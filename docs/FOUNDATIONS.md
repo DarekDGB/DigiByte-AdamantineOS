@@ -6,7 +6,7 @@ This document defines the **three foundational primitives** of Adamantine Wallet
 It explains **what they are**, **what they are not**, and **how they relate**.
 
 This document is **normative**.  
-If future code contradicts this document, **this document wins**.
+If future code, documentation, or behavior contradicts this document, **this document wins**.
 
 ---
 
@@ -23,10 +23,10 @@ EQC evaluates an **execution context** and returns a **deterministic verdict**.
 
 ### What EQC does
 - Consumes an immutable execution context
-- Applies explicit rules and classifiers
+- Applies explicit, deterministic rules
 - Produces:
   - a verdict (`ALLOW`, `DENY`, `STEP_UP`)
-  - a context hash
+  - a deterministic context hash
   - reason identifiers (explainability)
 
 EQC is:
@@ -41,6 +41,7 @@ EQC does **not**:
 - generate keys
 - grant authority
 - access the network
+- mutate state
 - retry, learn, or adapt
 - bypass user intent
 
@@ -60,21 +61,22 @@ It answers one question only:
 WSQK represents **permission**, not decision.
 
 ### What WSQK does
-- Grants **scoped authority** after EQC approval
+- Grants **scoped authority** only after EQC approval
 - Binds authority to:
   - a specific wallet
   - a specific action
   - a specific context hash
 - Enforces:
-  - time limits (TTL)
-  - single-use (nonce)
-  - non-reusability across contexts
+  - explicit issuance time (`issued_at`)
+  - explicit expiry (`expires_at`)
+  - single-use via nonce (replay protection)
 
 WSQK is:
 - narrow
 - time-bound
-- single-purpose
+- single-use
 - non-transferable
+- context-bound
 
 ### What WSQK does NOT do
 WSQK does **not**:
@@ -83,6 +85,7 @@ WSQK does **not**:
 - evaluate risk
 - persist long-term secrets
 - override EQC
+- self-extend or renew
 
 WSQK can authorize — **but it cannot execute**.
 
@@ -98,23 +101,32 @@ It answers one question only:
 > **“Is execution allowed to continue at all?”**
 
 TVA is not a decision engine and not an authority generator.  
-TVA is the **gate**.
+TVA is the **final gate**.
 
 ### What TVA does
 TVA enforces that **all required truths align** before execution:
 
 - a valid execution context exists
-- EQC verdict is `ALLOW`
-- WSQK authority exists
-- authority matches the context
-- authority is unused and unexpired
+- an EQC verdict exists and is `ALLOW`
+- a WSQK authority exists
+- authority binds exactly to the context
+- authority time window is valid (`issued_at ≤ now ≤ expires_at`)
+- authority nonce is unused (single-use)
 
 If **any condition fails**, execution **does not continue**.
 
 TVA is:
 - fail-closed
+- deterministic
 - non-negotiable
 - final
+
+### Determinism rule
+TVA **does not read global time or global state**.
+
+All external truths must be **explicitly injected**, including:
+- `now` (unix seconds)
+- `nonce_store` (replay protection)
 
 ### What TVA does NOT do
 TVA does **not**:
@@ -131,7 +143,7 @@ It only permits or refuses continuation.
 
 ## 4️⃣ Relationship Between EQC, WSQK, and TVA
 
-These three primitives form a **strict sequence**:
+These three primitives form a **strict, non-bypassable sequence**:
 
 ```
 EQC  →  WSQK  →  TVA  →  Execution
@@ -141,7 +153,8 @@ EQC  →  WSQK  →  TVA  →  Execution
 - **WSQK** authorizes *that exact execution*
 - **TVA** enforces that nothing proceeds unless everything aligns
 
-No component can bypass another.
+No component can bypass another.  
+No component can impersonate another.
 
 ---
 
@@ -151,6 +164,7 @@ No component can bypass another.
 - No implicit trust
 - No fallback paths
 - No hidden power
+- No global time or state
 - No single component can act alone
 
 Execution is only possible when:
@@ -169,6 +183,7 @@ Traditional wallets fail because:
 Adamantine separates these concerns so that:
 - mistakes are caught before execution
 - malware cannot escalate privilege
+- replay attacks are blocked
 - user intent cannot be silently overridden
 
 ---
@@ -184,8 +199,15 @@ Adamantine separates these concerns so that:
 ---
 
 ## Status
-This document defines **v1 foundations**.  
-No implementation is implied by this text.
+
+This document defines **v1 foundations**.
+
+It reflects:
+- EQC v1 (deterministic decision + context hash)
+- WSQK v1 Phase 2 (time-bound + nonce)
+- TVA v1 (binding + expiry + replay enforcement)
+
+No runtime wallet execution is implied by this text.
 
 ---
 
