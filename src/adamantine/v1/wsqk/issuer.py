@@ -32,25 +32,29 @@ def issue_wsqk_authority(req: WSQKIssueRequest) -> WSQKAuthority:
     - expires_at = now + ttl_seconds
     """
     wallet_id = str(req.wallet_id or "").strip()
-    action = str(req.action or "").strip()
-    context_hash = str(req.context_hash or "").strip()
-    nonce = str(req.nonce or "").strip()
-
     if not wallet_id:
-        raise TVAError(ReasonId.EQC_MISSING_WALLET_ID.value)
+        raise TVAError(ReasonId.WSQK_MISSING_WALLET_ID.value)
+
+    action = str(req.action or "").strip()
     if not action:
-        raise TVAError(ReasonId.EQC_MISSING_ACTION.value)
+        raise TVAError(ReasonId.WSQK_MISSING_ACTION.value)
+
+    context_hash = str(req.context_hash or "").strip()
     if not context_hash:
-        raise TVAError(ReasonId.TVA_AUTHORITY_CONTEXT_HASH_MISMATCH.value)  # fail-closed placeholder reason
+        raise TVAError(ReasonId.WSQK_MISSING_CONTEXT_HASH.value)
 
-    now = int(req.now)
+    try:
+        now = int(req.now)
+    except Exception:
+        raise TVAError(ReasonId.WSQK_MISSING_NOW.value)
+
     ttl = int(req.ttl_seconds)
-
     if ttl <= 0:
-        raise TVAError(ReasonId.TVA_INVALID_TIME_WINDOW.value)
+        raise TVAError(ReasonId.WSQK_INVALID_TTL.value)
 
+    nonce = str(req.nonce or "").strip()
     if not nonce:
-        raise TVAError(ReasonId.TVA_INVALID_NONCE.value)
+        raise TVAError(ReasonId.WSQK_INVALID_NONCE.value)
 
     issued_at = now
     expires_at = now + ttl
