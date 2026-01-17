@@ -6,15 +6,21 @@ from dataclasses import dataclass
 @dataclass(frozen=True, slots=True)
 class WSQKAuthority:
     """
-    Wallet-Scoped Quantum Key (WSQK) Authority token (v1 foundation shape).
+    Wallet-Scoped Quantum Key (WSQK) Authority token (v1).
 
-    This is the *authority layer* output that must bind to the exact
-    ExecutionContext (wallet_id, action, context_hash).
+    Phase 2 adds:
+      - issued_at / expires_at (unix seconds, int)
+      - nonce (single-use)
 
-    Note:
-    - This is intentionally minimal. TTL/nonce/proof come later (Phase 2).
-    - Deterministic + fail-closed by design.
+    Notes:
+    - TVA must validate all fields (fail-closed).
+    - No reliance on global time; TVA receives `now` injected.
+    - Single-use requires an injected nonce store (no global state).
     """
     wallet_id: str
     action: str
     context_hash: str
+
+    issued_at: int
+    expires_at: int
+    nonce: str
