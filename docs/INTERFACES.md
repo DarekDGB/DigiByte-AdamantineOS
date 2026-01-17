@@ -8,7 +8,7 @@ It is intentionally **minimal** and **implementation-agnostic**.
 
 ## v1 contracts
 
-### ExecutionContext
+### Execution Context
 Fields:
 - `wallet_id: str`
 - `action: str`
@@ -20,13 +20,13 @@ Values:
 - `DENY`
 - `STEP_UP`
 
-### EQCResult (decision output)
+### EQC Result (decision output)
 Fields:
 - `verdict: Verdict`
 - `reason_ids: tuple[str, ...]`
 - `context_hash: str`
 
-### WSQKAuthority (authority token)
+### WSQK Authority (authority token)
 Fields:
 - `wallet_id: str`
 - `action: str`
