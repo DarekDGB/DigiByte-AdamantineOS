@@ -1,5 +1,20 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
+## Status: Foundation (Not a wallet runtime yet)
+
+This repository is a **fresh rebuild** focused on **contracts + invariants + deterministic fail-closed enforcement**.
+
+Implemented:
+- EQC v1 (decision foundation + deterministic context hashing)
+- WSQKAuthority v1 (time-bound + nonce)
+- TVA gate (binding + expiry + replay protection via injected nonce store)
+- CI + tests + coverage enforcement
+
+Not implemented (by design):
+- wallet execution environment (keys/signing/broadcasting)
+- mobile/web clients
+- Shield v3 / Adaptive Core v3 integration
+
 **Quantum-Secure Execution Layer for DigiByte Wallets**  
 *Architecture by @DarekDGB — MIT Licensed*
 
