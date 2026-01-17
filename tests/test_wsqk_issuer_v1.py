@@ -36,7 +36,7 @@ def test_issuer_rejects_non_positive_ttl() -> None:
     )
     with pytest.raises(TVAError) as e:
         issue_wsqk_authority(req)
-    assert str(e.value) == ReasonId.TVA_INVALID_TIME_WINDOW.value
+    assert str(e.value) == ReasonId.WSQK_INVALID_TTL.value
 
 
 def test_issuer_rejects_empty_nonce() -> None:
@@ -50,4 +50,4 @@ def test_issuer_rejects_empty_nonce() -> None:
     )
     with pytest.raises(TVAError) as e:
         issue_wsqk_authority(req)
-    assert str(e.value) == ReasonId.TVA_INVALID_NONCE.value
+    assert str(e.value) == ReasonId.WSQK_INVALID_NONCE.value
