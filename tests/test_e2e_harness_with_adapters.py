@@ -103,7 +103,7 @@ def test_e2e_allows_and_executes_with_valid_evidence() -> None:
     executor=executor,
     request=req,
 )
-    assert out == {"ok": True}
+    assert out == "EXECUTED"
 
     # Ensure executor was actually called once
     assert len(executor.calls) == 1
