@@ -2,6 +2,11 @@
 
 This repository is rebuilt from first principles.
 
+## Foundation Freeze
+- A known-good baseline must be tagged before integration work (e.g. `v0.1.0-foundation`).
+- At the frozen foundation baseline, EQC may enforce **minimal presence checks** only.
+- Integration evidence (Q-ID session + RiskReport) becomes mandatory only when the integration gate is wired in.
+
 ## Core Laws
 - No hidden authority
 - No privileged maintainer paths
