@@ -92,7 +92,7 @@ def test_e2e_allows_and_executes_with_valid_evidence() -> None:
     executor = RecordingExecutor()
 
     ctx = ExecutionContext(wallet_id=wallet_id, action=action, context_hash=eqc.context_hash)
-    req = ExecutionRequest(wallet_id=wallet_id, action=action, context_hash=eqc.context_hash, payload={"x": 1})
+    req = ExecutionRequest(wallet_id=wallet_id, action=action, payload={"x": 1})
 
     out = run_with_tva(ctx, eqc.verdict, auth, now=now, nonce_store=store, executor=executor, request=req)
     assert out == {"ok": True}
