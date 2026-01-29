@@ -94,7 +94,15 @@ def test_e2e_allows_and_executes_with_valid_evidence() -> None:
     ctx = ExecutionContext(wallet_id=wallet_id, action=action, context_hash=eqc.context_hash)
     req = ExecutionRequest(wallet_id=wallet_id, action=action, payload={"x": 1})
 
-    out = run_with_tva(ctx, eqc.verdict, auth, now=now, nonce_store=store, executor=executor, request=req)
+    out = run_with_tva(
+    context=ctx,
+    verdict=eqc.verdict,
+    authority=auth,
+    now=now,
+    nonce_store=store,
+    executor=executor,
+    request=req,
+)
     assert out == {"ok": True}
 
     # Ensure executor was actually called once
