@@ -417,19 +417,23 @@ def test_executor_interface_raises_not_implemented() -> None:
 # -----------------------------
 def test_tva_denies_empty_nonce() -> None:
     ctx = ExecutionContext(wallet_id="w1", action="SEND", context_hash="h")
-    auth = issue_wsqk_authority(
-        WSQKIssueRequest(wallet_id="w1", action="SEND", context_hash="h", now=100, ttl_seconds=10, nonce=" ")
+
+    # Issue a valid authority first (WSQK enforces nonce validity).
+    auth_ok = issue_wsqk_authority(
+        WSQKIssueRequest(wallet_id="w1", action="SEND", context_hash="h", now=100, ttl_seconds=10, nonce="n1")
     )
-    # overwrite nonce to force empty/whitespace branch deterministically
-    auth = type(auth)(
-        wallet_id=auth.wallet_id,
-        action=auth.action,
-        context_hash=auth.context_hash,
-        issued_at=auth.issued_at,
-        expires_at=auth.expires_at,
+
+    # Create an authority with an empty/whitespace nonce to reach TVA's nonce validation branch.
+    auth_bad = type(auth_ok)(
+        wallet_id=auth_ok.wallet_id,
+        action=auth_ok.action,
+        context_hash=auth_ok.context_hash,
+        issued_at=auth_ok.issued_at,
+        expires_at=auth_ok.expires_at,
         nonce=" ",
     )
 
     with pytest.raises(TVAError) as e:
-        enforce_tva(ctx, Verdict.ALLOW, auth, now=105, nonce_store=InMemoryNonceStore())
+        enforce_tva(ctx, Verdict.ALLOW, auth_bad, now=105, nonce_store=InMemoryNonceStore())
+
     assert str(e.value) == ReasonId.TVA_INVALID_NONCE.value
