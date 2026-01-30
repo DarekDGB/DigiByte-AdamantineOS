@@ -6,6 +6,14 @@ from adamantine.v1.eqc.result import EQCResult
 from adamantine.v1.policy.risk_policy import RiskPolicy
 from adamantine.v1.contracts.qid import QIDSessionProof
 from adamantine.v1.contracts.risk import RiskReport
+from adamantine.v1.obs.metrics import Metrics
+
+
+def _inc_all(metrics: Metrics | None, reasons: list[ReasonId]) -> None:
+    if metrics is None:
+        return
+    for r in reasons:
+        metrics.inc(r.value)
 
 
 def evaluate_eqc(
@@ -17,9 +25,14 @@ def evaluate_eqc(
     risk: RiskReport | None = None,
     now: int | None = None,
     policy: RiskPolicy | None = None,
+    metrics: Metrics | None = None,
 ) -> EQCResult:
     """
     Deterministic EQC evaluator (v1 integration gate).
+
+    Observability:
+      - If metrics is provided, increments counters for each deny ReasonId.
+      - Metrics MUST NOT receive payloads or request objects.
 
     Fail-closed rules (v1):
       - Missing wallet_id => DENY
@@ -47,6 +60,7 @@ def evaluate_eqc(
     # Deterministic time must be injected
     if now is None or not isinstance(now, int):
         reasons.append(ReasonId.EQC_MISSING_NOW)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     # Policy (deterministic)
@@ -56,43 +70,52 @@ def evaluate_eqc(
     # Q-ID session evidence (fail-closed)
     if session is None:
         reasons.append(ReasonId.EQC_MISSING_QID_SESSION)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     # Provide precise reasons for common time validity failures
     if now < session.issued_at:
         reasons.append(ReasonId.EQC_QID_SESSION_NOT_YET_VALID)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
     if now >= session.expires_at:
         reasons.append(ReasonId.EQC_QID_SESSION_EXPIRED)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     try:
         session.validate(now=now)
     except ValueError:
         reasons.append(ReasonId.EQC_INVALID_QID_PROOF)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     # Risk report evidence (fail-closed)
     if risk is None:
         reasons.append(ReasonId.EQC_MISSING_RISK_REPORT)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     if risk.context_hash != ctx_hash:
         reasons.append(ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     try:
         risk.validate(now=now)
     except ValueError:
         reasons.append(ReasonId.EQC_INVALID_RISK_REPORT)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     if risk.overall_score < p.min_overall_score:
         reasons.append(ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD)
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     # If basic presence checks failed, still deny (but only after evidence validation rules above)
     if reasons:
+        _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
     return EQCResult.allow(context_hash=ctx_hash)
