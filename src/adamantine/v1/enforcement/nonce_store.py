@@ -21,6 +21,27 @@ class NonceStore:
         raise NotImplementedError
 
 
+class DurableNonceStore(NonceStore):
+    """
+    Durable nonce store contract (mobile-ready).
+
+    SECURITY/CONSISTENCY REQUIREMENTS:
+    - Atomicity: check-and-mark must be atomic (no TOCTOU window).
+      If two concurrent calls attempt the same (wallet_id, nonce), exactly one may succeed.
+    - Crash safety: once a nonce is marked used, it MUST remain used after process restart.
+    - Fail-closed: if storage is unavailable/corrupt, implementations should refuse acceptance
+      (i.e., behave as if nonce cannot be safely validated).
+    - No global state: must be dependency-injected.
+
+    NOTE:
+    This repo only defines the contract. iOS/Android implementations will live in platform layers.
+    """
+
+    # Inherits signature from NonceStore; kept here to make the "durable" semantics explicit.
+    def check_and_mark(self, wallet_id: str, nonce: str, expires_at: int) -> bool:  # pragma: no cover
+        raise NotImplementedError
+
+
 @dataclass(slots=True)
 class InMemoryNonceStore(NonceStore):
     """
