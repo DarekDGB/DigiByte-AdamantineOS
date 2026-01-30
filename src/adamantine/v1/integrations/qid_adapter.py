@@ -5,11 +5,22 @@ from typing import Any, Mapping
 from adamantine.v1.contracts.qid import QIDSessionProof
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.integrations.errors import AdapterError
+from adamantine.v1.obs.metrics import Metrics
 
 
-def parse_qid_session(*, payload: Mapping[str, Any], now: int) -> QIDSessionProof:
+def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> "NoReturn":  # type: ignore[name-defined]
+    if metrics is not None:
+        metrics.inc(rid.value)
+    raise AdapterError(rid, msg)
+
+
+def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics | None = None) -> QIDSessionProof:
     """
     External Q-ID session payload -> QIDSessionProof (contract)
+
+    Observability:
+      - If metrics is provided, increments on AdapterError ReasonId only.
+      - Metrics MUST NOT receive payloads or request objects.
 
     Fail-closed:
       - missing required fields
@@ -18,15 +29,14 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int) -> QIDSessionProo
       - empty subject / empty proof_hash
     """
     if not isinstance(now, int):
-        raise AdapterError(ReasonId.EQC_MISSING_NOW, "now must be int")
+        _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
 
     if not isinstance(payload, Mapping):
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "payload must be mapping")
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "payload must be mapping")
 
-    # Required: version (shape enforcement; semantics can evolve later)
     iface = payload.get("qid_iface_version")
     if not isinstance(iface, str) or not iface:
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "qid_iface_version must be non-empty str")
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "qid_iface_version must be non-empty str")
 
     subject = payload.get("subject")
     issued_at = payload.get("issued_at")
@@ -34,27 +44,26 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int) -> QIDSessionProo
     proof_hash = payload.get("proof_hash")
 
     if not isinstance(subject, str) or not subject:
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "subject must be non-empty str")
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "subject must be non-empty str")
 
     if not isinstance(proof_hash, str) or not proof_hash:
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "proof_hash must be non-empty str")
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "proof_hash must be non-empty str")
 
     if not isinstance(issued_at, int) or not isinstance(expires_at, int):
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "issued_at/expires_at must be int")
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "issued_at/expires_at must be int")
 
-    # Provide precise time reasons
     if now < issued_at:
-        raise AdapterError(ReasonId.EQC_QID_SESSION_NOT_YET_VALID, "session not yet valid")
+        _fail(metrics, ReasonId.EQC_QID_SESSION_NOT_YET_VALID, "session not yet valid")
     if now >= expires_at:
-        raise AdapterError(ReasonId.EQC_QID_SESSION_EXPIRED, "session expired")
+        _fail(metrics, ReasonId.EQC_QID_SESSION_EXPIRED, "session expired")
 
     device_binding = payload.get("device_binding", None)
     if device_binding is not None and (not isinstance(device_binding, str) or not device_binding):
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "device_binding must be non-empty str or None")
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "device_binding must be non-empty str or None")
 
     issuer_version = payload.get("issuer_version", None)
     if issuer_version is not None and not isinstance(issuer_version, str):
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "issuer_version must be str or None")
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "issuer_version must be str or None")
 
     proof = QIDSessionProof(
         subject=subject,
@@ -65,10 +74,9 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int) -> QIDSessionProo
         issuer_version=issuer_version,
     )
 
-    # Contract-level validation (defense in depth)
     try:
         proof.validate(now=now)
     except ValueError as e:
-        raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, f"contract validation failed: {e}") from e
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, f"contract validation failed: {e}")
 
     return proof
