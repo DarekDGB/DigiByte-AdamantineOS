@@ -3,7 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple
 
-from adamantine.v1.contracts.shield import ExternalReasonMap
+from adamantine.v1.contracts.reason_ids import ReasonId
+from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
+
+
+_DEFAULT_REASON_MAP = ExternalReasonMap(
+    entries=(ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +33,7 @@ class PolicyPack:
     """
     min_overall_score: int = 85
     allowed_external_reason_ids: Tuple[str, ...] = ("ok",)
-    external_reason_map: ExternalReasonMap = ExternalReasonMap(entries=())
+    external_reason_map: ExternalReasonMap = _DEFAULT_REASON_MAP
 
     def validate(self) -> None:
         if not isinstance(self.min_overall_score, int):
@@ -49,7 +55,7 @@ class PolicyPack:
                 raise ValueError("allowed_external_reason_ids must be unique")
             seen.add(rid)
 
-        # Mapping table: must exist, validate, and be non-empty
+        # Mapping table: must exist and validate
         if not isinstance(self.external_reason_map, ExternalReasonMap):
             raise ValueError("external_reason_map must be ExternalReasonMap")
         if not isinstance(self.external_reason_map.entries, tuple) or len(self.external_reason_map.entries) == 0:
