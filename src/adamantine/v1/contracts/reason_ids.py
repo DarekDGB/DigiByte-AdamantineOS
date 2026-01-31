@@ -47,6 +47,9 @@ class ReasonId(str, Enum):
     # --- External reason mapping (adapter boundary) ---
     UNKNOWN_EXTERNAL_REASON = "UNKNOWN_EXTERNAL_REASON"
 
+        # --- Evidence / signal normalization ---
+    EVIDENCE_OK = "EVIDENCE_OK"
+    
     # --- WSQK (Authority issuer) validation ---
     WSQK_MISSING_WALLET_ID = "WSQK_MISSING_WALLET_ID"
     WSQK_MISSING_ACTION = "WSQK_MISSING_ACTION"
