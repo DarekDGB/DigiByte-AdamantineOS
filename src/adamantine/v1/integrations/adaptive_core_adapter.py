@@ -9,9 +9,6 @@ from adamantine.v1.policy.risk_policy import RiskPolicy, UnknownReasonMode
 from adamantine.v1.obs.metrics import Metrics
 
 
-_ALLOWED_EXTERNAL_REASON_IDS = {"ok"}
-
-
 def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> "NoReturn":  # type: ignore[name-defined]
     if metrics is not None:
         metrics.inc(rid.value)
@@ -28,10 +25,6 @@ def parse_risk_report(
 ) -> RiskReport:
     """
     External Adaptive Core payload -> RiskReport (contract)
-
-    Observability:
-      - If metrics is provided, increments on AdapterError ReasonId only.
-      - Metrics MUST NOT receive payloads or request objects.
 
     Fail-closed:
       - missing required fields
@@ -50,6 +43,8 @@ def parse_risk_report(
 
     p = policy or RiskPolicy()
     p.validate()
+
+    allowed_reason_ids = set(p.effective_allowed_external_reason_ids())
 
     iface = payload.get("ac_iface_version")
     if not isinstance(iface, str) or not iface:
@@ -104,7 +99,7 @@ def parse_risk_report(
             if not isinstance(rid, str) or not rid:
                 _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, f"signal[{idx}].reason_ids must be non-empty str")
 
-            if rid not in _ALLOWED_EXTERNAL_REASON_IDS and p.unknown_reason_mode is UnknownReasonMode.DENY_EXPLICIT:
+            if rid not in allowed_reason_ids and p.unknown_reason_mode is UnknownReasonMode.DENY_EXPLICIT:
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unknown external reason_id: {rid}")
 
             reason_ids.append(rid)
