@@ -5,6 +5,7 @@ import pytest
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.context import ExecutionContext
 from adamantine.v1.contracts.execution_request import ExecutionRequest
+from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.verdict import Verdict
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
@@ -18,12 +19,6 @@ from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_session
 from adamantine.v1.policy.risk_policy import RiskPolicy
 from adamantine.v1.wsqk.issuer import WSQKIssueRequest, issue_wsqk_authority
-from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
-
-
-_REASON_MAP = ExternalReasonMap(
-    entries=(ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
-)
 
 
 def _qid_payload(*, issued_at: int, expires_at: int) -> dict:
@@ -65,7 +60,7 @@ def test_e2e_allows_and_executes_with_valid_evidence() -> None:
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
         expected_context_hash=ctx_hash,
-        reason_map=_REASON_MAP,
+        reason_map=PolicyPack().external_reason_map,
         policy=RiskPolicy(min_overall_score=85),
     )
 
@@ -125,7 +120,7 @@ def test_e2e_denies_on_unknown_external_reason() -> None:
             payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["NEW_REASON"]),
             now=now,
             expected_context_hash=ctx_hash,
-            reason_map=_REASON_MAP,
+            reason_map=PolicyPack().external_reason_map,
             policy=RiskPolicy(),
         )
     assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
@@ -144,7 +139,7 @@ def test_e2e_denies_on_score_below_threshold() -> None:
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=80, reason_ids=["ok"]),
         now=now,
         expected_context_hash=ctx_hash,
-        reason_map=_REASON_MAP,
+        reason_map=PolicyPack().external_reason_map,
         policy=RiskPolicy(),
     )
 
@@ -174,7 +169,7 @@ def test_tva_nonce_replay_denies_second_execution() -> None:
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
         expected_context_hash=ctx_hash,
-        reason_map=_REASON_MAP,
+        reason_map=PolicyPack().external_reason_map,
         policy=RiskPolicy(min_overall_score=85),
     )
 
