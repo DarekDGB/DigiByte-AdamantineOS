@@ -1,9 +1,15 @@
 import pytest
 
+from adamantine.v1.contracts.reason_ids import ReasonId
+from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
 from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
 from adamantine.v1.integrations.errors import AdapterError
-from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.policy.risk_policy import RiskPolicy
+
+
+_REASON_MAP_OK = ExternalReasonMap(
+    entries=(ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
+)
 
 
 def test_parse_risk_report_accepts_valid_payload() -> None:
@@ -20,7 +26,13 @@ def test_parse_risk_report_accepts_valid_payload() -> None:
         "oracle_version": "ac-v0",
         "external_source_id": "rpt-1",
     }
-    rpt = parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash, policy=RiskPolicy())
+    rpt = parse_risk_report(
+        payload=payload,
+        now=now,
+        expected_context_hash=expected_hash,
+        reason_map=_REASON_MAP_OK,
+        policy=RiskPolicy(),
+    )
     assert rpt.context_hash == expected_hash
     assert rpt.overall_score == 90
 
@@ -35,7 +47,13 @@ def test_parse_risk_report_denies_context_hash_mismatch() -> None:
         "signals": [{"source": "adaptive-core", "severity": 10, "reason_ids": ["ok"]}],
     }
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash="a" * 64, policy=RiskPolicy())
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash="a" * 64,
+            reason_map=_REASON_MAP_OK,
+            policy=RiskPolicy(),
+        )
     assert e.value.reason_id is ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH
 
 
@@ -50,5 +68,11 @@ def test_parse_risk_report_denies_unknown_reason_id() -> None:
         "signals": [{"source": "adaptive-core", "severity": 10, "reason_ids": ["SOMETHING_NEW"]}],
     }
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash, policy=RiskPolicy())
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+            policy=RiskPolicy(),
+        )
     assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
