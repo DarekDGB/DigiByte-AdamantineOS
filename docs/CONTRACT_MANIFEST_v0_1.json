@@ -1,35 +1,21 @@
 {
-  "manifest_version": "v0.1",
-  "purpose": "freeze contract + gate interfaces; deny drift",
+  "version": "v0.1.0-foundation",
   "hash_algo": "sha256",
-  "paths": [
-    "src/adamantine/v1/contracts/context.py",
-    "src/adamantine/v1/contracts/verdict.py",
-    "src/adamantine/v1/contracts/reason_ids.py",
-    "src/adamantine/v1/contracts/authority.py",
-    "src/adamantine/v1/contracts/execution_request.py",
-    "src/adamantine/v1/contracts/qid.py",
-    "src/adamantine/v1/contracts/risk.py",
-    "src/adamantine/v1/contracts/policy_pack.py",
-    "src/adamantine/v1/contracts/shield.py",
-    "src/adamantine/v1/eqc/context_hash.py",
-    "src/adamantine/v1/eqc/evaluator.py",
-    "src/adamantine/v1/enforcement/tva_gate.py",
-    "src/adamantine/v1/wsqk/issuer.py"
-  ],
-  "hashes": {
-    "src/adamantine/v1/contracts/context.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/verdict.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/reason_ids.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/authority.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/execution_request.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/qid.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/risk.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/policy_pack.py": "REPLACE_ME",
-    "src/adamantine/v1/contracts/shield.py": "REPLACE_ME",
-    "src/adamantine/v1/eqc/context_hash.py": "REPLACE_ME",
-    "src/adamantine/v1/eqc/evaluator.py": "REPLACE_ME",
-    "src/adamantine/v1/enforcement/tva_gate.py": "REPLACE_ME",
-    "src/adamantine/v1/wsqk/issuer.py": "REPLACE_ME"
+  "contracts": {
+    "src/adamantine/v1/contracts/context.py": "7ab68b7c3b1c82777ec68a00c8b51efdf24284e1e422f2e88a32d2c41b2f2b96",
+    "src/adamantine/v1/contracts/verdict.py": "27574c1e9a575094b89213d7bbb607637f86e6abb4a5eeea7609cf137306969a",
+    "src/adamantine/v1/contracts/reason_ids.py": "e075bb2f1686f0b04852eabb89c6996e56902a055dbab851ab4e9e47f68576b9",
+    "src/adamantine/v1/contracts/authority.py": "28faa8c88a5f0de45848f2cf872235a1246e895a43217d444e5db07a6b738b24",
+    "src/adamantine/v1/contracts/execution_request.py": "0d81ccdff100942988a420afc5b62f4557d8e256916c05916ce88a0003240f28",
+    "src/adamantine/v1/contracts/qid.py": "38c8f958c2a765e3dc5c980f829cec702ddc86ba85bf07a3cb0789c90929473a",
+    "src/adamantine/v1/contracts/risk.py": "470e55feb3c7d375d09e7fecef1040a0c59f62dcb664ea47ed341044ef075eb9",
+    "src/adamantine/v1/contracts/policy_pack.py": "3a9bbfff1cc6e2f4a7d3629c02fbc68e6d1b54e907361cfbc7dd826f6cf08bb5",
+    "src/adamantine/v1/contracts/shield.py": "f8cc8ef90554e99ea062cdc5ccb1fbc1a649fdf3e6c021857f8dd4d95398616d",
+
+    "src/adamantine/v1/eqc/context_hash.py": "80e15ef02d5e1b735b210c6239acfee2c0dcc78c2c20fe01c5c2aaa67bbfa3ae",
+    "src/adamantine/v1/eqc/evaluator.py": "49504940f20872b2a7ab15d6d58fa0e2b2a6340db5f55ad4f56bcdb0cf1a9794",
+
+    "src/adamantine/v1/enforcement/tva_gate.py": "c3bd5c84552e9416b5478bbae1250369cc1430210a79efb4cb08b1fdad0e1933",
+    "src/adamantine/v1/wsqk/issuer.py": "21812dcf2341962345bc29dd6880559d7800c1aba621c94028d4b818016bae12"
   }
 }
