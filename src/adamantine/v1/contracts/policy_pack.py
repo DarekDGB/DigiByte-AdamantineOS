@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple
 
+from adamantine.v1.contracts.shield import ExternalReasonMap
+
 
 @dataclass(frozen=True, slots=True)
 class PolicyPack:
@@ -17,9 +19,15 @@ class PolicyPack:
     v1 fields:
     - min_overall_score: minimum risk report score required to allow
     - allowed_external_reason_ids: allowlist for external reason IDs from oracles/adapters
+    - external_reason_map: explicit mapping table for external reason codes -> internal ReasonId strings
+
+    Critical invariant:
+    - allowed_external_reason_ids MUST be a subset of external_reason_map entries.
+      (No allow-without-map drift.)
     """
     min_overall_score: int = 85
     allowed_external_reason_ids: Tuple[str, ...] = ("ok",)
+    external_reason_map: ExternalReasonMap = ExternalReasonMap(entries=())
 
     def validate(self) -> None:
         if not isinstance(self.min_overall_score, int):
@@ -29,7 +37,6 @@ class PolicyPack:
 
         if not isinstance(self.allowed_external_reason_ids, tuple):
             raise ValueError("allowed_external_reason_ids must be tuple")
-
         if len(self.allowed_external_reason_ids) == 0:
             raise ValueError("allowed_external_reason_ids must not be empty")
 
@@ -41,3 +48,15 @@ class PolicyPack:
             if rid in seen:
                 raise ValueError("allowed_external_reason_ids must be unique")
             seen.add(rid)
+
+        # Mapping table: must exist, validate, and be non-empty
+        if not isinstance(self.external_reason_map, ExternalReasonMap):
+            raise ValueError("external_reason_map must be ExternalReasonMap")
+        if not isinstance(self.external_reason_map.entries, tuple) or len(self.external_reason_map.entries) == 0:
+            raise ValueError("external_reason_map must be non-empty")
+        self.external_reason_map.validate()
+
+        # Subset invariant: allowlist must be fully mappable
+        for rid in self.allowed_external_reason_ids:
+            if self.external_reason_map.lookup(rid) is None:
+                raise ValueError("allowed_external_reason_ids must be subset of external_reason_map")
