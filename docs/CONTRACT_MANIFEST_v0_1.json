@@ -1,0 +1,35 @@
+{
+  "manifest_version": "v0.1",
+  "purpose": "freeze contract + gate interfaces; deny drift",
+  "hash_algo": "sha256",
+  "paths": [
+    "src/adamantine/v1/contracts/context.py",
+    "src/adamantine/v1/contracts/verdict.py",
+    "src/adamantine/v1/contracts/reason_ids.py",
+    "src/adamantine/v1/contracts/authority.py",
+    "src/adamantine/v1/contracts/execution_request.py",
+    "src/adamantine/v1/contracts/qid.py",
+    "src/adamantine/v1/contracts/risk.py",
+    "src/adamantine/v1/contracts/policy_pack.py",
+    "src/adamantine/v1/contracts/shield.py",
+    "src/adamantine/v1/eqc/context_hash.py",
+    "src/adamantine/v1/eqc/evaluator.py",
+    "src/adamantine/v1/enforcement/tva_gate.py",
+    "src/adamantine/v1/wsqk/issuer.py"
+  ],
+  "hashes": {
+    "src/adamantine/v1/contracts/context.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/verdict.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/reason_ids.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/authority.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/execution_request.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/qid.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/risk.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/policy_pack.py": "REPLACE_ME",
+    "src/adamantine/v1/contracts/shield.py": "REPLACE_ME",
+    "src/adamantine/v1/eqc/context_hash.py": "REPLACE_ME",
+    "src/adamantine/v1/eqc/evaluator.py": "REPLACE_ME",
+    "src/adamantine/v1/enforcement/tva_gate.py": "REPLACE_ME",
+    "src/adamantine/v1/wsqk/issuer.py": "REPLACE_ME"
+  }
+}
