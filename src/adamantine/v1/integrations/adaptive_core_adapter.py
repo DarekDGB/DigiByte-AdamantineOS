@@ -4,9 +4,10 @@ from typing import Any, Mapping, Sequence
 
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.risk import RiskReport, RiskSignal
+from adamantine.v1.contracts.shield import ExternalReasonMap
 from adamantine.v1.integrations.errors import AdapterError
-from adamantine.v1.policy.risk_policy import RiskPolicy, UnknownReasonMode
 from adamantine.v1.obs.metrics import Metrics
+from adamantine.v1.policy.risk_policy import RiskPolicy, UnknownReasonMode
 
 
 def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> "NoReturn":  # type: ignore[name-defined]
@@ -20,6 +21,7 @@ def parse_risk_report(
     payload: Mapping[str, Any],
     now: int,
     expected_context_hash: str,
+    reason_map: ExternalReasonMap,
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> RiskReport:
@@ -30,7 +32,8 @@ def parse_risk_report(
       - missing required fields
       - invalid types/ranges
       - context_hash mismatch
-      - unknown external reason ids (per policy, default deny)
+      - unknown external reason ids (per policy allowlist)
+      - unmapped external reason ids (mapping table)
     """
     if not isinstance(now, int):
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
@@ -43,6 +46,10 @@ def parse_risk_report(
 
     p = policy or RiskPolicy()
     p.validate()
+
+    if not isinstance(reason_map, ExternalReasonMap):
+        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "reason_map must be ExternalReasonMap")
+    reason_map.validate()
 
     allowed_reason_ids = set(p.effective_allowed_external_reason_ids())
 
@@ -94,17 +101,23 @@ def parse_risk_report(
         if not isinstance(reason_ids_raw, Sequence) or isinstance(reason_ids_raw, (str, bytes)):
             _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, f"signal[{idx}].reason_ids must be a list of str")
 
-        reason_ids: list[str] = []
+        internal_reason_ids: list[str] = []
         for rid in reason_ids_raw:
             if not isinstance(rid, str) or not rid:
                 _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, f"signal[{idx}].reason_ids must be non-empty str")
 
+            # Policy allowlist gate (external code)
             if rid not in allowed_reason_ids and p.unknown_reason_mode is UnknownReasonMode.DENY_EXPLICIT:
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unknown external reason_id: {rid}")
 
-            reason_ids.append(rid)
+            # Mapping table (external -> internal ReasonId)
+            internal = reason_map.lookup(rid)
+            if internal is None:
+                _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {rid}")
 
-        sig = RiskSignal(source=source, severity=severity, reason_ids=tuple(reason_ids))
+            internal_reason_ids.append(internal)
+
+        sig = RiskSignal(source=source, severity=severity, reason_ids=tuple(internal_reason_ids))
         try:
             sig.validate()
         except ValueError as e:
