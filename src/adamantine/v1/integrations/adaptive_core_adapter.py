@@ -21,7 +21,7 @@ def parse_risk_report(
     payload: Mapping[str, Any],
     now: int,
     expected_context_hash: str,
-    reason_map: ExternalReasonMap,
+    reason_map: ExternalReasonMap | None = None,
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> RiskReport:
@@ -34,6 +34,11 @@ def parse_risk_report(
       - context_hash mismatch
       - unknown external reason ids (per policy allowlist)
       - unmapped external reason ids (mapping table)
+
+    Mapping resolution precedence:
+      1) explicit reason_map argument
+      2) policy.policy_pack.external_reason_map (via policy.effective_external_reason_map())
+      3) fail-closed
     """
     if not isinstance(now, int):
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
@@ -47,9 +52,17 @@ def parse_risk_report(
     p = policy or RiskPolicy()
     p.validate()
 
-    if not isinstance(reason_map, ExternalReasonMap):
+    # Resolve mapping source (strict precedence)
+    resolved_map: ExternalReasonMap | None = reason_map
+    if resolved_map is None and policy is not None:
+        resolved_map = policy.effective_external_reason_map()
+
+    if resolved_map is None:
+        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "reason_map is required (explicit or via policy_pack)")
+
+    if not isinstance(resolved_map, ExternalReasonMap):
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "reason_map must be ExternalReasonMap")
-    reason_map.validate()
+    resolved_map.validate()
 
     allowed_reason_ids = set(p.effective_allowed_external_reason_ids())
 
@@ -111,7 +124,7 @@ def parse_risk_report(
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unknown external reason_id: {rid}")
 
             # Mapping table (external -> internal ReasonId)
-            internal = reason_map.lookup(rid)
+            internal = resolved_map.lookup(rid)
             if internal is None:
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {rid}")
 
