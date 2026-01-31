@@ -39,7 +39,6 @@ def test_policy_pack_allowlist_allows_new_reason_when_explicitly_listed() -> Non
         payload=payload,
         now=now,
         expected_context_hash=expected_hash,
-        reason_map=pack.external_reason_map,
         policy=policy,
     )
     assert rpt.context_hash == expected_hash
