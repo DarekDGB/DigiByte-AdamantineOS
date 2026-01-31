@@ -108,7 +108,8 @@ def evaluate_eqc(
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
-    if risk.overall_score < p.min_overall_score:
+    threshold = p.policy_pack.min_overall_score if p.policy_pack is not None else p.min_overall_score
+if risk.overall_score < threshold:
         reasons.append(ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD)
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
