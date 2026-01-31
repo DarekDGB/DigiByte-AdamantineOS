@@ -1,14 +1,11 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
-<!--
-BADGES: Replace <ORG> and <REPO> with your GitHub org/user + repository name.
-Example: https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS
--->
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-foundation--locked-orange.svg)
+![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
+![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen.svg)
 
-![CI](https://github.com/<ORG>/<REPO>/actions/workflows/ci.yml/badge.svg)
-![License: MIT](https://img.shields.io/badge/license-MIT-blue)
-![Status](https://img.shields.io/badge/status-foundation--locked-important)
-![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-only)
 
 ## Status: Foundation Locked (Not a wallet runtime yet)
 
