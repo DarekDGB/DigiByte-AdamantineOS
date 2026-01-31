@@ -18,6 +18,12 @@ from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_session
 from adamantine.v1.policy.risk_policy import RiskPolicy
 from adamantine.v1.wsqk.issuer import WSQKIssueRequest, issue_wsqk_authority
+from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
+
+
+_REASON_MAP = ExternalReasonMap(
+    entries=(ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
+)
 
 
 def _qid_payload(*, issued_at: int, expires_at: int) -> dict:
@@ -59,6 +65,7 @@ def test_e2e_allows_and_executes_with_valid_evidence() -> None:
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
         expected_context_hash=ctx_hash,
+        reason_map=_REASON_MAP,
         policy=RiskPolicy(min_overall_score=85),
     )
 
@@ -88,19 +95,21 @@ def test_e2e_allows_and_executes_with_valid_evidence() -> None:
     executor = RecordingExecutor()
 
     ctx = ExecutionContext(wallet_id=wallet_id, action=action, context_hash=eqc.context_hash)
-    req = ExecutionRequest(wallet_id=wallet_id, action=action, payload={"x": 1})
+    req = ExecutionRequest(wallet_id=wallet_id, action=action, payload="payload-v0")
 
     out = run_with_tva(
+        executor=executor,
+        request=req,
         context=ctx,
         verdict=eqc.verdict,
         authority=auth,
         now=now,
         nonce_store=store,
-        executor=executor,
-        request=req,
     )
 
     assert out == "EXECUTED"
+    assert executor.called is True
+    assert executor.last_request == req
 
 
 def test_e2e_denies_on_unknown_external_reason() -> None:
@@ -116,9 +125,9 @@ def test_e2e_denies_on_unknown_external_reason() -> None:
             payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["NEW_REASON"]),
             now=now,
             expected_context_hash=ctx_hash,
+            reason_map=_REASON_MAP,
             policy=RiskPolicy(),
         )
-
     assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
 
 
@@ -135,6 +144,7 @@ def test_e2e_denies_on_score_below_threshold() -> None:
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=80, reason_ids=["ok"]),
         now=now,
         expected_context_hash=ctx_hash,
+        reason_map=_REASON_MAP,
         policy=RiskPolicy(),
     )
 
@@ -147,7 +157,6 @@ def test_e2e_denies_on_score_below_threshold() -> None:
         now=now,
         policy=RiskPolicy(min_overall_score=85),
     )
-
     assert eqc.verdict is Verdict.DENY
     assert ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD.value in eqc.reason_ids
 
@@ -165,6 +174,7 @@ def test_tva_nonce_replay_denies_second_execution() -> None:
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
         expected_context_hash=ctx_hash,
+        reason_map=_REASON_MAP,
         policy=RiskPolicy(min_overall_score=85),
     )
 
