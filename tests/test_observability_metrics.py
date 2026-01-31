@@ -2,19 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from adamantine.v1.obs.metrics import InMemoryMetrics, NullMetrics
+from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
-from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
 from adamantine.v1.eqc.evaluator import evaluate_eqc
+from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_session
-from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
+from adamantine.v1.obs.metrics import InMemoryMetrics, NullMetrics
 from adamantine.v1.policy.risk_policy import RiskPolicy
-
-
-_REASON_MAP = ExternalReasonMap(
-    entries=(ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
-)
 
 
 def test_inmemory_metrics_counts_only_reason_ids() -> None:
@@ -81,7 +76,7 @@ def test_metrics_increment_on_risk_adapter_unknown_reason() -> None:
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP,
+            reason_map=PolicyPack().external_reason_map,
             policy=RiskPolicy(),
             metrics=m,
         )
