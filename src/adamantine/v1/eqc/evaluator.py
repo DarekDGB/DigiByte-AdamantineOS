@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from adamantine.v1.contracts.qid import QIDSessionProof
 from adamantine.v1.contracts.reason_ids import ReasonId
+from adamantine.v1.contracts.risk import RiskReport
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.eqc.result import EQCResult
-from adamantine.v1.policy.risk_policy import RiskPolicy
-from adamantine.v1.contracts.qid import QIDSessionProof
-from adamantine.v1.contracts.risk import RiskReport
 from adamantine.v1.obs.metrics import Metrics
+from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
 def _inc_all(metrics: Metrics | None, reasons: list[ReasonId]) -> None:
@@ -78,6 +78,7 @@ def evaluate_eqc(
         reasons.append(ReasonId.EQC_QID_SESSION_NOT_YET_VALID)
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
+
     if now >= session.expires_at:
         reasons.append(ReasonId.EQC_QID_SESSION_EXPIRED)
         _inc_all(metrics, reasons)
@@ -108,8 +109,9 @@ def evaluate_eqc(
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
+    # PolicyPack-driven threshold when present (single source of truth)
     threshold = p.policy_pack.min_overall_score if p.policy_pack is not None else p.min_overall_score
-if risk.overall_score < threshold:
+    if risk.overall_score < threshold:
         reasons.append(ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD)
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
