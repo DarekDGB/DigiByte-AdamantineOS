@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from adamantine.v1.contracts.policy_pack import PolicyPack
+from adamantine.v1.contracts.shield import ExternalReasonMap
 
 
 class UnknownReasonMode(str, Enum):
@@ -32,10 +33,10 @@ class RiskPolicy:
     Deterministic risk policy config.
 
     This remains a small immutable config object, but can optionally carry a PolicyPack.
-    The PolicyPack is the contract-driven source for thresholds/allowlists.
+    The PolicyPack is the contract-driven source for thresholds/allowlists/mapping.
 
     IMPORTANT:
-    - If policy_pack is provided, it defines min_overall_score and allowlisted external reason IDs.
+    - If policy_pack is provided, it defines min_overall_score + allowlisted external reason IDs + mapping table.
     - If policy_pack is None, defaults remain deterministic and safe.
     """
 
@@ -48,10 +49,10 @@ class RiskPolicy:
         if self.policy_pack is not None:
             if not isinstance(self.policy_pack, PolicyPack):
                 raise ValueError("policy_pack must be PolicyPack or None")
+            # PolicyPack is the single source of truth and must validate first.
             self.policy_pack.validate()
 
-        # If a pack exists, min_overall_score must match it (avoid split-brain).
-        if self.policy_pack is not None:
+            # Avoid split-brain: min_overall_score must match pack.
             if self.min_overall_score != self.policy_pack.min_overall_score:
                 raise ValueError("min_overall_score must match policy_pack.min_overall_score")
 
@@ -76,3 +77,14 @@ class RiskPolicy:
         if self.policy_pack is not None:
             return self.policy_pack.allowed_external_reason_ids
         return ("ok",)
+
+    def effective_external_reason_map(self) -> ExternalReasonMap | None:
+        """
+        Returns the ExternalReasonMap used by adapters.
+
+        If a PolicyPack is present, it is the source of truth.
+        If not present, return None so callers can fail-closed or inject explicitly.
+        """
+        if self.policy_pack is not None:
+            return self.policy_pack.external_reason_map
+        return None
