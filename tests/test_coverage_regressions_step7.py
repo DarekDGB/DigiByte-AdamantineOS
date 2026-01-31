@@ -4,10 +4,11 @@ import pytest
 
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.context import ExecutionContext
+from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.qid import QIDSessionProof
+from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.risk import RiskReport, RiskSignal
 from adamantine.v1.contracts.verdict import Verdict
-from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore, NonceStore
 from adamantine.v1.enforcement.tva_gate import enforce_tva
 from adamantine.v1.eqc.context_hash import compute_context_hash
@@ -121,26 +122,58 @@ def test_eqc_covers_time_branches_and_validation_failures() -> None:
     # session not yet valid
     session_future = QIDSessionProof("did:x", issued_at=300, expires_at=400, proof_hash="h")
     risk_ok = RiskReport(ctx_hash, (RiskSignal("ac", 1, ("ok",)),), 90, generated_at=150)
-    res = evaluate_eqc(wallet_id="w1", action="SEND", fields=None, session=session_future, risk=risk_ok, now=now, policy=RiskPolicy())
+    res = evaluate_eqc(
+        wallet_id="w1",
+        action="SEND",
+        fields=None,
+        session=session_future,
+        risk=risk_ok,
+        now=now,
+        policy=RiskPolicy(),
+    )
     assert res.verdict is Verdict.DENY
     assert ReasonId.EQC_QID_SESSION_NOT_YET_VALID.value in res.reason_ids
 
     # session expired
     session_expired = QIDSessionProof("did:x", issued_at=100, expires_at=150, proof_hash="h")
-    res = evaluate_eqc(wallet_id="w1", action="SEND", fields=None, session=session_expired, risk=risk_ok, now=now, policy=RiskPolicy())
+    res = evaluate_eqc(
+        wallet_id="w1",
+        action="SEND",
+        fields=None,
+        session=session_expired,
+        risk=risk_ok,
+        now=now,
+        policy=RiskPolicy(),
+    )
     assert res.verdict is Verdict.DENY
     assert ReasonId.EQC_QID_SESSION_EXPIRED.value in res.reason_ids
 
     # invalid qid proof (contract validate raises)
     session_bad = QIDSessionProof("did:x", issued_at=100, expires_at=300, proof_hash="")
-    res = evaluate_eqc(wallet_id="w1", action="SEND", fields=None, session=session_bad, risk=risk_ok, now=now, policy=RiskPolicy())
+    res = evaluate_eqc(
+        wallet_id="w1",
+        action="SEND",
+        fields=None,
+        session=session_bad,
+        risk=risk_ok,
+        now=now,
+        policy=RiskPolicy(),
+    )
     assert res.verdict is Verdict.DENY
     assert ReasonId.EQC_INVALID_QID_PROOF.value in res.reason_ids
 
     # invalid risk report (contract validate raises)
     session_ok = QIDSessionProof("did:x", issued_at=100, expires_at=300, proof_hash="h")
     risk_bad = RiskReport(ctx_hash, (RiskSignal("", 1, ("ok",)),), 90, generated_at=150)
-    res = evaluate_eqc(wallet_id="w1", action="SEND", fields=None, session=session_ok, risk=risk_bad, now=now, policy=RiskPolicy())
+    res = evaluate_eqc(
+        wallet_id="w1",
+        action="SEND",
+        fields=None,
+        session=session_ok,
+        risk=risk_bad,
+        now=now,
+        policy=RiskPolicy(),
+    )
     assert res.verdict is Verdict.DENY
     assert ReasonId.EQC_INVALID_RISK_REPORT.value in res.reason_ids
 
@@ -229,20 +262,13 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
     now = 200
     expected_hash = "a" * 64
 
-    # Minimal mapping for known benign external code "ok"
-    from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
-
-    _REASON_MAP_OK = ExternalReasonMap(
-        entries=(ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
-    )
-
     # now must be int
     with pytest.raises(AdapterError) as e:
         parse_risk_report(
             payload={},
             now="x",  # type: ignore[arg-type]
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_MISSING_NOW
 
@@ -252,7 +278,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload={},
             now=now,
             expected_context_hash="",
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -262,7 +288,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload="nope",  # type: ignore[arg-type]
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -272,7 +298,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload={"context_hash": expected_hash},
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -289,7 +315,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -300,7 +326,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -312,7 +338,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -324,7 +350,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -335,7 +361,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -346,7 +372,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -357,7 +383,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -368,7 +394,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -379,7 +405,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -390,7 +416,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -401,7 +427,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
 
@@ -412,7 +438,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -424,7 +450,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -436,7 +462,7 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -454,10 +480,11 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
             payload=payload,
             now=now,
             expected_context_hash=expected_hash,
-            reason_map=_REASON_MAP_OK,
+            reason_map=PolicyPack().external_reason_map,
         )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
     monkeypatch.setattr(RiskReport, "validate", real_validate)
+
 
 # -----------------------------
 # Policy validation (risk_policy.py)
@@ -479,22 +506,30 @@ def test_policy_validate_covers_invalid_modes() -> None:
 def test_wsqk_issuer_covers_error_branches() -> None:
     # missing wallet_id
     with pytest.raises(TVAError) as e:
-        issue_wsqk_authority(WSQKIssueRequest(wallet_id="", action="A", context_hash="h", now=1, ttl_seconds=1, nonce="n"))
+        issue_wsqk_authority(
+            WSQKIssueRequest(wallet_id="", action="A", context_hash="h", now=1, ttl_seconds=1, nonce="n")
+        )
     assert str(e.value) == ReasonId.WSQK_MISSING_WALLET_ID.value
 
     # missing action
     with pytest.raises(TVAError) as e:
-        issue_wsqk_authority(WSQKIssueRequest(wallet_id="w", action="", context_hash="h", now=1, ttl_seconds=1, nonce="n"))
+        issue_wsqk_authority(
+            WSQKIssueRequest(wallet_id="w", action="", context_hash="h", now=1, ttl_seconds=1, nonce="n")
+        )
     assert str(e.value) == ReasonId.WSQK_MISSING_ACTION.value
 
     # missing context_hash
     with pytest.raises(TVAError) as e:
-        issue_wsqk_authority(WSQKIssueRequest(wallet_id="w", action="A", context_hash="", now=1, ttl_seconds=1, nonce="n"))
+        issue_wsqk_authority(
+            WSQKIssueRequest(wallet_id="w", action="A", context_hash="", now=1, ttl_seconds=1, nonce="n")
+        )
     assert str(e.value) == ReasonId.WSQK_MISSING_CONTEXT_HASH.value
 
     # now not convertible to int
     with pytest.raises(TVAError) as e:
-        issue_wsqk_authority(WSQKIssueRequest(wallet_id="w", action="A", context_hash="h", now="x", ttl_seconds=1, nonce="n"))  # type: ignore[arg-type]
+        issue_wsqk_authority(
+            WSQKIssueRequest(wallet_id="w", action="A", context_hash="h", now="x", ttl_seconds=1, nonce="n")  # type: ignore[arg-type]
+        )
     assert str(e.value) == ReasonId.WSQK_MISSING_NOW.value
 
 
