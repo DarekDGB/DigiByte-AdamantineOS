@@ -229,24 +229,51 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
     now = 200
     expected_hash = "a" * 64
 
+    # Minimal mapping for known benign external code "ok"
+    from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
+
+    _REASON_MAP_OK = ExternalReasonMap(
+        entries=(ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
+    )
+
     # now must be int
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload={}, now="x", expected_context_hash=expected_hash)  # type: ignore[arg-type]
+        parse_risk_report(
+            payload={},
+            now="x",  # type: ignore[arg-type]
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_MISSING_NOW
 
     # expected_context_hash must be non-empty str
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload={}, now=now, expected_context_hash="")
+        parse_risk_report(
+            payload={},
+            now=now,
+            expected_context_hash="",
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # payload must be mapping
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload="nope", now=now, expected_context_hash=expected_hash)  # type: ignore[arg-type]
+        parse_risk_report(
+            payload="nope",  # type: ignore[arg-type]
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # missing iface
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload={"context_hash": expected_hash}, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload={"context_hash": expected_hash},
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # generated_at invalid
@@ -258,89 +285,159 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
         "signals": [{"source": "ac", "severity": 1, "reason_ids": ["ok"]}],
     }
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # generated_at in the future
     payload["generated_at"] = 999
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # overall_score invalid
     payload["generated_at"] = 150
     payload["overall_score"] = 1000
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # signals must be sequence (not str/bytes)
     payload["overall_score"] = 90
     payload["signals"] = "nope"
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # signals must not be empty
     payload["signals"] = []
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # signal must be mapping
     payload["signals"] = ["not-mapping"]
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # signal source invalid
     payload["signals"] = [{"source": "", "severity": 1, "reason_ids": ["ok"]}]
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # signal severity invalid
     payload["signals"] = [{"source": "ac", "severity": 999, "reason_ids": ["ok"]}]
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # reason_ids must be sequence
     payload["signals"] = [{"source": "ac", "severity": 1, "reason_ids": "nope"}]
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # reason_id element invalid (empty str)
     payload["signals"] = [{"source": "ac", "severity": 1, "reason_ids": [""]}]
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # unknown external reason -> fail-closed
     payload["signals"] = [{"source": "ac", "severity": 1, "reason_ids": ["NEW_REASON"]}]
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
 
     # trigger RiskSignal.validate failure path (empty reason_ids list)
     payload["signals"] = [{"source": "ac", "severity": 1, "reason_ids": []}]
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # oracle_version wrong type
     payload["signals"] = [{"source": "ac", "severity": 1, "reason_ids": ["ok"]}]
     payload["oracle_version"] = 123
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # external_source_id wrong type
     payload["oracle_version"] = "ac-v0"
     payload["external_source_id"] = 123
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
     # cover adapter's RiskReport.validate exception branch via monkeypatch
@@ -353,10 +450,14 @@ def test_adaptive_core_adapter_covers_error_branches(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr(RiskReport, "validate", _boom)
     with pytest.raises(AdapterError) as e:
-        parse_risk_report(payload=payload, now=now, expected_context_hash=expected_hash)
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected_hash,
+            reason_map=_REASON_MAP_OK,
+        )
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
     monkeypatch.setattr(RiskReport, "validate", real_validate)
-
 
 # -----------------------------
 # Policy validation (risk_policy.py)
