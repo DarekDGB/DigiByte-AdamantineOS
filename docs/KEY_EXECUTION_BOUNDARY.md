@@ -1,6 +1,4 @@
-# KEY_EXECUTION_BOUNDARY.md
-
-## Adamantine Wallet OS — Execution Boundary (Step 18B)
+## Adamantine Wallet OS — Execution Boundary
 
 **License:** MIT  
 **© 2025 DarekDGB**
