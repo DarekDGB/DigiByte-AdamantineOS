@@ -1,6 +1,10 @@
-# Adamantine Wallet OS — Key Custody Model (Step 18A)
+# Adamantine Wallet OS — Key Custody Model
 
 Author attribution: **DarekDGB**
+
+MIT License © 2025 DarekDGB
+
+---
 
 This document freezes the **Key Custody Model** for Adamantine Wallet OS.
 
@@ -25,103 +29,103 @@ Adamantine only controls **whether** an external request may execute.
 
 ## Where keys live
 
-Keys belong to a **separate key custody module** (platform-native, minimal TCB) that is outside Adamantine’s core.
+Keys belong to a **separate key custody module** (platform‑native, minimal TCB) that is outside Adamantine’s core.
 
-### iOS key custody (expected model)
+### iOS key custody (strict device‑only model)
 
-On iOS, keys should be stored in the **Keychain**, and when possible protected by the **Secure Enclave**.
+On iOS, keys must be stored in the **Keychain**, and when available protected by the **Secure Enclave**.
 
-Practical posture:
-- **Device-only keys by default**: the private key material should remain on the device.
-- **Biometric / passcode gating**: require Face ID / Touch ID / device passcode for signing operations.
-- **Non‑exportable keys where possible**: prefer keys that cannot be exported as raw material (Secure Enclave-backed).
+Security posture:
+- **Device‑only keys**: private key material remains on the device.
+- **Biometric / passcode gating**: Face ID, Touch ID, or device passcode required for signing.
+- **Non‑exportable keys**: Secure Enclave‑backed keys where possible.
+- **No cloud synchronization**: keys are never synced, backed up, or mirrored externally.
 
-**Cloud syncing is optional and must be explicit.**
+Adamantine assumes **local‑only custody**. Any form of key replication or syncing is explicitly out of scope.
 
-Important distinction (this explains your “password leak” messages):
-- iOS can warn you about leaked passwords because those credentials were **seen in external breaches** (websites/app databases), not because iOS “leaked them.”
-- If you enable iCloud Keychain, some secrets can sync across devices, but Apple states iCloud Keychain is end‑to‑end encrypted. Still, for a high-security crypto wallet posture, Adamantine should default to **device-only custody**, and treat any syncing as a **conscious opt‑in** feature with clear warnings.
+### Android key custody (strict device‑only model)
 
-### Android key custody (expected model)
+On Android, keys must be stored using the **Android Keystore System**, backed by hardware security (TEE / StrongBox) where available.
 
-On Android, keys should be stored via the **Android Keystore System**, ideally backed by hardware security (StrongBox / TEE where available).
-
-Practical posture:
-- **Hardware-backed keys where possible**.
-- **User authentication required** (biometric / device credential) to authorize signing.
-- **Non-exportable keys** when supported.
+Security posture:
+- **Hardware‑backed keys only when possible**.
+- **User authentication required** for signing.
+- **Non‑exportable keys** enforced.
+- **No cloud or cross‑device replication**.
 
 ---
 
 ## What Adamantine receives
 
-Adamantine should never receive raw private keys. It should only receive:
-- **A signing request intent** (what must be signed),
+Adamantine never receives raw private keys.
+
+It receives only:
+- A **signing request intent** (what must be signed),
 - **Context** (wallet_id, action, context_hash, fields),
-- **Authority** (WSQK) and the gate decision (EQC verdict),
-- **A handle/reference** to the platform custody module (not the key itself).
+- **Authority** (WSQK) and decision (EQC verdict),
+- A **reference/handle** to the platform custody module (never the key).
 
-In other words, Adamantine can decide:
-> “Allowed to sign this exact thing under this exact context, right now.”
+Adamantine can decide:
+> “This exact operation may execute right now.”
 
-But the signing is performed by the custody module.
+The custody module performs signing independently.
 
 ---
 
 ## Why this separation exists
 
-This is a deliberate **Minimal TCB** move:
-- Key custody is the highest-risk component.
-- Adamantine must stay small, deterministic, and auditable.
-- Splitting custody from enforcement prevents “feature creep” from turning Adamantine into a monolithic wallet.
+This separation enforces **Minimal Trusted Computing Base (TCB)**:
 
-This also enforces the core law:
+- Key custody is the highest‑risk component.
+- Adamantine must remain small, deterministic, and auditable.
+- Enforcement and execution must never collapse into one unit.
+
+Core law enforced:
 > **Decision, authority, and execution are never combined.**
-
-Key custody is execution-capability; Adamantine decides if that capability may be used.
 
 ---
 
 ## Failure rules
 
-If key custody cannot comply (device locked, biometrics fail, keystore unavailable, user cancels):
-- The operation **fails closed**.
-- Adamantine records only **reason IDs** (no sensitive payloads).
-- No partial signing, no fallback signing.
+If key custody cannot comply (device locked, biometric failure, keystore unavailable, user cancellation):
+- Execution **fails closed**.
+- Only **Reason IDs** are recorded.
+- No retries, no fallbacks, no partial signing.
 
 ---
 
 ## Threat model notes
 
-This custody model is designed to reduce damage from:
-- malware trying to trigger unauthorized signing
-- UI deception / social engineering
-- compromised app state
-- repeated/replayed requests
-- “silent” background signing
+This custody model mitigates:
+- malware‑triggered signing attempts
+- UI deception and social engineering
+- compromised application state
+- replay and timing attacks
+- background or silent execution
 
-Adamantine blocks execution before custody is invoked unless all required proofs and gates are satisfied.
+Adamantine blocks execution **before** custody is invoked unless all proofs and gates pass.
 
 ---
 
-## Explicit non-goals
+## Explicit non‑goals
 
 Adamantine Wallet OS will never:
 - manage private keys directly
 - perform signing internally
-- perform network broadcasting
-- act as an intelligence or learning engine
-- make autonomous decisions on behalf of the user
+- broadcast transactions
+- act as an intelligence engine
+- make autonomous decisions
 
 ---
 
-## Compatibility with future Shield layers
+## Compatibility with Shield layers
 
-Shield layers (Sentinel / DQSN / ADN / Adaptive Core / QWG / Guardian Wallet) can produce evidence and risk signals.
-Adamantine consumes that evidence via strict adapters and still enforces:
+Shield layers (Sentinel, DQSN, ADN, Adaptive Core, QWG, Guardian Wallet) may generate evidence.
+
+Adamantine consumes evidence via strict adapters and enforces:
 - deterministic context hashing
-- deny-by-default execution
-- time-bound authority (WSQK)
-- replay protection (nonce store)
+- deny‑by‑default execution
+- time‑bound authority (WSQK)
+- replay protection
 
-Key custody remains separate even as the evidence stack grows.
+Key custody remains isolated regardless of future integrations.
