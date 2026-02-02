@@ -101,6 +101,4 @@ and execution is denied.
 
 ## Status
 
-Design locked.  
-Implementation will follow **after Step 18**.
-
+Design locked. 
