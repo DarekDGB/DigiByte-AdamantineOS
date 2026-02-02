@@ -1,95 +1,146 @@
 # Adamantine Wallet OS — Invariants
 
-This repository is rebuilt from first principles.
+**License:** MIT License — DarekDGB
 
 ---
 
-## Foundation Freeze
+## 1. Purpose
 
-- A known-good baseline **must be tagged** before any integration or expansion work.
-- The current locked baseline is **v0.1.1-foundation-locked**.
-- At the frozen foundation baseline:
-  - EQC may enforce **minimal presence checks** only.
-  - No external intelligence is required.
-- Integration evidence (**Q-ID session + RiskReport**) becomes **mandatory only after**
-  the integration gate is explicitly wired and versioned.
+This document defines the **non-negotiable invariants** of Adamantine Wallet OS.
 
-No code may silently transition from “foundation” to “integration” behavior.
+Invariants are permanent rules that must remain true across all versions,
+refactors, optimizations, and integrations.
+
+Any violation of an invariant is a **security defect**.
 
 ---
 
-## Post-Foundation Lock Invariants (v0.1.1+)
+## 2. Foundational Invariants
 
-Once the foundation is locked, the following invariants are **non-negotiable**:
+These invariants apply to all components without exception.
 
-- Execution **must always** follow:
-  ```
-  EQC → WSQK → TVA → Execution
-  ```
-- Decision, authority, and execution **must never be combined**.
-- All enforcement gates are **deny-by-default**.
-- Missing, malformed, or unverifiable evidence **always results in DENY**.
-- No fallback to weaker modes is permitted.
-- No environment-dependent behavior is permitted.
-- No maintainer, developer, or system override paths exist.
+### 2.1 Deny-by-Default
+If an action is not explicitly permitted, it is denied.
 
-Any change violating these requires a **major version bump**.
+### 2.2 Fail-Closed
+Ambiguity, partial data, or unexpected input results in rejection.
 
----
+### 2.3 Determinism
+Given the same valid input, Adamantine must always produce the same output.
 
-## Core Laws
+### 2.4 No Hidden Authority
+All authority must be declared explicitly.
+No authority may be inferred, escalated, or assumed.
 
-- No hidden authority
-- No privileged maintainer paths
-- No silent fallback
-- Fail-closed always
-- Deterministic behavior only
-- Read-only observation before action
-- Human-in-the-loop where consequence exists
-
-These laws apply to **all future code**, regardless of platform or language.
+### 2.5 No Silent Fallback
+Failures must surface as explicit, deterministic rejections.
 
 ---
 
-## Truth Primitives
+## 3. Execution Boundary Invariants
 
-Adamantine operates on three immutable truth primitives:
+### 3.1 Execution Boundary Only
+Adamantine is an execution boundary, not a wallet runtime.
 
-- **EQC** — truth extraction (decision without authority)
-- **WSQK** — sovereign, scoped authority (no execution)
-- **TVA** — final enforcement gate (no decision logic)
+It evaluates *whether* execution is allowed.
+It never performs execution itself.
 
-Only what is aligned across all three may execute.
+### 3.2 Explicit Execution Envelopes
+All interactions occur via versioned execution envelopes.
+Internal functions are never exposed externally.
 
----
+### 3.3 Single Evaluation
+Each execution request is evaluated exactly once.
 
-## Scope Discipline
-
-- Architecture before implementation
-- Contracts before features
-- Tests before trust
-- Ports before platforms
-- Documentation before optimization
+Replays are rejected deterministically.
 
 ---
 
-## Explicit Non-Goals
+## 4. Key Custody Invariants
 
-Adamantine Wallet OS will **never**:
-- Manage private keys directly
-- Perform signing internally
-- Perform network broadcasting
-- Act as an intelligence or learning engine
-- Make autonomous decisions on behalf of the user
+### 4.1 External Key Custody
+Adamantine never:
+- Holds private keys
+- Generates private keys
+- Derives seeds or mnemonics
+
+All key custody is external.
+
+### 4.2 Key Distribution Neutrality
+The presence of keys on multiple devices MUST NOT, by itself, cause denial.
+
+Execution decisions depend only on:
+- Declared context
+- Declared authority
+- Timebox validity
+- Nonce validity
+- Explicit policy
+
+Single-device and multi-device custody are treated neutrally.
 
 ---
 
-## Final Statement
+## 5. Time and Replay Invariants
 
-These invariants are enforced by:
-- contracts
-- tests
-- documentation
-- versioning discipline
+### 5.1 Timebox Enforcement
+Execution is valid only within the declared time window.
 
-They exist to ensure that **unsafe execution is impossible by design**, not by policy.
+Expired or future-dated requests are rejected.
+
+### 5.2 Nonce Enforcement
+Each execution request must include a nonce.
+
+Nonces are single-use.
+Replay attempts are rejected deterministically.
+
+---
+
+## 6. Interface and Contract Invariants
+
+### 6.1 Strict Validation
+Unknown or unexpected fields are rejected.
+
+### 6.2 Version Discipline
+All interfaces are versioned.
+Compatibility is explicit, never implicit.
+
+### 6.3 Canonicalization
+Canonical representations are used for hashing and evaluation.
+
+---
+
+## 7. Adapter Invariants
+
+Adapters:
+- Are non-authoritative
+- Cannot bypass enforcement rules
+- Are validated before use
+- Cause deterministic rejection on failure
+
+---
+
+## 8. Observability Invariants
+
+- No private or sensitive material is logged
+- Metrics are non-sensitive
+- Observability does not affect execution decisions
+
+---
+
+## 9. Evolution Rules
+
+Invariants may not be weakened.
+
+New invariants may be added only if:
+- They do not conflict with existing ones
+- They strengthen security or determinism
+- They are documented and test-locked
+
+---
+
+## 10. Summary
+
+Invariants define the identity of Adamantine Wallet OS.
+
+They are not guidelines.
+They are laws.
