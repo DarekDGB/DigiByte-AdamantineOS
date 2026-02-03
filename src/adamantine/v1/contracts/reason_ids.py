@@ -89,3 +89,5 @@ class ReasonId(str, Enum):
 
     ERR_INTERNAL = "ERR_INTERNAL"
     ERR_UNHANDLED = "ERR_UNHANDLED"
+
+    DENY_NOT_WIRED = "DENY_NOT_WIRED"
