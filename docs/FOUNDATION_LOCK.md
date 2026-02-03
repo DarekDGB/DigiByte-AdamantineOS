@@ -1,123 +1,116 @@
-# FOUNDATION LOCK — Adamantine Wallet OS
+# Foundation Lock
 
-**Status:** Foundation Locked  
-**Tag:** v0.1.1-foundation-locked  
-**Author:** DarekDGB  
-**Date:** 2026-01-28
+**License:** MIT License — DarekDGB
 
 ---
 
-## Purpose
+## 1. Purpose
 
-This document defines the **irreversible foundation lock** of Adamantine Wallet OS.
+This document defines what it means for the Adamantine Wallet OS **foundation** to be **locked**.
 
-From this point forward, the execution model, contracts, and invariants defined here
-**must not change without an explicit major-version break**.
-
-This file exists to prevent:
-- silent authority creep
-- accidental weakening of security properties
-- undocumented behavior changes
-- retroactive reinterpretation of intent
-
----
-
-## Locked Execution Pipeline
-
-The following execution pipeline is **final and mandatory**:
-
-```
-EQC → WSQK → TVA → Execution
-```
-
-No stage may be skipped.  
-No stage may merge responsibilities with another.
+A locked foundation is a security and stability checkpoint:
+- Interfaces are stable
+- Behavior is deterministic
+- Invariants are enforced
+- Tests are green and meaningful
+- Coverage is consistently high
+- Future work builds *on top* of this boundary without weakening it
 
 ---
 
-## Locked Responsibilities
+## 2. What “Locked” Means
 
-### EQC (Execution Qualification Check)
-- Deterministic context hashing
-- Evidence-based decisioning
-- Fail-closed behavior on missing or invalid evidence
-- No execution authority
+When the foundation is locked:
 
-### WSQK (Scoped Wallet Quantum Key / Authority)
-- Time-bound authority
-- Context-bound authority
-- Nonce-scoped authority
-- No execution logic
-
-### TVA (Terminal Verification Authority)
-- Final enforcement gate
-- Replay protection
-- Binding verification
-- No decision logic
-
-### Execution Boundary
-- Executes **only** after TVA approval
-- No side-channel execution paths
-- No implicit retries or fallbacks
+- **Core invariants are non-negotiable** (deny-by-default, fail-closed, determinism, no hidden authority).
+- **The execution boundary is preserved** (Adamantine is not a wallet runtime).
+- **Key custody remains external** (Adamantine never handles private keys).
+- **No cloud syncing** is introduced.
+- **Only iOS + Android** are supported (no web).
+- All changes after lock must be **additive**, **versioned**, and **test-locked**.
 
 ---
 
-## Invariants (Non-Negotiable)
+## 3. Locked Foundation Components (Implemented)
 
-The following invariants are **permanently enforced**:
+The following components are part of the locked foundation and are implemented and test-covered:
 
-- Fail-closed by default
-- No hidden authority
-- No global mutable state
-- Deterministic behavior only
-- Explicit user intent where consequence exists
-- Test-enforced contracts and invariants
+- **TVA Gate** — Trust/authority gate for execution decisions.
+- **EQC v1** — Deterministic equilibrium confirmation logic.
+- **WSQK v1** — Wallet-scoped enforcement primitives (no key custody).
+- **Nonce Store** — Replay protection via single-use nonce enforcement.
+- **Metrics / Audit Signals** — Non-sensitive decision telemetry and reason identifiers.
+- **Adapters** — Integration boundaries for external systems (e.g., Q-ID, Adaptive Core).
 
----
-
-## What Requires a Major Version Bump
-
-Any change to the following **requires a major version increment**:
-
-- Contract field meanings
-- Execution order
-- Authority semantics
-- Default failure behavior
-- Security invariants
-- Evidence requirements
+Adamantine remains strictly an **execution boundary**: it decides *allow/deny* under declared conditions.
 
 ---
 
-## Explicitly Forbidden
+## 4. Explicit Non-Goals (Remain Out of Scope)
 
-The following are **not allowed**:
+The foundation lock explicitly excludes:
 
-- Bypass paths around EQC, WSQK, or TVA
-- Silent fallback to weaker security modes
-- Implicit trust in external systems
-- Environment-dependent behavior
-- Hidden maintainer overrides
+- Private key generation, storage, derivation, or export
+- Transaction signing or broadcasting
+- Wallet runtime / UI concerns
+- Cloud-based recovery or syncing
+- Any assumption that keys are single-device
 
----
-
-## Scope Clarification
-
-This lock applies to:
-- Core contracts
-- Enforcement logic
-- Adapter boundaries
-- Policy semantics
-
-It does **not** define:
-- UI behavior
-- Mobile UX
-- Key storage implementations
-- Network transport logic
+Key custody and signing remain external responsibilities.
 
 ---
 
-## Final Statement
+## 5. Quality Gate (Lock Criteria)
 
-Adamantine Wallet OS is designed so that **unsafe execution is impossible by design**.
+A foundation lock requires:
 
-This foundation lock ensures that future growth does not compromise that goal.
+- **All tests green** on CI
+- **High, stable coverage** (target ~97% in this repo)
+- **Negative-first security tests** for boundary enforcement
+- **Deterministic behavior** (no time/random/order dependence beyond explicit timebox rules)
+- **Fail-closed semantics** for all validation and gating paths
+
+If a change reduces determinism, weakens invariants, or introduces silent fallback,
+the foundation is no longer considered locked.
+
+---
+
+## 6. Change Control After Lock
+
+After foundation lock:
+
+- No breaking changes without **versioning**
+- No relaxation of validation rules
+- No expansion of scope into wallet runtime or key custody
+- No hidden authority, no bypasses, no “temporary” exceptions
+
+Any change must include:
+- Updated tests
+- Updated docs (if behavior or contracts change)
+- Clear reason identifiers for new rejection paths
+
+---
+
+## 7. Roadmap Position
+
+The foundation lock enables the next phase:
+
+- **Execution wiring via versioned execution envelopes**
+- Strict mobile integration boundaries
+- Deterministic request/response contracts
+
+The next step is to freeze the **Execution Envelope v1** contracts
+so iOS and Android can integrate against a stable, enforceable boundary.
+
+---
+
+## 8. Summary
+
+Foundation lock is a commitment:
+
+- The core is stable
+- The boundary is respected
+- The security posture is preserved
+- Everything that follows is additive,
+
+versioned, and test-locked
