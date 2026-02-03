@@ -6,27 +6,40 @@
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen.svg)
 
+---
 
-## Status: Foundation Locked (Not a wallet runtime yet)
+## Status: Foundation Locked (Execution Boundary Only)
 
-This repository is a **clean, locked foundation** focused on **contracts, invariants, and deterministic fail-closed execution**.
+This repository contains a **clean, locked foundation** for the Adamantine Wallet OS.
 
-Implemented:
-- EQC v1 (decision foundation + deterministic context hashing)
-- WSQK Authority v1 (time-bound authority + nonce)
-- TVA Gate (binding, expiry, replay protection via injected nonce store)
-- PolicyPack-driven risk thresholds & allowlists
-- ExternalReasonMap-enforced adapters
-- High-coverage CI with invariant-locked tests
+The foundation focuses on **contracts, invariants, and deterministic fail-closed execution**.
+It is **not** a wallet runtime and does **not** manage keys, signing, or broadcasting.
 
-Not implemented (by design):
-- Wallet execution environment (keys, signing, broadcasting)
-- Mobile runtime (iOS / Android)
-- Shield v3 / Adaptive Core v3 live integration
-- Durable nonce storage
+---
 
-**Quantum-Secure Execution Layer for DigiByte Wallets**  
-*Architecture by DarekDGB — MIT Licensed*
+## Implemented (Foundation Locked)
+
+- **EQC v1** — deterministic decision foundation and context hashing
+- **WSQK v1** — time-bound authority and scope enforcement (no key custody)
+- **TVA Gate** — binding, expiry, and replay protection via injected nonce store
+- **Nonce Store** — single-use nonce enforcement for replay protection
+- **PolicyPack** — explicit thresholds and allowlists
+- **ExternalReasonMap** — strict, versioned adapter reason mapping
+- **Adapters** — validated integration boundaries (e.g. Q-ID, Adaptive Core)
+- **Invariant-locked CI** with high, stable coverage (~97%)
+
+---
+
+## Explicitly Not Implemented (By Design)
+
+- Wallet runtime (keys, signing, broadcasting)
+- Key generation, storage, or recovery
+- Cloud syncing or remote custody
+- Web or browser execution
+- Mobile UI or client application logic
+- Shield v3 / Adaptive Core v3 live runtime integration
+
+Adamantine remains strictly an **execution boundary**.
 
 ---
 
@@ -34,10 +47,10 @@ Not implemented (by design):
 
 **Adamantine Wallet OS** is not a traditional cryptocurrency wallet.
 
-It is a **Wallet Operating System** whose sole responsibility is to ensure that  
-**only context-approved, deterministic, and user-authorised actions are allowed  
-to execute**, even under hostile conditions such as malware, compromised devices,
-network anomalies, or social engineering.
+It is a **Wallet Operating System** whose sole responsibility is to ensure that
+**only context-approved, deterministic, and user-authorised actions are allowed
+to execute**, even under hostile conditions such as compromised devices,
+malicious inputs, or replay attempts.
 
 Adamantine exists to make *unsafe wallet behaviour impossible by design*.
 
@@ -47,14 +60,16 @@ Adamantine exists to make *unsafe wallet behaviour impossible by design*.
 
 Adamantine Wallet OS is:
 
-- a **secure execution layer** for DigiByte wallets
-- a **consumer of shield intelligence**, not a generator of it
-- a **runtime enforcement environment**, not a decision engine
+- a **deterministic execution boundary** for DigiByte wallets
+- a **consumer of external intelligence**, not a generator of it
+- **key-custody neutral** (keys are always external)
 - **mobile-first** (iOS and Android only)
-- **consensus-neutral** (does not alter DigiByte protocol rules)
+- **consensus-neutral**
 - **open-source and auditable** (MIT licensed)
 
-It is the place where **decisions become irreversible actions — safely**.
+Adamantine answers a single question:
+
+> *“Is this execution allowed, right now, under these conditions?”*
 
 ---
 
@@ -62,16 +77,14 @@ It is the place where **decisions become irreversible actions — safely**.
 
 Adamantine is **not**:
 
-- a replacement for DigiByte Core
-- a consensus or mining component
-- a web wallet or browser runtime
+- a wallet UI or runtime
+- a key manager or signer
+- a DigiByte node or consensus component
+- a web wallet
 - an AI or learning system
-- a node authority
 - a monolithic “do-everything” wallet
 
-All intelligence, learning, and risk assessment happens *outside* Adamantine.
-
-Adamantine only executes what is already approved.
+All learning, intelligence, and risk assessment occur **outside** Adamantine.
 
 ---
 
@@ -82,19 +95,11 @@ Adamantine sits at the **final execution boundary** of the DigiByte security sta
 Execution pipeline:
 
 ```
-EQC → WSQK → TVA → Execution
+EQC → WSQK → TVA → Execution Decision
 ```
 
-Upstream systems may:
-- observe
-- analyse
-- classify
-- recommend
-- warn
-
-But **only Adamantine executes**.
-
-This separation is intentional and enforced.
+Upstream systems may observe, analyse, classify, recommend, or warn.
+**Only Adamantine produces the final allow/deny execution decision.**
 
 ---
 
@@ -102,28 +107,25 @@ This separation is intentional and enforced.
 
 ```mermaid
 flowchart TD
-  %% External evidence (NOT executed here)
-  subgraph Upstream["Upstream Intelligence (outside Adamantine)"]
-    QID["Q-ID Session Proof (external)"]
-    AC["Adaptive Core Risk Report (external)"]
+  subgraph Upstream["Upstream Intelligence (external)"]
+    QID["Q-ID Session Proof"]
+    AC["Adaptive Core Risk Report"]
   end
 
-  %% Adapter boundary (strict validation, fail-closed)
   subgraph Adapters["Adapter Boundary (fail-closed)"]
-    QIDA["qid_adapter: parse_qid_session()"]
-    ACA["adaptive_core_adapter: parse_risk_report()"]
-    MAP["ExternalReasonMap (explicit mapping)"]
-    PACK["PolicyPack (thresholds + allowlists)"]
+    QIDA["qid_adapter"]
+    ACA["adaptive_core_adapter"]
+    MAP["ExternalReasonMap"]
+    PACK["PolicyPack"]
   end
 
-  %% Core execution boundary
   subgraph Core["Adamantine Execution Boundary (locked)"]
-    CTX["Execution Context\n(wallet_id + action + fields)"]
+    CTX["Execution Context"]
     HASH["Deterministic Context Hash"]
-    EQC["EQC\nDecision Gate"]
-    WSQK["WSQK Authority\n(time-bound + nonce)"]
-    TVA["TVA Gate\n(binding + expiry + replay protection)"]
-    EXEC["Execution Boundary\n(run_with_tva)"]
+    EQC["EQC Gate"]
+    WSQK["WSQK Authority"]
+    TVA["TVA Gate"]
+    EXEC["Execution Decision"]
   end
 
   QID --> QIDA
@@ -136,7 +138,7 @@ flowchart TD
   QIDA --> EQC
   ACA --> EQC
 
-  EQC -->|ALLOW only| WSQK --> TVA --> EXEC
+  EQC -->|ALLOW| WSQK --> TVA --> EXEC
   EQC -->|DENY| TVA
 ```
 
@@ -148,10 +150,9 @@ flowchart TD
 
 Adamantine enforces execution **only after**:
 - a valid decision exists
-- authority is scoped and time-bound
+- authority is explicitly declared and time-bound
 - context integrity is verified
-
-If any condition fails, execution does not occur.
+- replay protection passes
 
 There are no bypass paths.
 
@@ -161,35 +162,30 @@ There are no bypass paths.
 
 Adamantine is built on strict invariants:
 
-- fail-closed by default
+- deny-by-default
+- fail-closed on ambiguity
 - no hidden authority
-- no privileged maintainer paths
 - deterministic behaviour only
-- explicit user involvement where consequence exists
+- explicit versioned contracts
 - explainability over automation
 
-These rules are defined in `INVARIANTS.md` and apply to all future code.
+These rules are defined in `INVARIANTS.md` and apply to all future development.
 
 ---
 
-## Project Status
+## Roadmap Position
 
 This repository represents a **foundation-locked baseline**.
 
-There is currently:
-- no mobile runtime
-- no signing or broadcasting logic
-- no client UI
+Next phase:
+- Versioned **Execution Envelope v1** contracts
+- Strict mobile integration boundaries (iOS / Android)
+- Deterministic request/response enforcement
 
-This is intentional.
-
-Architecture, contracts, and invariants are defined **before** runtime integration begins.
+Runtime integration begins **only after** contracts are frozen.
 
 ---
 
 ## License
 
-MIT License  
-© 2025 **DarekDGB**
-
-Use is permitted with attribution.
+MIT License — **DarekDGB**
