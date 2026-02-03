@@ -5,12 +5,13 @@ from dataclasses import dataclass
 from adamantine.v1.contracts.reason_ids import ReasonId
 
 
-@dataclass(frozen=True)
+@dataclass
 class EnvelopeError(ValueError):
     """
     Fail-closed execution envelope error with explicit ReasonId.
 
-    Used for mobile -> Adamantine request/response envelope validation.
+    NOTE: Must NOT be frozen. pytest/contextlib may set __traceback__ on the
+    exception instance during propagation.
     """
 
     reason_id: ReasonId
