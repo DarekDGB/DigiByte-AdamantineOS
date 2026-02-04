@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
+from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution.executor import RecordingExecutor
 from adamantine.v1.execution.orchestrator_v1 import orchestrate_execution_v1
-from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
@@ -34,9 +35,8 @@ def _risk_payload(*, context_hash: str, generated_at: int, overall_score: int, r
     }
 
 
-def _envelope_base(*, now: int, fields: dict[str, str]) -> dict[str, Any]:
-    # IMPORTANT: timebox matches the deterministic `now` used in your other tests.
-    # now = 1706990400 corresponds to 2024-02-03T20:00:00Z
+def _envelope_base(*, fields: dict[str, str]) -> dict[str, Any]:
+    # Deterministic timebox aligned with your existing envelope tests.
     return {
         "v": "execution_request_v1",
         "request_id": "req-1",
@@ -52,7 +52,6 @@ def _envelope_base(*, now: int, fields: dict[str, str]) -> dict[str, Any]:
         "authority": {"class": "user", "scope": {"policy_pack": "default"}},
         "timebox": {"issued_at": "2024-02-03T20:00:00Z", "expires_at": "2024-02-03T20:01:00Z"},
         "nonce": {"value": "nonce-1", "store": "tva", "mode": "single_use"},
-        # Orchestrator-specific wiring lives INSIDE payload (envelope parser allows it).
         "payload": {"ui_confirmed": True},
         "audit": {"platform": "ios", "client_version": "0.1.0"},
     }
@@ -60,34 +59,37 @@ def _envelope_base(*, now: int, fields: dict[str, str]) -> dict[str, Any]:
 
 def _allow_payload(now: int) -> dict[str, Any]:
     fields = {"amount": "10", "to": "DGB1"}
-    env = _envelope_base(now=now, fields=fields)
+    env = _envelope_base(fields=fields)
 
     ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
 
-    # Place evidence inside `payload` so envelope parsing remains strict but wiring can be versioned.
+    qid = _qid_payload(issued_at=now - 50, expires_at=now + 50)
+    risk = _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=95, reason_ids=["ok"])
+
+    # Put evidence in BOTH common locations to match orchestrator wiring styles.
     env["payload"] = {
         "ui_confirmed": True,
-        "evidence": {
-            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50),
-            "risk": _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=95, reason_ids=["ok"]),
-        },
+        "evidence": {"qid": qid, "risk": risk},
+        "qid": qid,
+        "risk": risk,
     }
     return env
 
 
 def _deny_payload_low_score(now: int) -> dict[str, Any]:
     fields = {"amount": "10", "to": "DGB1"}
-    env = _envelope_base(now=now, fields=fields)
+    env = _envelope_base(fields=fields)
 
     ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
 
+    qid = _qid_payload(issued_at=now - 50, expires_at=now + 50)
+    risk = _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=10, reason_ids=["ok"])
+
     env["payload"] = {
         "ui_confirmed": True,
-        "evidence": {
-            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50),
-            # Low score should drive EQC deny (policy threshold will be >= 85 in your setup when configured)
-            "risk": _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=10, reason_ids=["ok"]),
-        },
+        "evidence": {"qid": qid, "risk": risk},
+        "qid": qid,
+        "risk": risk,
     }
     return env
 
@@ -104,12 +106,15 @@ def test_matrix_allow_flags_and_reason() -> None:
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
 
+    # PolicyPack ensures adapters can resolve ExternalReasonMap deterministically.
+    policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
+
     resp = orchestrate_execution_v1(
         payload=_allow_payload(now),
         now=now,
         executor=executor,
         nonce_store=store,
-        policy=RiskPolicy(min_overall_score=85),
+        policy=policy,
     )
 
     assert resp["status"] == "allow"
@@ -128,15 +133,17 @@ def test_matrix_deny_flags_and_reason() -> None:
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
 
+    policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
+
     resp = orchestrate_execution_v1(
         payload=_deny_payload_low_score(now),
         now=now,
         executor=executor,
         nonce_store=store,
-        policy=RiskPolicy(min_overall_score=85),
+        policy=policy,
     )
 
-    # We lock the security posture: on non-allow, executor must not run and flags must be false.
+    # Lock security posture: non-allow must not execute.
     assert resp["status"] in {"deny", "error"}
     assert resp["reason_id"] != ReasonId.OK_ALLOW.value
 
@@ -170,9 +177,10 @@ def test_matrix_determinism_same_input_same_output() -> None:
     now = 1706990400
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
+    policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
     payload = _deny_payload_low_score(now)
 
-    r1 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=RiskPolicy(min_overall_score=85))
-    r2 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=RiskPolicy(min_overall_score=85))
+    r1 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+    r2 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
 
     assert r1 == r2
