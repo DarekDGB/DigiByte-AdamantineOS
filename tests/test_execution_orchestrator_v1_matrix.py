@@ -35,11 +35,16 @@ def _risk_payload(*, context_hash: str, generated_at: int, overall_score: int, r
     }
 
 
-def _envelope_base(*, fields: dict[str, str], now: int) -> dict[str, Any]:
-    issued_at = "2024-02-03T20:00:00Z"
-    expires_at = "2024-02-03T20:01:00Z"
-    nonce = "nonce-1"
+def _envelope_base(*, fields: dict[str, str]) -> dict[str, Any]:
+    # These timestamps MUST match the deterministic test `now` used elsewhere.
+    issued_iso = "2024-02-03T20:00:00Z"
+    expires_iso = "2024-02-03T20:01:00Z"
 
+    # Parsed ints for WSQK proof binding to timebox
+    issued_at = 1706990400
+    expires_at = 1706990460
+
+    nonce = "nonce-1"
     ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
 
     return {
@@ -62,13 +67,14 @@ def _envelope_base(*, fields: dict[str, str], now: int) -> dict[str, Any]:
                     "wallet_id": "w1",
                     "action": "SEND",
                     "context_hash": ctx_hash,
-                    "issued_at": now,
-                    "expires_at": now + 30,
+                    # MUST bind to envelope timebox ints, not `now`
+                    "issued_at": issued_at,
+                    "expires_at": expires_at,
                     "nonce": nonce,
                 }
             },
         },
-        "timebox": {"issued_at": issued_at, "expires_at": expires_at},
+        "timebox": {"issued_at": issued_iso, "expires_at": expires_iso},
         "nonce": {"value": nonce, "store": "tva", "mode": "single_use"},
         "payload": {"ui_confirmed": True},
         "audit": {"platform": "ios", "client_version": "0.1.0"},
@@ -77,7 +83,7 @@ def _envelope_base(*, fields: dict[str, str], now: int) -> dict[str, Any]:
 
 def _allow_payload(now: int) -> dict[str, Any]:
     fields = {"amount": "10", "to": "DGB1"}
-    env = _envelope_base(fields=fields, now=now)
+    env = _envelope_base(fields=fields)
     ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
 
     env["payload"] = {
@@ -92,7 +98,7 @@ def _allow_payload(now: int) -> dict[str, Any]:
 
 def _deny_payload_low_score(now: int) -> dict[str, Any]:
     fields = {"amount": "10", "to": "DGB1"}
-    env = _envelope_base(fields=fields, now=now)
+    env = _envelope_base(fields=fields)
     ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
 
     env["payload"] = {
