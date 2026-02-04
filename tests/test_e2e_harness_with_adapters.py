@@ -328,6 +328,10 @@ def test_e2e_determinism_same_inputs_same_result() -> None:
     assert eqc1.verdict is eqc2.verdict
     assert eqc1.reason_ids == eqc2.reason_ids
 
+
+# --- Step 20.2 additions: hostile adapter evidence shapes ---
+
+
 def test_e2e_denies_on_invalid_qid_missing_proof_hash() -> None:
     now = 200
     bad = _qid_payload(issued_at=150, expires_at=250)
@@ -421,6 +425,10 @@ def test_e2e_denies_on_invalid_risk_empty_signals() -> None:
 
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
 
+
+# --- Step 20.3 additions: governance locks (no custom ExternalReasonMap construction) ---
+
+
 def test_e2e_unknown_reason_denied_under_deny_explicit_policy() -> None:
     now = 200
     wallet_id = "w1"
@@ -428,59 +436,57 @@ def test_e2e_unknown_reason_denied_under_deny_explicit_policy() -> None:
     fields = {"amount": "10"}
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    # External reason not in allowlist -> must deny explicitly
     with pytest.raises(AdapterError) as e:
         parse_risk_report(
             payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["NOT_ALLOWED"]),
             now=now,
             expected_context_hash=ctx_hash,
             reason_map=PolicyPack().external_reason_map,
-            policy=RiskPolicy(),  # default should be DENY_EXPLICIT in your policy
-        )
-    assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
-
-
-def test_e2e_unmapped_reason_denied_even_if_allowed() -> None:
-    now = 200
-    wallet_id = "w1"
-    action = "SEND"
-    fields = {"amount": "10"}
-    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
-
-    # "ok" is allowed by policy, but we pass an empty map so it becomes unmapped.
-    empty_map = PolicyPack().external_reason_map.__class__({})  # ExternalReasonMap({})
-    empty_map.validate()
-
-    with pytest.raises(AdapterError) as e:
-        parse_risk_report(
-            payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
-            now=now,
-            expected_context_hash=ctx_hash,
-            reason_map=empty_map,
             policy=RiskPolicy(),
         )
     assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
 
 
-def test_e2e_explicit_reason_map_takes_precedence_over_policy_map() -> None:
+def test_e2e_unmapped_external_reason_is_denied() -> None:
     now = 200
     wallet_id = "w1"
     action = "SEND"
     fields = {"amount": "10"}
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    # Create a map that deliberately maps "ok" to a known internal ReasonId.
-    # We pick a stable internal ReasonId string that exists.
-    custom_map = PolicyPack().external_reason_map.__class__({"ok": ReasonId.DENY_POLICY.value})
-    custom_map.validate()
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=_risk_payload(
+                context_hash=ctx_hash,
+                generated_at=190,
+                overall_score=90,
+                reason_ids=["UNMAPPED_REASON_999"],
+            ),
+            now=now,
+            expected_context_hash=ctx_hash,
+            reason_map=PolicyPack().external_reason_map,
+            policy=RiskPolicy(),
+        )
 
-    risk = parse_risk_report(
-        payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
-        now=now,
-        expected_context_hash=ctx_hash,
-        reason_map=custom_map,
-        policy=RiskPolicy(),
-    )
+    assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
 
-    # Adapter must return the mapped internal reason id, proving precedence.
-    assert risk.signals[0].reason_ids == (ReasonId.DENY_POLICY.value,)
+
+def test_e2e_reason_map_is_required_when_policy_not_provided() -> None:
+    now = 200
+    expected = "a" * 64
+
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=_risk_payload(
+                context_hash=expected,
+                generated_at=190,
+                overall_score=90,
+                reason_ids=["ok"],
+            ),
+            now=now,
+            expected_context_hash=expected,
+            reason_map=None,
+            policy=None,
+        )
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
