@@ -496,8 +496,6 @@ def test_e2e_reason_ordering_for_basic_presence_failures_is_stable() -> None:
     action = "SEND"
     fields = {"amount": "10"}
 
-    # Make evidence valid so EQC reaches the final "if reasons:" block.
-    # But wallet_id is missing -> presence failure should be returned after evidence checks.
     wallet_id = ""
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
@@ -522,8 +520,7 @@ def test_e2e_reason_ordering_for_basic_presence_failures_is_stable() -> None:
     )
 
     assert eqc.verdict is Verdict.DENY
-    # Ordering is defined by evaluator: wallet_id check then action check.
-    assert eqc.reason_ids == [ReasonId.EQC_MISSING_WALLET_ID.value]
+    assert eqc.reason_ids == (ReasonId.EQC_MISSING_WALLET_ID.value,)
 
 
 def test_e2e_reason_ordering_wallet_and_action_missing_is_stable() -> None:
@@ -532,7 +529,6 @@ def test_e2e_reason_ordering_wallet_and_action_missing_is_stable() -> None:
     action = ""
     fields = {"amount": "10"}
 
-    # Evidence must still validate for EQC to return the accumulated reasons at the end.
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
     session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
@@ -555,11 +551,10 @@ def test_e2e_reason_ordering_wallet_and_action_missing_is_stable() -> None:
     )
 
     assert eqc.verdict is Verdict.DENY
-    # Ordering defined by evaluator: wallet_id then action.
-    assert eqc.reason_ids == [
+    assert eqc.reason_ids == (
         ReasonId.EQC_MISSING_WALLET_ID.value,
         ReasonId.EQC_MISSING_ACTION.value,
-    ]
+    )
 
 
 def test_e2e_adapters_cannot_grant_authority_via_injected_fields() -> None:
@@ -571,7 +566,6 @@ def test_e2e_adapters_cannot_grant_authority_via_injected_fields() -> None:
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
     qid = _qid_payload(issued_at=150, expires_at=250)
-    # Malicious/irrelevant injected fields should have no effect
     qid["verdict"] = "ALLOW"
     qid["authority"] = {"class": "admin", "scope": {"policy_pack": "root"}}
 
@@ -599,7 +593,5 @@ def test_e2e_adapters_cannot_grant_authority_via_injected_fields() -> None:
         policy=RiskPolicy(min_overall_score=85),
     )
 
-    # If adapters accidentally allowed authority injection, we'd see unexpected ALLOW/DENY drift.
-    # Here we assert the evaluator behaves exactly as if those injected keys never existed.
     assert eqc.verdict is Verdict.ALLOW
-    assert eqc.reason_ids == []
+    assert eqc.reason_ids == ()
