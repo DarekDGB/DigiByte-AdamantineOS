@@ -35,8 +35,13 @@ def _risk_payload(*, context_hash: str, generated_at: int, overall_score: int, r
     }
 
 
-def _envelope_base(*, fields: dict[str, str]) -> dict[str, Any]:
-    # Deterministic timebox aligned with your existing envelope tests.
+def _envelope_base(*, fields: dict[str, str], now: int) -> dict[str, Any]:
+    issued_at = "2024-02-03T20:00:00Z"
+    expires_at = "2024-02-03T20:01:00Z"
+    nonce = "nonce-1"
+
+    ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
+
     return {
         "v": "execution_request_v1",
         "request_id": "req-1",
@@ -49,9 +54,22 @@ def _envelope_base(*, fields: dict[str, str]) -> dict[str, Any]:
             "action": "SEND",
             "fields": fields,
         },
-        "authority": {"class": "user", "scope": {"policy_pack": "default"}},
-        "timebox": {"issued_at": "2024-02-03T20:00:00Z", "expires_at": "2024-02-03T20:01:00Z"},
-        "nonce": {"value": "nonce-1", "store": "tva", "mode": "single_use"},
+        "authority": {
+            "class": "user",
+            "scope": {"policy_pack": "default"},
+            "proofs": {
+                "wsqk": {
+                    "wallet_id": "w1",
+                    "action": "SEND",
+                    "context_hash": ctx_hash,
+                    "issued_at": now,
+                    "expires_at": now + 30,
+                    "nonce": nonce,
+                }
+            },
+        },
+        "timebox": {"issued_at": issued_at, "expires_at": expires_at},
+        "nonce": {"value": nonce, "store": "tva", "mode": "single_use"},
         "payload": {"ui_confirmed": True},
         "audit": {"platform": "ios", "client_version": "0.1.0"},
     }
@@ -59,37 +77,30 @@ def _envelope_base(*, fields: dict[str, str]) -> dict[str, Any]:
 
 def _allow_payload(now: int) -> dict[str, Any]:
     fields = {"amount": "10", "to": "DGB1"}
-    env = _envelope_base(fields=fields)
-
+    env = _envelope_base(fields=fields, now=now)
     ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
 
-    qid = _qid_payload(issued_at=now - 50, expires_at=now + 50)
-    risk = _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=95, reason_ids=["ok"])
-
-    # Put evidence in BOTH common locations to match orchestrator wiring styles.
     env["payload"] = {
         "ui_confirmed": True,
-        "evidence": {"qid": qid, "risk": risk},
-        "qid": qid,
-        "risk": risk,
+        "evidence": {
+            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50),
+            "risk": _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=95, reason_ids=["ok"]),
+        },
     }
     return env
 
 
 def _deny_payload_low_score(now: int) -> dict[str, Any]:
     fields = {"amount": "10", "to": "DGB1"}
-    env = _envelope_base(fields=fields)
-
+    env = _envelope_base(fields=fields, now=now)
     ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
-
-    qid = _qid_payload(issued_at=now - 50, expires_at=now + 50)
-    risk = _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=10, reason_ids=["ok"])
 
     env["payload"] = {
         "ui_confirmed": True,
-        "evidence": {"qid": qid, "risk": risk},
-        "qid": qid,
-        "risk": risk,
+        "evidence": {
+            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50),
+            "risk": _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=10, reason_ids=["ok"]),
+        },
     }
     return env
 
@@ -106,7 +117,6 @@ def test_matrix_allow_flags_and_reason() -> None:
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
 
-    # PolicyPack ensures adapters can resolve ExternalReasonMap deterministically.
     policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
 
     resp = orchestrate_execution_v1(
@@ -143,7 +153,6 @@ def test_matrix_deny_flags_and_reason() -> None:
         policy=policy,
     )
 
-    # Lock security posture: non-allow must not execute.
     assert resp["status"] in {"deny", "error"}
     assert resp["reason_id"] != ReasonId.OK_ALLOW.value
 
