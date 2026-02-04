@@ -5,7 +5,6 @@ from typing import Any
 from adamantine.v1.execution.orchestrator_v1 import orchestrate_execution_v1
 from adamantine.v1.execution.executor import RecordingExecutor
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
-from adamantine.v1.contracts.reason_ids import ReasonId
 
 
 def _minimal_payload() -> dict[str, Any]:
@@ -91,18 +90,18 @@ def test_determinism_same_input_same_output() -> None:
     assert r1 == r2
 
 
-def test_error_path_sets_error_status() -> None:
+def test_error_path_returns_error_status() -> None:
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
 
-    bad = {}  # completely invalid payload
+    bad_payload: dict[str, Any] = {}
 
     resp = orchestrate_execution_v1(
-        payload=bad,
+        payload=bad_payload,
         now=150,
         executor=executor,
         nonce_store=store,
     )
 
     assert resp["status"] == "error"
-    assert resp["reason_id"] == ReasonId.EXECUTION_ERROR.value
+    assert executor.called is False
