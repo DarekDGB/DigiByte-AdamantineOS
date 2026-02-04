@@ -1,18 +1,22 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
+from adamantine.errors import TVAError
+from adamantine.v1.contracts.authority import WSQKAuthority
+from adamantine.v1.contracts.execution_request import ExecutionRequest
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.verdict import Verdict
+from adamantine.v1.execution.boundary import run_with_tva
 from adamantine.v1.execution.envelope_v1 import parse_execution_request_envelope_v1
 from adamantine.v1.execution.errors import EnvelopeError
-from adamantine.v1.execution.response_v1 import build_execution_response_v1
-from adamantine.v1.execution.boundary import run_with_tva
 from adamantine.v1.execution.executor import Executor
+from adamantine.v1.execution.response_v1 import build_execution_response_v1
 from adamantine.v1.enforcement.nonce_store import NonceStore
 from adamantine.v1.eqc.evaluator import evaluate_eqc
-from adamantine.v1.integrations.qid_adapter import parse_qid_session
 from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
+from adamantine.v1.integrations.errors import AdapterError
+from adamantine.v1.integrations.qid_adapter import parse_qid_session
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
@@ -20,6 +24,113 @@ def _safe_str(value: Any, *, fallback: str) -> str:
     if isinstance(value, str) and value:
         return value
     return fallback
+
+
+def _reason_from_message(msg: str) -> ReasonId:
+    """
+    TVAError messages are reason-id strings.
+    Fall back to DENY_SCHEMA_INVALID if not recognized.
+    """
+    try:
+        return ReasonId(msg)
+    except Exception:
+        return ReasonId.DENY_SCHEMA_INVALID
+
+
+def _require_mapping(obj: Any) -> Mapping[str, Any] | None:
+    if obj is None:
+        return None
+    if not isinstance(obj, Mapping):
+        return None
+    return cast(Mapping[str, Any], obj)
+
+
+def _extract_fields(original_payload: Mapping[str, Any]) -> dict[str, str] | None:
+    ctx = _require_mapping(original_payload.get("context"))
+    if ctx is None:
+        return None
+    fields = _require_mapping(ctx.get("fields"))
+    if fields is None:
+        return None
+    # Envelope parser already validated these as str->str.
+    out: dict[str, str] = {}
+    for k, v in fields.items():
+        if isinstance(k, str) and isinstance(v, str):
+            out[k] = v
+    return out
+
+
+def _extract_evidence(req_payload: Mapping[str, Any]) -> tuple[Mapping[str, Any] | None, Mapping[str, Any] | None]:
+    """
+    Evidence is carried inside the intent payload as:
+      payload.evidence.qid
+      payload.evidence.risk
+    """
+    ev = _require_mapping(req_payload.get("evidence"))
+    if ev is None:
+        return None, None
+
+    qid = _require_mapping(ev.get("qid"))
+    risk = _require_mapping(ev.get("risk"))
+    return qid, risk
+
+
+def _extract_wsqk_authority(
+    *,
+    wallet_id: str,
+    action: str,
+    context_hash: str,
+    nonce_value: str,
+    issued_at: int,
+    expires_at: int,
+    authority_proofs: Mapping[str, Any] | None,
+) -> WSQKAuthority | None:
+    """
+    WSQK authority MUST be provided externally via authority.proofs.wsqk.
+    Adamantine must not mint authority implicitly.
+    """
+    if authority_proofs is None:
+        return None
+
+    wsqk = _require_mapping(authority_proofs.get("wsqk"))
+    if wsqk is None:
+        return None
+
+    w = wsqk.get("wallet_id")
+    a = wsqk.get("action")
+    ch = wsqk.get("context_hash")
+    ia = wsqk.get("issued_at")
+    ea = wsqk.get("expires_at")
+    n = wsqk.get("nonce")
+
+    # Fail-closed: all must be present and correct types
+    if not isinstance(w, str) or not w:
+        return None
+    if not isinstance(a, str) or not a:
+        return None
+    if not isinstance(ch, str) or not ch:
+        return None
+    if not isinstance(ia, int) or not isinstance(ea, int):
+        return None
+    if not isinstance(n, str) or not n:
+        return None
+
+    # Binding: must match envelope context + nonce/timebox
+    if w != wallet_id or a != action or ch != context_hash:
+        return None
+    if n != nonce_value:
+        return None
+    if ia != issued_at or ea != expires_at:
+        return None
+
+    return WSQKAuthority(
+        wallet_id=w,
+        action=a,
+        context_hash=ch,
+        issued_at=ia,
+        expires_at=ea,
+        nonce=n,
+    )
 
 
 def orchestrate_execution_v1(
@@ -37,37 +148,41 @@ def orchestrate_execution_v1(
     - Always returns execution_response_v1
     - Never raises
     - Deny-by-default
-    - ALLOW path is wired only via EQC -> WSQK -> TVA -> executor
+    - ALLOW path: EQC -> WSQK(proof) -> TVA -> executor
     """
     try:
-        # 1) Parse execution request envelope
         req = parse_execution_request_envelope_v1(payload=payload, now=now)
+        fields = _extract_fields(payload)
 
-        # 2) Parse external evidence (fail-closed)
-        session = parse_qid_session(
-            payload=req.evidence.qid,
-            now=now,
-        )
+        p = policy or RiskPolicy()
+        p.validate()
 
-        risk = parse_risk_report(
-            payload=req.evidence.risk,
-            now=now,
-            expected_context_hash=req.context.context_hash,
-            policy=policy,
-        )
+        # Evidence is carried inside the intent payload
+        qid_raw, risk_raw = _extract_evidence(req.payload)
 
-        # 3) Evaluate EQC (deterministic decision)
+        session = None
+        if qid_raw is not None:
+            session = parse_qid_session(payload=qid_raw, now=now)
+
+        risk = None
+        if risk_raw is not None:
+            risk = parse_risk_report(
+                payload=risk_raw,
+                now=now,
+                expected_context_hash=req.context.context_hash,
+                policy=p,
+            )
+
         eqc = evaluate_eqc(
             wallet_id=req.context.wallet_id,
             action=req.context.action,
-            fields=req.context.fields,
+            fields=fields,
             session=session,
             risk=risk,
             now=now,
-            policy=policy,
+            policy=p,
         )
 
-        # 4) DENY path (default)
         if eqc.verdict is not Verdict.ALLOW:
             return build_execution_response_v1(
                 request_id=req.request_id,
@@ -83,13 +198,44 @@ def orchestrate_execution_v1(
                 timebox_valid=True,
             )
 
-        # 5) ALLOW path — enforce TVA and execute
+        # WSQK authority must be present as an external proof
+        wsqk = _extract_wsqk_authority(
+            wallet_id=req.context.wallet_id,
+            action=req.context.action,
+            context_hash=req.context.context_hash,
+            nonce_value=req.nonce_value,
+            issued_at=req.issued_at,
+            expires_at=req.expires_at,
+            authority_proofs=req.authority_proofs,
+        )
+        if wsqk is None:
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=ReasonId.DENY_AUTHORITY_INVALID,
+                tva_allowed=False,
+                eqc_allowed=True,
+                wsqk_allowed=False,
+                nonce_consumed=False,
+                timebox_valid=True,
+            )
+
+        # ExecutionRequest is intentionally opaque at foundation stage
+        exec_req = ExecutionRequest(
+            wallet_id=req.context.wallet_id,
+            action=req.context.action,
+            payload="opaque",
+        )
+
         out = run_with_tva(
             executor=executor,
-            request=req.request,
+            request=exec_req,
             context=req.context,
             verdict=eqc.verdict,
-            authority=req.authority,
+            authority=wsqk,
             now=now,
             nonce_store=nonce_store,
         )
@@ -109,11 +255,47 @@ def orchestrate_execution_v1(
             artifacts={"executor_result": out},
         )
 
-    except EnvelopeError as e:
-        # Envelope validation errors already carry stable reason ids
+    except AdapterError as e:
         request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
-        action = _safe_str(payload.get("context", {}).get("action"), fallback="invalid-action")
+        action = _safe_str(_require_mapping(payload.get("context")) and payload.get("context", {}).get("action"), fallback="invalid-action")
+        return build_execution_response_v1(
+            request_id=request_id,
+            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            action=action,
+            context_hash="0" * 64,
+            status="error",
+            reason_id=e.reason_id,
+            tva_allowed=False,
+            eqc_allowed=False,
+            wsqk_allowed=False,
+            nonce_consumed=False,
+            timebox_valid=False,
+            artifacts={"error": e.message},
+        )
 
+    except TVAError as e:
+        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
+        action = _safe_str(_require_mapping(payload.get("context")) and payload.get("context", {}).get("action"), fallback="invalid-action")
+        rid = _reason_from_message(str(e))
+        return build_execution_response_v1(
+            request_id=request_id,
+            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            action=action,
+            context_hash="0" * 64,
+            status="deny",
+            reason_id=rid,
+            tva_allowed=False,
+            eqc_allowed=True,
+            wsqk_allowed=True,
+            nonce_consumed=False,
+            timebox_valid=True,
+            artifacts={"error": str(e)},
+        )
+
+    except EnvelopeError as e:
+        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
+        ctx = _require_mapping(payload.get("context")) or {}
+        action = _safe_str(ctx.get("action"), fallback="invalid-action")
         return build_execution_response_v1(
             request_id=request_id,
             intent=_safe_str(payload.get("intent"), fallback="unknown"),
@@ -130,10 +312,9 @@ def orchestrate_execution_v1(
         )
 
     except Exception as e:
-        # Unknown failures are reported deterministically without inventing new reason ids
         request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
-        action = _safe_str(payload.get("context", {}).get("action"), fallback="invalid-action")
-
+        ctx = _require_mapping(payload.get("context")) or {}
+        action = _safe_str(ctx.get("action"), fallback="invalid-action")
         return build_execution_response_v1(
             request_id=request_id,
             intent=_safe_str(payload.get("intent"), fallback="unknown"),
