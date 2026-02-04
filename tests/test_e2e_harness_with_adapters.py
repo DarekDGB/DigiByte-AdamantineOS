@@ -204,3 +204,126 @@ def test_tva_nonce_replay_denies_second_execution() -> None:
         enforce_tva(ctx, Verdict.ALLOW, auth, now=now, nonce_store=store)
 
     assert str(e.value) == ReasonId.TVA_NONCE_REPLAY.value
+
+
+# --- Step 20.1 additions: time window, evidence, context mismatch, determinism ---
+
+
+def test_e2e_denies_on_expired_session() -> None:
+    now = 200
+    with pytest.raises(AdapterError) as e:
+        parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=199), now=now)
+    assert e.value.reason_id is ReasonId.EQC_QID_SESSION_EXPIRED
+
+
+def test_e2e_denies_on_future_session() -> None:
+    now = 200
+    with pytest.raises(AdapterError) as e:
+        parse_qid_session(payload=_qid_payload(issued_at=250, expires_at=350), now=now)
+    assert e.value.reason_id is ReasonId.EQC_QID_SESSION_NOT_YET_VALID
+
+
+def test_e2e_denies_on_risk_context_mismatch() -> None:
+    now = 200
+    expected = "a" * 64
+    actual = "b" * 64
+
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=_risk_payload(context_hash=actual, generated_at=190, overall_score=90, reason_ids=["ok"]),
+            now=now,
+            expected_context_hash=expected,
+            reason_map=PolicyPack().external_reason_map,
+            policy=RiskPolicy(),
+        )
+    assert e.value.reason_id is ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH
+
+
+def test_e2e_denies_when_missing_qid_evidence() -> None:
+    now = 200
+    wallet_id = "w1"
+    action = "SEND"
+    fields = {"amount": "10"}
+
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+    risk = parse_risk_report(
+        payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
+        now=now,
+        expected_context_hash=ctx_hash,
+        reason_map=PolicyPack().external_reason_map,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+
+    eqc = evaluate_eqc(
+        wallet_id=wallet_id,
+        action=action,
+        fields=fields,
+        session=None,
+        risk=risk,
+        now=now,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+    assert eqc.verdict is Verdict.DENY
+    assert ReasonId.EQC_MISSING_QID_SESSION.value in eqc.reason_ids
+
+
+def test_e2e_denies_when_missing_risk_evidence() -> None:
+    now = 200
+    wallet_id = "w1"
+    action = "SEND"
+    fields = {"amount": "10"}
+
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+
+    eqc = evaluate_eqc(
+        wallet_id=wallet_id,
+        action=action,
+        fields=fields,
+        session=session,
+        risk=None,
+        now=now,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+    assert eqc.verdict is Verdict.DENY
+    assert ReasonId.EQC_MISSING_RISK_REPORT.value in eqc.reason_ids
+
+
+def test_e2e_determinism_same_inputs_same_result() -> None:
+    now = 200
+    wallet_id = "w1"
+    action = "SEND"
+    fields = {"amount": "10", "to": "DGB1"}
+
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    risk = parse_risk_report(
+        payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
+        now=now,
+        expected_context_hash=ctx_hash,
+        reason_map=PolicyPack().external_reason_map,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+
+    eqc1 = evaluate_eqc(
+        wallet_id=wallet_id,
+        action=action,
+        fields=fields,
+        session=session,
+        risk=risk,
+        now=now,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+    eqc2 = evaluate_eqc(
+        wallet_id=wallet_id,
+        action=action,
+        fields=fields,
+        session=session,
+        risk=risk,
+        now=now,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+
+    assert eqc1.context_hash == eqc2.context_hash
+    assert eqc1.verdict is eqc2.verdict
+    assert eqc1.reason_ids == eqc2.reason_ids
