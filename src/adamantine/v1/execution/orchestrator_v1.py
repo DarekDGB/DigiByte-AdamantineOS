@@ -6,25 +6,31 @@ from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.execution.envelope_v1 import parse_execution_request_envelope_v1
 from adamantine.v1.execution.errors import EnvelopeError
 from adamantine.v1.execution.response_v1 import build_execution_response_v1
+from adamantine.v1.execution.executor import Executor
+from adamantine.v1.enforcement.nonce_store import NonceStore
 
 
 def orchestrate_execution_v1(
     *,
     payload: Mapping[str, Any],
     now: int,
+    executor: Executor,
+    nonce_store: NonceStore,
 ) -> dict[str, Any]:
     """
-    Execution Orchestrator v1 (skeleton).
+    Execution Orchestrator v1 (sealed skeleton).
 
-    C1 invariant:
-    - Always returns execution_response_v1 (never raises).
-    - Fail-closed.
-    - No execution wiring is performed yet (DENY_NOT_WIRED).
+    Invariants:
+    - Always returns execution_response_v1
+    - Never raises
+    - Deny-by-default
+    - No execution wiring in C1/C2
     """
     try:
         parsed = parse_execution_request_envelope_v1(payload=payload, now=now)
 
-        # C1: Orchestrator exists as the single entry point, but is not wired to execute yet.
+        # C1/C2: orchestrator exists as the single entry point,
+        # but execution wiring is intentionally not enabled yet.
         return build_execution_response_v1(
             request_id=parsed.request_id,
             intent=parsed.intent,
@@ -40,11 +46,10 @@ def orchestrate_execution_v1(
         )
 
     except EnvelopeError as e:
-        # Envelope parsing/validation already produces stable, contract-locked reason ids.
         return build_execution_response_v1(
-            request_id=str(getattr(payload, "get", lambda *_: "")("request_id", "")),
-            intent=str(getattr(payload, "get", lambda *_: "")("intent", "")),
-            action=str(getattr(payload, "get", lambda *_: "")("context", {}) or {}).get("action", ""),
+            request_id=str(payload.get("request_id", "")),
+            intent=str(payload.get("intent", "")),
+            action=str(payload.get("context", {}).get("action", "")),
             context_hash="",
             status="error",
             reason_id=e.reason_id,
@@ -57,11 +62,10 @@ def orchestrate_execution_v1(
         )
 
     except Exception as e:
-        # Unknown failures are reported deterministically without inventing new reason ids.
         return build_execution_response_v1(
-            request_id=str(getattr(payload, "get", lambda *_: "")("request_id", "")),
-            intent=str(getattr(payload, "get", lambda *_: "")("intent", "")),
-            action=str(getattr(payload, "get", lambda *_: "")("context", {}) or {}).get("action", ""),
+            request_id=str(payload.get("request_id", "")),
+            intent=str(payload.get("intent", "")),
+            action=str(payload.get("context", {}).get("action", "")),
             context_hash="",
             status="error",
             reason_id=ReasonId.DENY_SCHEMA_INVALID,
