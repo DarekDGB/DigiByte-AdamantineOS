@@ -327,3 +327,96 @@ def test_e2e_determinism_same_inputs_same_result() -> None:
     assert eqc1.context_hash == eqc2.context_hash
     assert eqc1.verdict is eqc2.verdict
     assert eqc1.reason_ids == eqc2.reason_ids
+
+def test_e2e_denies_on_invalid_qid_missing_proof_hash() -> None:
+    now = 200
+    bad = _qid_payload(issued_at=150, expires_at=250)
+    bad.pop("proof_hash", None)
+
+    with pytest.raises(AdapterError) as e:
+        parse_qid_session(payload=bad, now=now)
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_QID_PROOF
+
+
+def test_e2e_denies_on_invalid_qid_wrong_types() -> None:
+    now = 200
+    bad = _qid_payload(issued_at=150, expires_at=250)
+    bad["issued_at"] = "150"  # wrong type
+    bad["expires_at"] = "250"  # wrong type
+
+    with pytest.raises(AdapterError) as e:
+        parse_qid_session(payload=bad, now=now)
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_QID_PROOF
+
+
+def test_e2e_denies_on_invalid_risk_missing_overall_score() -> None:
+    now = 200
+    expected = "a" * 64
+    payload = _risk_payload(context_hash=expected, generated_at=190, overall_score=90, reason_ids=["ok"])
+    payload.pop("overall_score", None)
+
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected,
+            reason_map=PolicyPack().external_reason_map,
+            policy=RiskPolicy(),
+        )
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
+
+
+def test_e2e_denies_on_invalid_risk_wrong_overall_score_type() -> None:
+    now = 200
+    expected = "a" * 64
+    payload = _risk_payload(context_hash=expected, generated_at=190, overall_score=90, reason_ids=["ok"])
+    payload["overall_score"] = "90"  # wrong type
+
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected,
+            reason_map=PolicyPack().external_reason_map,
+            policy=RiskPolicy(),
+        )
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
+
+
+def test_e2e_denies_on_invalid_risk_generated_at_in_future() -> None:
+    now = 200
+    expected = "a" * 64
+    payload = _risk_payload(context_hash=expected, generated_at=250, overall_score=90, reason_ids=["ok"])  # future
+
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected,
+            reason_map=PolicyPack().external_reason_map,
+            policy=RiskPolicy(),
+        )
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
+
+
+def test_e2e_denies_on_invalid_risk_empty_signals() -> None:
+    now = 200
+    expected = "a" * 64
+    payload = _risk_payload(context_hash=expected, generated_at=190, overall_score=90, reason_ids=["ok"])
+    payload["signals"] = []
+
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=payload,
+            now=now,
+            expected_context_hash=expected,
+            reason_map=PolicyPack().external_reason_map,
+            policy=RiskPolicy(),
+        )
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
