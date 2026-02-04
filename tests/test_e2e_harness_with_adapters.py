@@ -595,3 +595,65 @@ def test_e2e_adapters_cannot_grant_authority_via_injected_fields() -> None:
 
     assert eqc.verdict is Verdict.ALLOW
     assert eqc.reason_ids == ()
+
+def test_e2e_no_execution_without_valid_tva_authority() -> None:
+    now = 200
+    wallet_id = "w1"
+    action = "SEND"
+    fields = {"amount": "10", "to": "DGB1"}
+
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+
+    # Evidence passes -> EQC allows
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    risk = parse_risk_report(
+        payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
+        now=now,
+        expected_context_hash=ctx_hash,
+        reason_map=PolicyPack().external_reason_map,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+
+    eqc = evaluate_eqc(
+        wallet_id=wallet_id,
+        action=action,
+        fields=fields,
+        session=session,
+        risk=risk,
+        now=now,
+        policy=RiskPolicy(min_overall_score=85),
+    )
+    assert eqc.verdict is Verdict.ALLOW
+
+    # But we intentionally use a mismatching authority context_hash -> TVA must fail -> executor not called
+    auth = issue_wsqk_authority(
+        WSQKIssueRequest(
+            wallet_id=wallet_id,
+            action=action,
+            context_hash="x" * 64,  # wrong on purpose
+            now=now,
+            ttl_seconds=30,
+            nonce="nonce-bad-auth",
+        )
+    )
+
+    store = InMemoryNonceStore()
+    executor = RecordingExecutor()
+
+    ctx = ExecutionContext(wallet_id=wallet_id, action=action, context_hash=eqc.context_hash)
+    req = ExecutionRequest(wallet_id=wallet_id, action=action, payload="payload-v0")
+
+    with pytest.raises(TVAError) as e:
+        run_with_tva(
+            executor=executor,
+            request=req,
+            context=ctx,
+            verdict=eqc.verdict,
+            authority=auth,
+            now=now,
+            nonce_store=store,
+        )
+
+    assert str(e.value) == ReasonId.TVA_AUTHORITY_CONTEXT_HASH_MISMATCH.value
+    assert executor.called is False
+    assert executor.last_request is None
