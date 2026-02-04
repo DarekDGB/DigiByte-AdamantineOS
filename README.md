@@ -1,23 +1,23 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-foundation--locked-orange.svg)
+![Status](https://img.shields.io/badge/status-execution--boundary--sealed-orange.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen.svg)
 
 ---
 
-## Status: Foundation Locked (Execution Boundary Only)
+## Status: Execution Boundary Sealed (Execution Boundary Only)
 
-This repository contains a **clean, locked foundation** for the Adamantine Wallet OS.
+This repository contains a **clean, locked execution boundary** for the Adamantine Wallet OS.
 
-The foundation focuses on **contracts, invariants, and deterministic fail-closed execution**.
-It is **not** a wallet runtime and does **not** manage keys, signing, or broadcasting.
+The focus is **versioned contracts, invariants, and deterministic fail-closed execution**.
+It is **not** a wallet runtime and does **not** manage keys, signing, broadcasting, or user interfaces.
 
 ---
 
-## Implemented (Foundation Locked)
+## Implemented (Execution Boundary Sealed)
 
 - **EQC v1** — deterministic decision foundation and context hashing
 - **WSQK v1** — time-bound authority and scope enforcement (no key custody)
@@ -26,7 +26,7 @@ It is **not** a wallet runtime and does **not** manage keys, signing, or broadca
 - **PolicyPack** — explicit thresholds and allowlists
 - **ExternalReasonMap** — strict, versioned adapter reason mapping
 - **Adapters** — validated integration boundaries (e.g. Q-ID, Adaptive Core)
-- **Invariant-locked CI** with high, stable coverage (~97%)
+- **End-to-end integration harness** (adapter + gate proofs) with high, stable coverage (~97%)
 
 ---
 
@@ -119,7 +119,7 @@ flowchart TD
     PACK["PolicyPack"]
   end
 
-  subgraph Core["Adamantine Execution Boundary (locked)"]
+  subgraph Core["Adamantine Execution Boundary (sealed)"]
     CTX["Execution Context"]
     HASH["Deterministic Context Hash"]
     EQC["EQC Gate"]
@@ -175,14 +175,12 @@ These rules are defined in `INVARIANTS.md` and apply to all future development.
 
 ## Roadmap Position
 
-This repository represents a **foundation-locked baseline**.
+This repository represents a **sealed execution boundary baseline**.
 
-Next phase:
-- Versioned **Execution Envelope v1** contracts
-- Strict mobile integration boundaries (iOS / Android)
-- Deterministic request/response enforcement
-
-Runtime integration begins **only after** contracts are frozen.
+Next work introduces additional wiring and integration surfaces **only after** contracts remain stable:
+- strict request/response envelopes
+- mobile integration boundaries (iOS / Android)
+- controlled orchestration around the execution boundary
 
 ---
 
