@@ -10,6 +10,12 @@ from adamantine.v1.execution.executor import Executor
 from adamantine.v1.enforcement.nonce_store import NonceStore
 
 
+def _safe_str(value: Any, *, fallback: str) -> str:
+    if isinstance(value, str) and value:
+        return value
+    return fallback
+
+
 def orchestrate_execution_v1(
     *,
     payload: Mapping[str, Any],
@@ -23,14 +29,13 @@ def orchestrate_execution_v1(
     Invariants:
     - Always returns execution_response_v1
     - Never raises
+    - Response contract is always valid
     - Deny-by-default
     - No execution wiring in C1/C2
     """
     try:
         parsed = parse_execution_request_envelope_v1(payload=payload, now=now)
 
-        # C1/C2: orchestrator exists as the single entry point,
-        # but execution wiring is intentionally not enabled yet.
         return build_execution_response_v1(
             request_id=parsed.request_id,
             intent=parsed.intent,
@@ -46,11 +51,20 @@ def orchestrate_execution_v1(
         )
 
     except EnvelopeError as e:
+        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
+        action = _safe_str(
+            payload.get("context", {}).get("action"),
+            fallback="invalid-action",
+        )
+
+        # Deterministic placeholder — must be non-empty
+        context_hash = "0" * 64
+
         return build_execution_response_v1(
-            request_id=str(payload.get("request_id", "")),
-            intent=str(payload.get("intent", "")),
-            action=str(payload.get("context", {}).get("action", "")),
-            context_hash="",
+            request_id=request_id,
+            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            action=action,
+            context_hash=context_hash,
             status="error",
             reason_id=e.reason_id,
             tva_allowed=False,
@@ -62,11 +76,19 @@ def orchestrate_execution_v1(
         )
 
     except Exception as e:
+        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
+        action = _safe_str(
+            payload.get("context", {}).get("action"),
+            fallback="invalid-action",
+        )
+
+        context_hash = "0" * 64
+
         return build_execution_response_v1(
-            request_id=str(payload.get("request_id", "")),
-            intent=str(payload.get("intent", "")),
-            action=str(payload.get("context", {}).get("action", "")),
-            context_hash="",
+            request_id=request_id,
+            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            action=action,
+            context_hash=context_hash,
             status="error",
             reason_id=ReasonId.DENY_SCHEMA_INVALID,
             tva_allowed=False,
