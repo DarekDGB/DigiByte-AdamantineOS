@@ -420,3 +420,67 @@ def test_e2e_denies_on_invalid_risk_empty_signals() -> None:
         )
 
     assert e.value.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
+
+def test_e2e_unknown_reason_denied_under_deny_explicit_policy() -> None:
+    now = 200
+    wallet_id = "w1"
+    action = "SEND"
+    fields = {"amount": "10"}
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+
+    # External reason not in allowlist -> must deny explicitly
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["NOT_ALLOWED"]),
+            now=now,
+            expected_context_hash=ctx_hash,
+            reason_map=PolicyPack().external_reason_map,
+            policy=RiskPolicy(),  # default should be DENY_EXPLICIT in your policy
+        )
+    assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
+
+
+def test_e2e_unmapped_reason_denied_even_if_allowed() -> None:
+    now = 200
+    wallet_id = "w1"
+    action = "SEND"
+    fields = {"amount": "10"}
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+
+    # "ok" is allowed by policy, but we pass an empty map so it becomes unmapped.
+    empty_map = PolicyPack().external_reason_map.__class__({})  # ExternalReasonMap({})
+    empty_map.validate()
+
+    with pytest.raises(AdapterError) as e:
+        parse_risk_report(
+            payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
+            now=now,
+            expected_context_hash=ctx_hash,
+            reason_map=empty_map,
+            policy=RiskPolicy(),
+        )
+    assert e.value.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
+
+
+def test_e2e_explicit_reason_map_takes_precedence_over_policy_map() -> None:
+    now = 200
+    wallet_id = "w1"
+    action = "SEND"
+    fields = {"amount": "10"}
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+
+    # Create a map that deliberately maps "ok" to a known internal ReasonId.
+    # We pick a stable internal ReasonId string that exists.
+    custom_map = PolicyPack().external_reason_map.__class__({"ok": ReasonId.DENY_POLICY.value})
+    custom_map.validate()
+
+    risk = parse_risk_report(
+        payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
+        now=now,
+        expected_context_hash=ctx_hash,
+        reason_map=custom_map,
+        policy=RiskPolicy(),
+    )
+
+    # Adapter must return the mapped internal reason id, proving precedence.
+    assert risk.signals[0].reason_ids == (ReasonId.DENY_POLICY.value,)
