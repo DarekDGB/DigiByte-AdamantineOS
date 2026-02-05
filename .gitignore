@@ -1,0 +1,89 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv
+venv/
+ENV/
+
+# Build / distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Type checking
+.mypy_cache/
+.pyre/
+.pytype/
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Logs / temp
+# =========================
+*.log
+tmp/
+temp/
+
+# =========================
+# Secrets (never commit)
+# =========================
+*.key
+*.pem
+*.crt
+secrets/
+.env.local
+.env.production
+
+# =========================
+# Mobile build artifacts
+# =========================
+# iOS
+ios/build/
+ios/DerivedData/
+
+# Android
+android/build/
+android/.gradle/
+android/local.properties
+
+# =========================
+# Archives
+# =========================
+*.zip
+*.tar.gz
+
+# =========================
+# CI artifacts (generated)
+# =========================
+test-results/
+reports/
+
+# =========================
+# Allowlist (explicitly tracked)
+# =========================
+!.github/
