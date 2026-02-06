@@ -15,4 +15,4 @@ def test_shield_signal_rejects_blank_reason_id_entry() -> None:
     with pytest.raises(ValueError) as e:
         sig.validate()
 
-    assert "reason_id entries must be non-empty str" in str(e.value)
+    assert "reason_ids entries must be non-empty str" in str(e.value)
