@@ -29,43 +29,62 @@ def _risk_payload(*, context_hash: str, generated_at: int, overall_score: int) -
         "context_hash": context_hash,
         "generated_at": generated_at,
         "overall_score": overall_score,
-        "signals": [
-            {"source": "adaptive-core", "severity": 10, "reason_ids": ["ok"]},
-        ],
+        "signals": [{"source": "adaptive-core", "severity": 10, "reason_ids": ["ok"]}],
         "oracle_version": "ac-v0",
         "external_source_id": "rpt-1",
     }
 
 
 def _allow_payload(now: int, nonce: str) -> dict[str, Any]:
+    # Keep this payload aligned with the known-good allow fixture semantics in C4.
     fields = {"amount": "10", "to": "DGB1"}
+    wallet_id = "w1"
+    action = "SEND"
 
-    ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+
+    # Envelope timebox is parsed into ints by the envelope parser:
+    # 2024-02-03T20:00:00Z -> 1706990400
+    # 2024-02-03T20:01:00Z -> 1706990460
+    issued_at = 1706990400
+    expires_at = 1706990460
 
     qid = _qid_payload(issued_at=now - 30, expires_at=now + 30)
     risk = _risk_payload(context_hash=ctx_hash, generated_at=now - 5, overall_score=95)
 
     return {
         "v": "execution_request_v1",
-        "request_id": "req-replay-test",
+        "request_id": "req-c5-replay",
         "intent": "authorize",
         "context": {
-            "wallet_id": "w1",
+            "wallet_id": wallet_id,
             "device_id": "d1",
             "app_id": "com.example.wallet",
             "session_id": "s1",
-            "action": "SEND",
+            "action": action,
             "fields": fields,
         },
-        "authority": {"class": "user", "scope": {"policy_pack": "default"}},
-        "timebox": {
-            "issued_at": "2024-02-03T20:00:00Z",
-            "expires_at": "2024-02-03T20:01:00Z",
+        "authority": {
+            "class": "user",
+            "scope": {"policy_pack": "default"},
+            "proofs": {
+                "wsqk": {
+                    "wallet_id": wallet_id,
+                    "action": action,
+                    "context_hash": ctx_hash,
+                    # MUST bind to envelope timebox ints
+                    "issued_at": issued_at,
+                    "expires_at": expires_at,
+                    "nonce": nonce,
+                }
+            },
         },
+        "timebox": {"issued_at": "2024-02-03T20:00:00Z", "expires_at": "2024-02-03T20:01:00Z"},
         "nonce": {"value": nonce, "store": "tva", "mode": "single_use"},
         "payload": {
             "ui_confirmed": True,
             "evidence": {"qid": qid, "risk": risk},
+            # keep backward-compat with earlier fixtures if orchestrator reads these too
             "qid": qid,
             "risk": risk,
         },
@@ -77,47 +96,24 @@ def test_orchestrator_replay_nonce_denied_and_executor_called_once() -> None:
     now = 1706990400
 
     executor = RecordingExecutor()
-    nonce_store = InMemoryNonceStore()
-
+    store = InMemoryNonceStore()
     policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
 
     payload = _allow_payload(now=now, nonce="nonce-c5-replay")
 
-    # First execution → ALLOW
-    resp1 = orchestrate_execution_v1(
-        payload=payload,
-        now=now,
-        executor=executor,
-        nonce_store=nonce_store,
-        policy=policy,
-    )
+    # First execution -> allow
+    r1 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+    assert r1["status"] == "allow"
+    assert r1["reason_id"] == ReasonId.OK_ALLOW.value
 
-    assert resp1["status"] == "allow"
-    assert resp1["reason_id"] == ReasonId.OK_ALLOW.value
-    assert executor.called is True
+    # Second execution -> deny replay
+    r2 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+    assert r2["status"] == "deny"
+    assert r2["reason_id"] == ReasonId.TVA_NONCE_REPLAY.value
 
-    # Second execution with SAME nonce → DENY (replay)
-    resp2 = orchestrate_execution_v1(
-        payload=payload,
-        now=now,
-        executor=executor,
-        nonce_store=nonce_store,
-        policy=policy,
-    )
-
-    assert resp2["status"] == "deny"
-    assert resp2["reason_id"] == ReasonId.TVA_NONCE_REPLAY.value
-
-    # Executor must NOT be called again
+    # Executor must run exactly once
     assert executor.call_count == 1
 
-    # Determinism: repeating replay yields identical deny response
-    resp3 = orchestrate_execution_v1(
-        payload=payload,
-        now=now,
-        executor=executor,
-        nonce_store=nonce_store,
-        policy=policy,
-    )
-
-    assert resp3 == resp2
+    # Determinism: further replays are stable
+    r3 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+    assert r3 == r2
