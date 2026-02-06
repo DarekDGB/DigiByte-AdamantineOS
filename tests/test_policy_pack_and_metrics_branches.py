@@ -23,6 +23,6 @@ def test_risk_policy_effective_external_reason_map_none_when_no_pack() -> None:
     assert rp.effective_external_reason_map() is None
 
 
-def test_risk_policy_effective_allowed_reason_ids_empty_when_no_pack() -> None:
+def test_risk_policy_effective_allowed_reason_ids_defaults_to_ok_when_no_pack() -> None:
     rp = RiskPolicy(policy_pack=None)
-    assert tuple(rp.effective_allowed_external_reason_ids()) == ()
+    assert tuple(rp.effective_allowed_external_reason_ids()) == ("ok",)
