@@ -36,16 +36,13 @@ def _risk_payload(*, context_hash: str, generated_at: int, overall_score: int) -
 
 
 def _allow_payload(now: int, nonce: str) -> dict[str, Any]:
-    # Keep this payload aligned with the known-good allow fixture semantics in C4.
     fields = {"amount": "10", "to": "DGB1"}
     wallet_id = "w1"
     action = "SEND"
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    # Envelope timebox is parsed into ints by the envelope parser:
-    # 2024-02-03T20:00:00Z -> 1706990400
-    # 2024-02-03T20:01:00Z -> 1706990460
+    # Envelope timebox is parsed into ints:
     issued_at = 1706990400
     expires_at = 1706990460
 
@@ -72,7 +69,6 @@ def _allow_payload(now: int, nonce: str) -> dict[str, Any]:
                     "wallet_id": wallet_id,
                     "action": action,
                     "context_hash": ctx_hash,
-                    # MUST bind to envelope timebox ints
                     "issued_at": issued_at,
                     "expires_at": expires_at,
                     "nonce": nonce,
@@ -84,7 +80,6 @@ def _allow_payload(now: int, nonce: str) -> dict[str, Any]:
         "payload": {
             "ui_confirmed": True,
             "evidence": {"qid": qid, "risk": risk},
-            # keep backward-compat with earlier fixtures if orchestrator reads these too
             "qid": qid,
             "risk": risk,
         },
@@ -106,14 +101,21 @@ def test_orchestrator_replay_nonce_denied_and_executor_called_once() -> None:
     assert r1["status"] == "allow"
     assert r1["reason_id"] == ReasonId.OK_ALLOW.value
 
+    # Capture what was executed (must not change on replay)
+    assert executor.called is True
+    first_req = executor.last_request
+    assert first_req is not None
+
     # Second execution -> deny replay
     r2 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
     assert r2["status"] == "deny"
     assert r2["reason_id"] == ReasonId.TVA_NONCE_REPLAY.value
 
-    # Executor must run exactly once
-    assert executor.call_count == 1
+    # Executor must NOT be called again: last_request must remain identical
+    assert executor.called is True
+    assert executor.last_request is first_req
 
     # Determinism: further replays are stable
     r3 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
     assert r3 == r2
+    assert executor.last_request is first_req
