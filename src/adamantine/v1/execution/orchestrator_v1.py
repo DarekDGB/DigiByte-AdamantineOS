@@ -7,13 +7,13 @@ from adamantine.v1.contracts.authority import WSQKAuthority
 from adamantine.v1.contracts.execution_request import ExecutionRequest
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.verdict import Verdict
+from adamantine.v1.enforcement.nonce_store import NonceStore
+from adamantine.v1.eqc.evaluator import evaluate_eqc
 from adamantine.v1.execution.boundary import run_with_tva
 from adamantine.v1.execution.envelope_v1 import parse_execution_request_envelope_v1
 from adamantine.v1.execution.errors import EnvelopeError
 from adamantine.v1.execution.executor import Executor
 from adamantine.v1.execution.response_v1 import build_execution_response_v1
-from adamantine.v1.enforcement.nonce_store import NonceStore
-from adamantine.v1.eqc.evaluator import evaluate_eqc
 from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_session
@@ -135,7 +135,7 @@ def _extract_wsqk_authority(
 
 def orchestrate_execution_v1(
     *,
-    payload: Mapping[str, Any],
+    payload: Any,  # <- critical: accept Any so we never raise on bad caller types
     now: int,
     executor: Executor,
     nonce_store: NonceStore,
@@ -150,12 +150,15 @@ def orchestrate_execution_v1(
     - Deny-by-default
     - ALLOW path: EQC -> WSQK(proof) -> TVA -> executor
     """
-    try:
-        req = parse_execution_request_envelope_v1(payload=payload, now=now)
-        fields = _extract_fields(payload)
+    # Fail-closed: normalize payload for safe error handling in ALL exception paths.
+    p: Mapping[str, Any] = payload if isinstance(payload, Mapping) else {}
 
-        p = policy or RiskPolicy()
-        p.validate()
+    try:
+        req = parse_execution_request_envelope_v1(payload=cast(Mapping[str, Any], p), now=now)
+        fields = _extract_fields(p)
+
+        pol = policy or RiskPolicy()
+        pol.validate()
 
         # Evidence is carried inside the intent payload
         qid_raw, risk_raw = _extract_evidence(req.payload)
@@ -170,7 +173,7 @@ def orchestrate_execution_v1(
                 payload=risk_raw,
                 now=now,
                 expected_context_hash=req.context.context_hash,
-                policy=p,
+                policy=pol,
             )
 
         eqc = evaluate_eqc(
@@ -180,7 +183,7 @@ def orchestrate_execution_v1(
             session=session,
             risk=risk,
             now=now,
-            policy=p,
+            policy=pol,
         )
 
         if eqc.verdict is not Verdict.ALLOW:
@@ -256,11 +259,11 @@ def orchestrate_execution_v1(
         )
 
     except AdapterError as e:
-        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
-        action = _safe_str(_require_mapping(payload.get("context")) and payload.get("context", {}).get("action"), fallback="invalid-action")
+        request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
+        action = _safe_str((_require_mapping(p.get("context")) or {}).get("action"), fallback="invalid-action")
         return build_execution_response_v1(
             request_id=request_id,
-            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
             context_hash="0" * 64,
             status="error",
@@ -274,12 +277,12 @@ def orchestrate_execution_v1(
         )
 
     except TVAError as e:
-        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
-        action = _safe_str(_require_mapping(payload.get("context")) and payload.get("context", {}).get("action"), fallback="invalid-action")
+        request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
+        action = _safe_str((_require_mapping(p.get("context")) or {}).get("action"), fallback="invalid-action")
         rid = _reason_from_message(str(e))
         return build_execution_response_v1(
             request_id=request_id,
-            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
             context_hash="0" * 64,
             status="deny",
@@ -293,12 +296,12 @@ def orchestrate_execution_v1(
         )
 
     except EnvelopeError as e:
-        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
-        ctx = _require_mapping(payload.get("context")) or {}
+        request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
+        ctx = _require_mapping(p.get("context")) or {}
         action = _safe_str(ctx.get("action"), fallback="invalid-action")
         return build_execution_response_v1(
             request_id=request_id,
-            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
             context_hash="0" * 64,
             status="error",
@@ -312,12 +315,12 @@ def orchestrate_execution_v1(
         )
 
     except Exception as e:
-        request_id = _safe_str(payload.get("request_id"), fallback="invalid-request")
-        ctx = _require_mapping(payload.get("context")) or {}
+        request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
+        ctx = _require_mapping(p.get("context")) or {}
         action = _safe_str(ctx.get("action"), fallback="invalid-action")
         return build_execution_response_v1(
             request_id=request_id,
-            intent=_safe_str(payload.get("intent"), fallback="unknown"),
+            intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
             context_hash="0" * 64,
             status="error",
