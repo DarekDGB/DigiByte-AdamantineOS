@@ -38,6 +38,7 @@ def validate_execution_response_v1(*, payload: Mapping[str, Any]) -> Mapping[str
     - deny-by-default (unknown fields rejected)
     - fail-closed (raises ValueError)
     - validates the *shape* + key invariants only
+    - D3: locks status ↔ reason_id semantics + nonce/timebox safety invariants
     """
     top = _require_mapping(payload)
 
@@ -92,14 +93,42 @@ def validate_execution_response_v1(*, payload: Mapping[str, Any]) -> Mapping[str
     _require_bool(tva, "allowed")
     _require_bool(eqc, "allowed")
     _require_bool(wsqk, "allowed")
-    _require_bool(nonce, "consumed")
-    _require_bool(timebox, "valid")
 
-    # Invariant: allow => OK_ALLOW
+    nonce_consumed = _require_bool(nonce, "consumed")
+    timebox_valid = _require_bool(timebox, "valid")
+
+    # ---------------------------------------------------------------------
+    # D2 invariant (existing): allow => OK_ALLOW + decision.allowed True
+    # ---------------------------------------------------------------------
     if status == "allow":
         if reason_id != ReasonId.OK_ALLOW.value:
             raise ValueError("allow status requires reason_id == OK_ALLOW")
         if allowed is not True:
             raise ValueError("allow status requires decision.allowed == True")
+
+    # ---------------------------------------------------------------------
+    # D3 locks: status ↔ reason_id semantics + nonce/timebox safety invariants
+    # ---------------------------------------------------------------------
+    if status == "deny":
+        if not reason_id.startswith("DENY_"):
+            raise ValueError("deny status requires reason_id starting with DENY_")
+        if allowed is not False:
+            raise ValueError("deny status requires decision.allowed == False")
+        if nonce_consumed is True:
+            raise ValueError("deny must not consume nonce")
+
+    if status == "error":
+        if not reason_id.startswith("ERR_"):
+            raise ValueError("error status requires reason_id starting with ERR_")
+        if allowed is not False:
+            raise ValueError("error status requires decision.allowed == False")
+        if nonce_consumed is True:
+            raise ValueError("error must not consume nonce")
+
+    if status == "allow":
+        if nonce_consumed is not True:
+            raise ValueError("allow must consume nonce")
+        if timebox_valid is not True:
+            raise ValueError("allow requires timebox.valid == True")
 
     return top
