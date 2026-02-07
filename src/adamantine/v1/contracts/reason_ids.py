@@ -47,7 +47,7 @@ class ReasonId(str, Enum):
     # --- External reason mapping (adapter boundary) ---
     UNKNOWN_EXTERNAL_REASON = "UNKNOWN_EXTERNAL_REASON"
 
-        # --- Evidence / signal normalization ---
+    # --- Evidence / signal normalization ---
     EVIDENCE_OK = "EVIDENCE_OK"
     
     # --- WSQK (Authority issuer) validation ---
