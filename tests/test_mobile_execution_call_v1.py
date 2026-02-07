@@ -1,9 +1,28 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 import pytest
 
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.execution.mobile_call_v1 import validate_execution_response_v1
+
+
+def _canon_json_bytes(obj: object) -> bytes:
+    """
+    Deterministic canonical JSON encoding for boundary determinism proofs.
+
+    - sort_keys=True removes any dict insertion-order influence
+    - separators=(',', ':') removes whitespace variability
+    - ensure_ascii=True makes encoding stable across environments
+    """
+    s = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return s.encode("utf-8")
+
+
+def _sha256_hex(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
 
 
 def _base_resp(*, status: str, reason_id: str) -> dict:
@@ -106,3 +125,45 @@ def test_d3_allow_requires_nonce_consumed_and_timebox_valid() -> None:
     payload["decision"]["timebox"]["valid"] = False
     with pytest.raises(ValueError):
         validate_execution_response_v1(payload=payload)
+
+
+# ---------------------------------------------------------------------
+# D4 determinism proof (byte-identical canonical response encoding)
+# ---------------------------------------------------------------------
+
+
+def test_d4_replay_produces_byte_identical_canonical_response() -> None:
+    payload = _base_resp(status="deny", reason_id=ReasonId.DENY_POLICY.value)
+
+    out1 = validate_execution_response_v1(payload=payload)
+    out2 = validate_execution_response_v1(payload=payload)
+
+    b1 = _canon_json_bytes(out1)
+    b2 = _canon_json_bytes(out2)
+
+    assert b1 == b2
+    assert _sha256_hex(b1) == _sha256_hex(b2)
+
+
+def test_d4_snapshot_hash_regression_lock() -> None:
+    payload = _base_resp(status="deny", reason_id=ReasonId.DENY_POLICY.value)
+    out = validate_execution_response_v1(payload=payload)
+
+    digest = _sha256_hex(_canon_json_bytes(out))
+
+    # If this changes, determinism/semantics may have drifted.
+    # Update only with intent (and treat as a contract bump signal).
+    assert digest == "d3ea98c2f752ac035c378d868ca0bf34346933601c87c2ae9e3ce6e657026f56"
+
+
+def test_d4_single_field_change_changes_hash() -> None:
+    payload = _base_resp(status="deny", reason_id=ReasonId.DENY_POLICY.value)
+    out = validate_execution_response_v1(payload=payload)
+    h1 = _sha256_hex(_canon_json_bytes(out))
+
+    payload2 = _base_resp(status="deny", reason_id=ReasonId.DENY_POLICY.value)
+    payload2["decision"]["context_hash"] = ("a" * 63) + "b"  # 1-byte change
+    out2 = validate_execution_response_v1(payload=payload2)
+    h2 = _sha256_hex(_canon_json_bytes(out2))
+
+    assert h1 != h2
