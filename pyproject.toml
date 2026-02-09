@@ -24,3 +24,11 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --cov=adamantine --cov-report=term-missing --cov-fail-under=90"
+
+# Coverage configuration
+# Runtime adapters are intentionally frozen placeholders (Phase E).
+# They are excluded from coverage by design.
+[tool.coverage.run]
+omit = [
+  "src/adamantine/v1/runtime/*"
+]
