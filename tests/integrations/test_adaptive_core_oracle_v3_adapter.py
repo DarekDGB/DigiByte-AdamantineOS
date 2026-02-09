@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
 from adamantine.v1.integrations.adaptive_core_oracle_v3_adapter import parse_adaptive_core_oracle_v3
@@ -12,10 +13,21 @@ from adamantine.v1.policy.risk_policy import RiskPolicy
 def _reason_map() -> ExternalReasonMap:
     return ExternalReasonMap(
         entries=(
+            ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),
             ExternalReasonMapEntry(external_id="AC_OK", internal_reason_id=ReasonId.EVIDENCE_OK.value),
             ExternalReasonMapEntry(external_id="AC_HIGH_RISK", internal_reason_id=ReasonId.DENY_EQC.value),
         )
     )
+
+
+def _policy() -> RiskPolicy:
+    # RiskPolicy enforces allowlist via PolicyPack (strict deny-by-default).
+    pack = PolicyPack(
+        min_overall_score=85,
+        allowed_external_reason_ids=("AC_HIGH_RISK", "AC_OK", "ok"),
+        external_reason_map=_reason_map(),
+    )
+    return RiskPolicy(min_overall_score=85, policy_pack=pack)
 
 
 def _payload() -> dict:
@@ -40,7 +52,7 @@ def test_oracle_v3_accepts_valid_payload() -> None:
         now=150,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
-        policy=RiskPolicy(),
+        policy=_policy(),
     )
     assert out.context_hash == "a" * 64
     assert out.report.overall_score == 73
@@ -55,7 +67,7 @@ def test_oracle_v3_rejects_unknown_fields() -> None:
             now=150,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
-            policy=RiskPolicy(),
+            policy=_policy(),
         )
     assert e.value.reason_id == ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -69,7 +81,7 @@ def test_oracle_v3_rejects_version_mismatch() -> None:
             now=150,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
-            policy=RiskPolicy(),
+            policy=_policy(),
         )
     assert e.value.reason_id == ReasonId.DENY_VERSION_MISMATCH
 
@@ -83,7 +95,7 @@ def test_oracle_v3_rejects_context_hash_mismatch() -> None:
             now=150,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
-            policy=RiskPolicy(),
+            policy=_policy(),
         )
     assert e.value.reason_id == ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH
 
@@ -98,7 +110,7 @@ def test_oracle_v3_rejects_invalid_time_window() -> None:
             now=150,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
-            policy=RiskPolicy(),
+            policy=_policy(),
         )
     assert e.value.reason_id == ReasonId.EQC_INVALID_RISK_REPORT
 
@@ -112,7 +124,7 @@ def test_oracle_v3_rejects_unknown_external_reason() -> None:
             now=150,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
-            policy=RiskPolicy(),
+            policy=_policy(),
         )
     assert e.value.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
 
@@ -124,13 +136,13 @@ def test_oracle_v3_determinism_replay() -> None:
         now=150,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
-        policy=RiskPolicy(),
+        policy=_policy(),
     )
     out2 = parse_adaptive_core_oracle_v3(
         payload=p,
         now=150,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
-        policy=RiskPolicy(),
+        policy=_policy(),
     )
     assert out1 == out2
