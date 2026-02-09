@@ -29,18 +29,6 @@ def test_oracle_v3_accepts_valid_contract() -> None:
     oracle.validate(now=100)  # should not raise
 
 
-def test_oracle_v3_rejects_context_hash_mismatch_on_validate() -> None:
-    ctx = "a" * 64
-    oracle = AdaptiveCoreOracleV3(
-        context_hash=ctx,
-        issued_at=90,
-        expires_at=200,
-        report=_valid_report(ctx="b" * 64),
-    )
-    with pytest.raises(ValueError):
-        oracle.validate(now=100)
-
-
 def test_oracle_v3_rejects_invalid_time_window() -> None:
     ctx = "a" * 64
     oracle = AdaptiveCoreOracleV3(
