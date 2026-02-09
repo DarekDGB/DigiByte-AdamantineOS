@@ -1,43 +1,51 @@
 # Adamantine Wallet OS — External Interfaces
 
-**License:** MIT License — DarekDGB
+**License:** MIT License  
+**Author:** DarekDGB  
+**Repository:** DigiByte Adamantine Wallet OS  
+**Scope:** External Interface Contracts (Foundation)
 
 ---
 
-## 1. Purpose
+## 1. Purpose and Scope
 
-This document defines the **external interface rules** for Adamantine Wallet OS.
+This document defines the **external interface contracts** for the Adamantine Wallet OS.
 
-External interfaces describe how untrusted callers interact with Adamantine.
-They are treated as **security-critical contracts** and are enforced strictly.
+External interfaces describe how **untrusted callers and systems** interact with Adamantine at its boundaries.  
+They are treated as **security-critical attack surfaces** and are enforced strictly.
 
-Any deviation from this document is considered a breaking change.
+Adamantine exposes **no internal APIs**.  
+All interaction occurs through explicit, versioned, contract-defined interfaces.
 
----
-
-## 2. Interface Philosophy
-
-All external interfaces follow these principles:
-
-- Explicit over implicit
-- Deterministic over permissive
-- Fail-closed over best-effort
-- Versioned over inferred
-- Deny-by-default over allow-by-assumption
-
-Adamantine never infers intent or authority from context alone.
+Any deviation from this document is considered a **breaking change**.
 
 ---
 
-## 3. Execution Boundary
+## 2. External Interface Philosophy
 
-Adamantine exposes a **single execution boundary** to external callers.
+All external interfaces in Adamantine adhere to the following principles:
 
-- All interactions occur via versioned execution envelopes
-- No internal functions are callable directly
-- No partial execution is permitted
+- **Explicit over implicit** — nothing is inferred
+- **Deterministic over permissive** — same input, same outcome
+- **Fail-closed over best-effort** — invalid input halts execution
+- **Versioned over inferred** — compatibility is explicit
+- **Deny-by-default** — absence of proof is denial
 
-If an execution request cannot be fully validated, it is rejected.
+Adamantine never infers intent, authority, or legitimacy from context alone.
+
+---
+
+## 3. Execution Boundary Model
+
+Adamantine exposes a **single execution boundary**.
+
+### Boundary Characteristics
+- Interaction occurs via **versioned execution envelopes**
+- No partial execution paths exist
+- No internal functions are callable externally
+- All validation occurs **before** any reasoning
+
+If a request cannot be fully validated, it is **rejected deterministically**.
 
 ---
 
@@ -45,12 +53,17 @@ If an execution request cannot be fully validated, it is rejected.
 
 ### 4.1 Strict Decoding
 
-- All inputs MUST conform exactly to the declared schema
-- Unknown or unexpected fields are **rejected**
-- Type coercion is not permitted
-- Missing required fields result in rejection
+All external inputs MUST satisfy:
 
-This rule applies recursively to all nested structures.
+- Exact schema conformance
+- No unknown or extra fields
+- No type coercion
+- No implicit defaults
+- No missing required fields
+
+Validation rules apply **recursively** to all nested structures.
+
+Any violation results in **DENY**.
 
 ---
 
@@ -58,31 +71,43 @@ This rule applies recursively to all nested structures.
 
 Before evaluation, all requests are:
 
-- Canonicalized into a deterministic representation
-- Normalized for ordering and encoding
-- Hashed only after canonicalization
+- Canonicalized into a deterministic form
+- Normalized for field ordering and encoding
+- Hashed only **after** canonicalization
 
-Canonicalization rules are part of the contract and versioned.
+Canonicalization rules are:
+- part of the contract
+- versioned
+- test-enforced
+
+No non-canonical data is evaluated.
 
 ---
 
-### 4.3 Versioning
+### 4.3 Version Declaration
 
-- Every request MUST declare a version
+- Every external request MUST declare a contract version
 - Version mismatches result in rejection
-- Backward compatibility is explicit, never assumed
+- Backward compatibility is explicit and opt-in
+- Forward compatibility requires new versions
 
-Forward compatibility is achieved through **new versions**, not permissive parsing.
+Adamantine never guesses intent across versions.
 
 ---
 
-## 5. Authority Declaration
+## 5. Authority Declaration Rules
 
-- Authority MUST be explicitly declared per request
-- Authority cannot be inferred or escalated
-- Absence of authority is treated as denial
+Authority is **never inferred**.
 
-Authority evaluation is enforced by the TVA gate.
+Rules:
+- Authority MUST be explicitly declared
+- Authority MUST be scoped to context
+- Authority MUST be time-bound
+- Authority MUST be single-use
+
+Absence or invalidity of authority results in **DENY**.
+
+Authority enforcement is performed exclusively by the **TVA gate**.
 
 ---
 
@@ -90,72 +115,98 @@ Authority evaluation is enforced by the TVA gate.
 
 ### 6.1 Timeboxes
 
-- Requests MUST include issued-at and expiry timestamps
-- Execution outside the declared timebox is rejected
-- No implicit grace periods exist
+All external execution requests MUST include:
 
-### 6.2 Nonces
+- `issued_at`
+- `expires_at`
+
+Rules:
+- Execution outside the declared time window is rejected
+- No implicit grace periods exist
+- Clock input (`now`) is injected, never global
+
+---
+
+### 6.2 Nonce Enforcement
 
 - Every execution request MUST include a nonce
 - Nonces are single-use
 - Replay attempts are deterministically rejected
+- Nonce storage is injected and explicit
+
+Nonce enforcement is mandatory for **ALLOW**.
 
 ---
 
 ## 7. Key Custody Neutrality
 
-Adamantine treats key custody as **external and opaque**.
+Adamantine is **key-custody agnostic**.
 
 Rules:
 - Adamantine never receives private key material
-- Key distribution (single-device or multi-device) is not a deny condition
-- Execution decisions depend only on declared context, authority, timebox, nonce, and explicit policy
+- Adamantine does not track key distribution
+- Multi-device key usage is not a deny condition
+- Decisions depend only on:
+  - declared context
+  - explicit authority
+  - timebox
+  - nonce
+  - policy
 
-Key custody choice is the user's responsibility.
-
----
-
-## 8. Adapters
-
-Adapters connect Adamantine to external systems.
-
-Adapter rules:
-- Adapters are non-authoritative
-- Adapter outputs are validated
-- Adapter failure results in deterministic rejection
-- Adapters may not bypass execution rules
+Key custody decisions remain the responsibility of the user or wallet runtime.
 
 ---
 
-## 9. Observability
+## 8. External System Adapters
 
-- Interfaces may emit non-sensitive metrics
-- Reason identifiers are stable and versioned
-- No secrets or private material are logged
+Adapters connect Adamantine to external systems (e.g. Q-ID, Shield, Adaptive Core).
 
-Observability must never influence execution decisions.
+Adapter guarantees:
+- non-authoritative
+- fail-closed
+- schema-validated
+- version-pinned
+- deterministic
+
+Adapter failure always results in **DENY**.
+
+Adapters cannot bypass execution rules or grant authority.
 
 ---
 
-## 10. Breaking Changes
+## 9. Observability Constraints
+
+External interfaces may emit **non-sensitive observability data**.
+
+Rules:
+- Metrics are informational only
+- `ReasonId` values are stable and versioned
+- No secrets, keys, or private data are logged
+- Observability never influences decisions
+
+---
+
+## 10. Breaking Change Definition
 
 Any of the following constitute a breaking change:
 
-- Schema modification
-- Validation rule changes
-- Canonicalization changes
-- Authority semantics changes
-- Timebox or nonce rule changes
+- schema modification
+- validation rule changes
+- canonicalization changes
+- authority semantics changes
+- timebox or nonce semantics changes
 
 Breaking changes require:
-- New contract version
-- Updated tests
-- Explicit documentation
+- new contract version
+- updated tests
+- explicit documentation
 
 ---
 
-## 11. Summary
+## 11. Security Summary
 
-External interfaces are treated as **attack surfaces**, not conveniences.
+External interfaces are treated as **hostile entry points**, not conveniences.
 
 Anything not explicitly allowed is rejected.
+
+This model ensures that Adamantine remains deterministic, auditable, and resistant to ambiguity-based attacks.
