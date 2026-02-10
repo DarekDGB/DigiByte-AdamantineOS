@@ -5,6 +5,10 @@ from typing import Any, Mapping, cast
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.authority import WSQKAuthority
 from adamantine.v1.contracts.execution_request import ExecutionRequest
+from adamantine.v1.contracts.external_reason_registry import (
+    ExternalReasonLayerAllowlist,
+    ExternalReasonRegistryV1,
+)
 from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.verdict import Verdict
@@ -38,10 +42,6 @@ def _safe_str(value: Any, *, fallback: str) -> str:
 
 
 def _reason_from_message(msg: str) -> ReasonId:
-    """
-    TVAError messages are reason-id strings.
-    Fall back to DENY_SCHEMA_INVALID if not recognized.
-    """
     try:
         return ReasonId(msg)
     except Exception:
@@ -49,10 +49,6 @@ def _reason_from_message(msg: str) -> ReasonId:
 
 
 def _coerce_reason_id(value: Any) -> ReasonId:
-    """
-    EQCResult.reason_ids are strings (ReasonId.value). Convert safely.
-    Fail-closed to DENY_SCHEMA_INVALID if unknown.
-    """
     if isinstance(value, ReasonId):
         return value
     if isinstance(value, str) and value:
@@ -78,7 +74,6 @@ def _extract_fields(original_payload: Mapping[str, Any]) -> dict[str, str] | Non
     fields = _require_mapping(ctx.get("fields"))
     if fields is None:
         return None
-    # Envelope parser already validated these as str->str.
     out: dict[str, str] = {}
     for k, v in fields.items():
         if isinstance(k, str) and isinstance(v, str):
@@ -96,10 +91,6 @@ def _extract_wsqk_authority(
     expires_at: int,
     authority_proofs: Mapping[str, Any] | None,
 ) -> WSQKAuthority | None:
-    """
-    WSQK authority MUST be provided externally via authority.proofs.wsqk.
-    Adamantine must not mint authority implicitly.
-    """
     if authority_proofs is None:
         return None
 
@@ -114,7 +105,6 @@ def _extract_wsqk_authority(
     ea = wsqk.get("expires_at")
     n = wsqk.get("nonce")
 
-    # Fail-closed: all must be present and correct types
     if not isinstance(w, str) or not w:
         return None
     if not isinstance(a, str) or not a:
@@ -126,7 +116,6 @@ def _extract_wsqk_authority(
     if not isinstance(n, str) or not n:
         return None
 
-    # Binding: must match envelope context + nonce/timebox
     if w != wallet_id or a != action or ch != context_hash:
         return None
     if n != nonce_value:
@@ -145,35 +134,43 @@ def _extract_wsqk_authority(
 
 
 def _default_reason_map(policy: RiskPolicy) -> Any:
-    """
-    PolicyPack is the single source of truth for external reason mapping.
-    If absent, use deterministic PolicyPack default (still fail-closed).
-    """
     if policy.policy_pack is not None:
         return policy.policy_pack.external_reason_map
     return PolicyPack().external_reason_map
 
 
+def _build_mandatory_reason_registry(policy: RiskPolicy) -> ExternalReasonRegistryV1:
+    """
+    Phase M hard-lock:
+    - ExternalReasonRegistryV1 is mandatory for orchestrator_v2.
+    - For now we derive allowlists from policy pack allowlist (single source of truth).
+    - Future: split per-layer allowlists (contract bump + tests).
+    """
+    allowed = tuple(policy.effective_allowed_external_reason_ids())
+    if len(allowed) == 0:
+        raise ValueError("policy must provide non-empty allowed external reason ids")
+
+    shield_allowlists = tuple(
+        ExternalReasonLayerAllowlist(layer=layer, allowed_external_reason_ids=allowed)
+        for layer in REQUIRED_SHIELD_LAYERS_V3
+    )
+
+    reg = ExternalReasonRegistryV1(
+        oracle_allowed_external_reason_ids=allowed,
+        shield_layer_allowlists=shield_allowlists,
+    )
+    reg.validate()
+    return reg
+
+
 def orchestrate_execution_v2(
     *,
-    payload: Any,  # <- critical: accept Any so we never raise on bad caller types
+    payload: Any,
     now: int,
     executor: Executor,
     nonce_store: NonceStore,
     policy: RiskPolicy | None = None,
 ) -> dict[str, Any]:
-    """
-    Execution Orchestrator v2 (multi-evidence path).
-
-    Invariants:
-    - Always returns execution_response_v1
-    - Never raises
-    - Deny-by-default
-    - Evidence required: Q-ID + Adaptive Core Oracle v3 + Shield bundle v3
-    - ALLOW path: EQC(v2) -> WSQK(proof) -> TVA -> executor
-    - v1 contracts remain sealed; v2 is additive-only
-    """
-    # Fail-closed: normalize payload for safe error handling in ALL exception paths.
     p: Mapping[str, Any] = payload if isinstance(payload, Mapping) else {}
 
     try:
@@ -184,7 +181,25 @@ def orchestrate_execution_v2(
         pol.validate()
         reason_map = _default_reason_map(pol)
 
-        # Parse required evidence (strict, fail-closed in adapters)
+        # Phase M hard-lock: registry MUST exist and be valid (deny-by-default).
+        try:
+            reason_registry = _build_mandatory_reason_registry(pol)
+        except Exception as e:
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=ReasonId.DENY_POLICY,
+                tva_allowed=False,
+                eqc_allowed=False,
+                wsqk_allowed=False,
+                nonce_consumed=False,
+                timebox_valid=True,
+                artifacts={"error": f"reason registry build failed: {e}"},
+            )
+
         session = parse_qid_session(payload=req.evidence_qid, now=now)
 
         oracle = parse_adaptive_core_oracle_v3(
@@ -192,6 +207,7 @@ def orchestrate_execution_v2(
             now=now,
             expected_context_hash=req.context.context_hash,
             reason_map=reason_map,
+            reason_registry=reason_registry,
             policy=pol,
         )
 
@@ -200,10 +216,9 @@ def orchestrate_execution_v2(
             now=now,
             expected_context_hash=req.context.context_hash,
             reason_map=reason_map,
+            reason_registry=reason_registry,
         )
 
-        # Contract-level enforcement: Shield must declare and satisfy all 5 layers.
-        # (Adapter enforces "required_layers must exist + signals include them"; we enforce the *exact set*.)
         if tuple(shield.required_layers) != REQUIRED_SHIELD_LAYERS_V3:
             expected = list(REQUIRED_SHIELD_LAYERS_V3)
             got = list(shield.required_layers)
@@ -241,7 +256,6 @@ def orchestrate_execution_v2(
         )
 
         if eqc.verdict is not Verdict.ALLOW:
-            # EQCResult.reason_ids are strings -> coerce to ReasonId enum for response builder.
             rid = _coerce_reason_id(eqc.reason_ids[0] if eqc.reason_ids else ReasonId.DENY_SCHEMA_INVALID.value)
             return build_execution_response_v1(
                 request_id=req.request_id,
@@ -255,16 +269,9 @@ def orchestrate_execution_v2(
                 wsqk_allowed=False,
                 nonce_consumed=False,
                 timebox_valid=True,
-                artifacts={
-                    "evidence": {
-                        "qid": True,
-                        "oracle": True,
-                        "shield": True,
-                    }
-                },
+                artifacts={"evidence": {"qid": True, "oracle": True, "shield": True}},
             )
 
-        # WSQK authority must be present as an external proof
         wsqk = _extract_wsqk_authority(
             wallet_id=req.context.wallet_id,
             action=req.context.action,
@@ -289,7 +296,6 @@ def orchestrate_execution_v2(
                 timebox_valid=True,
             )
 
-        # ExecutionRequest is intentionally opaque at foundation stage
         exec_req = ExecutionRequest(
             wallet_id=req.context.wallet_id,
             action=req.context.action,
@@ -322,8 +328,6 @@ def orchestrate_execution_v2(
         )
 
     except AdapterError as e:
-        # v2 semantics: external evidence parse failures are DENY (fail-closed),
-        # not ERROR, because evidence is required and invalid evidence must block.
         request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
         ctx = _require_mapping(p.get("context")) or {}
         action = _safe_str(ctx.get("action"), fallback="invalid-action")
