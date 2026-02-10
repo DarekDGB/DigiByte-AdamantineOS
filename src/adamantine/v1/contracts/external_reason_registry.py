@@ -31,22 +31,13 @@ class ExternalReasonLayerAllowlist:
 class ExternalReasonRegistryV1:
     """Deny-by-default registry for external reason IDs.
 
-    Purpose
-    - Prevent free-form external reason strings from Shield / Oracle sources.
-    - Provide contract-level governance: new external reason IDs require registry updates + tests.
-
-    Deny-by-default semantics
-    - If a source/layer is not present in the registry, all external reason IDs for it are rejected.
-    - If an external reason ID is not allowlisted for that source/layer, it is rejected.
+    - Oracle: external reason IDs must be allowlisted in oracle_allowed_external_reason_ids
+    - Shield: external reason IDs must be allowlisted per layer (missing layer => deny)
     """
 
-    # Adaptive Core Oracle v3 reason IDs (external) allowlist.
     oracle_allowed_external_reason_ids: Tuple[str, ...] = ()
-
-    # Shield v3 per-layer allowlists.
     shield_layer_allowlists: Tuple[ExternalReasonLayerAllowlist, ...] = ()
 
-    # Canonical Shield v3 layers (contract-level).
     ALLOWED_SHIELD_LAYERS: Tuple[str, ...] = (
         "sentinel_ai",
         "adn",
@@ -58,6 +49,8 @@ class ExternalReasonRegistryV1:
     def validate(self) -> None:
         if not isinstance(self.oracle_allowed_external_reason_ids, tuple):
             raise ValueError("oracle_allowed_external_reason_ids must be tuple")
+        if len(self.oracle_allowed_external_reason_ids) == 0:
+            raise ValueError("oracle_allowed_external_reason_ids must be non-empty (deny-by-default)")
 
         seen_oracle: set[str] = set()
         for rid in self.oracle_allowed_external_reason_ids:
@@ -69,6 +62,8 @@ class ExternalReasonRegistryV1:
 
         if not isinstance(self.shield_layer_allowlists, tuple):
             raise ValueError("shield_layer_allowlists must be tuple")
+        if len(self.shield_layer_allowlists) == 0:
+            raise ValueError("shield_layer_allowlists must be non-empty (deny-by-default)")
 
         seen_layers: set[str] = set()
         for entry in self.shield_layer_allowlists:
@@ -85,7 +80,6 @@ class ExternalReasonRegistryV1:
         rid = str(external_reason_id or "").strip()
         if not rid:
             return False
-        # Deny-by-default if oracle list empty.
         return rid in set(self.oracle_allowed_external_reason_ids)
 
     def is_shield_reason_allowed(self, *, layer: str, external_reason_id: str) -> bool:
@@ -93,8 +87,10 @@ class ExternalReasonRegistryV1:
         rid = str(external_reason_id or "").strip()
         if not lyr or not rid:
             return False
-        # Deny-by-default: missing layer entry => reject.
+
         for entry in self.shield_layer_allowlists:
             if entry.layer == lyr:
                 return rid in set(entry.allowed_external_reason_ids)
+
+        # Deny-by-default if layer missing from registry
         return False
