@@ -8,6 +8,7 @@ from adamantine.v1.contracts.shield import (
     ShieldSignal,
     ShieldSource,
 )
+from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.contracts.shield_v3 import ShieldBundleV3
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.obs.metrics import Metrics
@@ -126,6 +127,7 @@ def _parse_signal_v3(
     bundle_issued_at: int,
     bundle_expires_at: int,
     reason_map: ExternalReasonMap,
+    reason_registry: ExternalReasonRegistryV1 | None,
 ) -> tuple[str, ShieldSignal]:
     _deny_unknown_keys(metrics, signal, _SIGNAL_ALLOWED_KEYS, ReasonId.DENY_ADAPTER_INVALID, "signal")
 
@@ -157,6 +159,16 @@ def _parse_signal_v3(
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.verdict must be allow/deny/unknown")
 
     ext_reason = _require_str(metrics, signal, "reason_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
+
+    # Contract governance: deny-by-default allowlist (optional).
+    if reason_registry is not None:
+        try:
+            reason_registry.validate()
+        except Exception:
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "reason_registry invalid")
+
+        if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
+            _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
     mapped = reason_map.lookup(ext_reason)
     if mapped is None:
         _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unknown external reason_id: {ext_reason}")
@@ -190,6 +202,7 @@ def parse_shield_bundle_v3(
     now: int,
     expected_context_hash: str,
     reason_map: ExternalReasonMap,
+    reason_registry: ExternalReasonRegistryV1 | None = None,
     metrics: Metrics | None = None,
 ) -> ShieldBundleV3:
     """
@@ -277,6 +290,7 @@ def parse_shield_bundle_v3(
             bundle_issued_at=issued_at,
             bundle_expires_at=expires_at,
             reason_map=reason_map,
+            reason_registry=reason_registry,
         )
         if layer in seen_layers:
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"duplicate layer signal in bundle: {layer}")
