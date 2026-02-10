@@ -5,6 +5,7 @@ from typing import Any, Mapping
 from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield import ExternalReasonMap
+from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.obs.metrics import Metrics
@@ -42,6 +43,7 @@ def parse_adaptive_core_oracle_v3(
     now: int,
     expected_context_hash: str,
     reason_map: ExternalReasonMap | None = None,
+    reason_registry: ExternalReasonRegistryV1 | None = None,
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> AdaptiveCoreOracleV3:
@@ -92,6 +94,7 @@ def parse_adaptive_core_oracle_v3(
         now=now,
         expected_context_hash=expected_context_hash,
         reason_map=reason_map,
+        reason_registry=reason_registry,
         policy=policy,
         metrics=metrics,
     )
