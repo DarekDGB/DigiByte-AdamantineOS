@@ -5,6 +5,7 @@ from typing import Any, Mapping, Sequence
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.risk import RiskReport, RiskSignal
 from adamantine.v1.contracts.shield import ExternalReasonMap
+from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.obs.metrics import Metrics
 from adamantine.v1.policy.risk_policy import RiskPolicy, UnknownReasonMode
@@ -22,6 +23,7 @@ def parse_risk_report(
     now: int,
     expected_context_hash: str,
     reason_map: ExternalReasonMap | None = None,
+    reason_registry: ExternalReasonRegistryV1 | None = None,
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> RiskReport:
@@ -65,6 +67,12 @@ def parse_risk_report(
     resolved_map.validate()
 
     allowed_reason_ids = set(p.effective_allowed_external_reason_ids())
+
+    if reason_registry is not None:
+        try:
+            reason_registry.validate()
+        except Exception:
+            _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "reason_registry invalid")
 
     iface = payload.get("ac_iface_version")
     if not isinstance(iface, str) or not iface:
@@ -122,6 +130,10 @@ def parse_risk_report(
             # Policy allowlist gate (external code)
             if rid not in allowed_reason_ids and p.unknown_reason_mode is UnknownReasonMode.DENY_EXPLICIT:
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unknown external reason_id: {rid}")
+
+            # Contract governance: optional deny-by-default registry (oracle bucket)
+            if reason_registry is not None and not reason_registry.is_oracle_reason_allowed(rid):
+                _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for oracle: {rid}")
 
             # Mapping table (external -> internal ReasonId)
             internal = resolved_map.lookup(rid)
