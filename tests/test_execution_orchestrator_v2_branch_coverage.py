@@ -8,18 +8,10 @@ import pytest
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
-from adamantine.v1.eqc import evaluator as eqc_eval_mod
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution.executor import Executor
-from adamantine.v1.execution.orchestrator_v2 import (
-    REQUIRED_SHIELD_LAYERS_V3,
-    orchestrate_execution_v2,
-)
-from adamantine.v1.integrations import adaptive_core_oracle_v3_adapter as oracle_mod
-from adamantine.v1.integrations import qid_adapter as qid_mod
-from adamantine.v1.integrations import shield_v3_adapter as shield_mod
+from adamantine.v1.execution import orchestrator_v2 as orch_mod
 from adamantine.v1.policy.risk_policy import RiskPolicy
-from adamantine.v1.execution import boundary as boundary_mod
 
 
 class _NoopExecutor(Executor):
@@ -71,8 +63,7 @@ def _base_payload() -> dict:
 
 
 def test_orchestrator_v2_envelope_error_path_status_error() -> None:
-    # Force EnvelopeError by missing required fields.
-    resp = orchestrate_execution_v2(
+    resp = orch_mod.orchestrate_execution_v2(
         payload={"v": "execution_request_v2", "bad": True},
         now=NOW,
         executor=_NoopExecutor(),
@@ -88,9 +79,10 @@ def test_orchestrator_v2_adapter_error_path_status_deny(monkeypatch: pytest.Monk
     def boom(*args: Any, **kwargs: Any) -> Any:
         raise AdapterError(ReasonId.DENY_ADAPTER_INVALID, "boom")
 
-    monkeypatch.setattr(qid_mod, "parse_qid_session", boom, raising=True)
+    # IMPORTANT: patch the symbol as imported into orchestrator_v2 module
+    monkeypatch.setattr(orch_mod, "parse_qid_session", boom, raising=True)
 
-    resp = orchestrate_execution_v2(
+    resp = orch_mod.orchestrate_execution_v2(
         payload=_base_payload(),
         now=NOW,
         executor=_NoopExecutor(),
@@ -108,11 +100,21 @@ def test_orchestrator_v2_required_layers_mismatch_branch(monkeypatch: pytest.Mon
             self.bundle_id = "b1"
             self.signals = ()
 
-    monkeypatch.setattr(qid_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
-    monkeypatch.setattr(oracle_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
-    monkeypatch.setattr(shield_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
 
-    resp = orchestrate_execution_v2(
+    # Ensure EQC doesn't block us before the required_layers check
+    from adamantine.v1.contracts.verdict import Verdict
+
+    class _Eqc:
+        verdict = Verdict.ALLOW
+        reason_ids = (ReasonId.OK_ALLOW.value,)
+        context_hash = "a" * 64
+
+    monkeypatch.setattr(orch_mod, "evaluate_eqc_v2", lambda *a, **k: _Eqc(), raising=True)
+
+    resp = orch_mod.orchestrate_execution_v2(
         payload=_base_payload(),
         now=NOW,
         executor=_NoopExecutor(),
@@ -131,16 +133,16 @@ def test_orchestrator_v2_eqc_deny_branch(monkeypatch: pytest.MonkeyPatch) -> Non
         reason_ids = (ReasonId.DENY_POLICY.value,)
         context_hash = "a" * 64
 
-    monkeypatch.setattr(qid_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
-    monkeypatch.setattr(oracle_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
 
     class _ShieldObj:
-        required_layers = REQUIRED_SHIELD_LAYERS_V3
+        required_layers = orch_mod.REQUIRED_SHIELD_LAYERS_V3
 
-    monkeypatch.setattr(shield_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
-    monkeypatch.setattr(eqc_eval_mod, "evaluate_eqc_v2", lambda *a, **k: _Eqc(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
+    monkeypatch.setattr(orch_mod, "evaluate_eqc_v2", lambda *a, **k: _Eqc(), raising=True)
 
-    resp = orchestrate_execution_v2(
+    resp = orch_mod.orchestrate_execution_v2(
         payload=_base_payload(),
         now=NOW,
         executor=_NoopExecutor(),
@@ -159,19 +161,19 @@ def test_orchestrator_v2_wsqk_missing_branch(monkeypatch: pytest.MonkeyPatch) ->
         reason_ids = (ReasonId.OK_ALLOW.value,)
         context_hash = "a" * 64
 
-    monkeypatch.setattr(qid_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
-    monkeypatch.setattr(oracle_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
 
     class _ShieldObj:
-        required_layers = REQUIRED_SHIELD_LAYERS_V3
+        required_layers = orch_mod.REQUIRED_SHIELD_LAYERS_V3
 
-    monkeypatch.setattr(shield_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
-    monkeypatch.setattr(eqc_eval_mod, "evaluate_eqc_v2", lambda *a, **k: _Eqc(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
+    monkeypatch.setattr(orch_mod, "evaluate_eqc_v2", lambda *a, **k: _Eqc(), raising=True)
 
     p = _base_payload()
     p["authority"]["proofs"] = {}  # no wsqk
 
-    resp = orchestrate_execution_v2(
+    resp = orch_mod.orchestrate_execution_v2(
         payload=p,
         now=NOW,
         executor=_NoopExecutor(),
@@ -191,15 +193,14 @@ def test_orchestrator_v2_tva_error_path(monkeypatch: pytest.MonkeyPatch) -> None
         context_hash = "a" * 64
 
     class _ShieldObj:
-        required_layers = REQUIRED_SHIELD_LAYERS_V3
+        required_layers = orch_mod.REQUIRED_SHIELD_LAYERS_V3
 
     p = _base_payload()
 
-    # Compute the real context hash so WSQK proof matches what envelope_v2 produces.
+    # Real context hash so WSQK proof matches parsed envelope context_hash
     ctx = p["context"]
     ch = compute_context_hash(wallet_id=ctx["wallet_id"], action=ctx["action"], fields=ctx["fields"])
 
-    # Align WSQK proof fields with parsed envelope fields.
     issued_at = NOW - 10
     expires_at = NOW + 60
 
@@ -214,17 +215,18 @@ def test_orchestrator_v2_tva_error_path(monkeypatch: pytest.MonkeyPatch) -> None
         }
     }
 
-    monkeypatch.setattr(qid_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
-    monkeypatch.setattr(oracle_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
-    monkeypatch.setattr(shield_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
-    monkeypatch.setattr(eqc_eval_mod, "evaluate_eqc_v2", lambda *a, **k: _Eqc(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_qid_session", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_adaptive_core_oracle_v3", lambda *a, **k: object(), raising=True)
+    monkeypatch.setattr(orch_mod, "parse_shield_bundle_v3", lambda *a, **k: _ShieldObj(), raising=True)
+    monkeypatch.setattr(orch_mod, "evaluate_eqc_v2", lambda *a, **k: _Eqc(), raising=True)
 
     def boom_run_with_tva(*args: Any, **kwargs: Any) -> Any:
         raise TVAError("DENY_NONCE_REPLAY")
 
-    monkeypatch.setattr(boundary_mod, "run_with_tva", boom_run_with_tva, raising=True)
+    # IMPORTANT: patch the symbol as imported into orchestrator_v2 module
+    monkeypatch.setattr(orch_mod, "run_with_tva", boom_run_with_tva, raising=True)
 
-    resp = orchestrate_execution_v2(
+    resp = orch_mod.orchestrate_execution_v2(
         payload=p,
         now=NOW,
         executor=_NoopExecutor(),
