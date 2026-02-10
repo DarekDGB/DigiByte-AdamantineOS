@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
+from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield import ExternalReasonMap
-from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.obs.metrics import Metrics
@@ -47,17 +47,6 @@ def parse_adaptive_core_oracle_v3(
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> AdaptiveCoreOracleV3:
-    """
-    External adaptive_core_oracle_v3 payload -> AdaptiveCoreOracleV3 (internal contract)
-
-    Fail-closed:
-      - unknown fields (deny-by-default)
-      - wrong iface version
-      - invalid types/ranges
-      - context_hash mismatch
-      - invalid time window
-      - unknown/unmapped external reason ids (via parse_risk_report policy+map rules)
-    """
     if not isinstance(now, int):
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
 
@@ -88,7 +77,6 @@ def parse_adaptive_core_oracle_v3(
     if expires_at < issued_at:
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "expires_at must be >= issued_at")
 
-    # RiskReport parsing (includes reason mapping + signal validation)
     report = parse_risk_report(
         payload=payload,
         now=now,
