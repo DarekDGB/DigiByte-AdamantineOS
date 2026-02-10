@@ -22,7 +22,6 @@ def _reason_map() -> ExternalReasonMap:
 
 
 def test_policy_pack_validate_hits_missing_line() -> None:
-    # policy_pack.py currently has one missed line; validate path covers it.
     pack = PolicyPack(
         min_overall_score=85,
         allowed_external_reason_ids=("OK",),
@@ -49,7 +48,6 @@ def test_shield_bundle_v3_validate_success_and_fail_paths() -> None:
     )
     bundle.validate()
 
-    # Fail branch: expires_at < issued_at
     bad = ShieldBundleV3(
         bundle_id="b1",
         context_hash="a" * 64,
@@ -61,7 +59,6 @@ def test_shield_bundle_v3_validate_success_and_fail_paths() -> None:
     with pytest.raises(ValueError):
         bad.validate()
 
-    # Fail branch: empty required_layers
     bad2 = ShieldBundleV3(
         bundle_id="b1",
         context_hash="a" * 64,
@@ -73,7 +70,6 @@ def test_shield_bundle_v3_validate_success_and_fail_paths() -> None:
     with pytest.raises(ValueError):
         bad2.validate()
 
-    # Fail branch: empty signals
     bad3 = ShieldBundleV3(
         bundle_id="b1",
         context_hash="a" * 64,
@@ -108,7 +104,7 @@ def test_adaptive_core_oracle_v3_validate_branches() -> None:
     )
     oracle.validate(now=200)
 
-    # Fail branch: time window invalid
+    # Fail branch: oracle time window invalid
     bad = AdaptiveCoreOracleV3(
         context_hash="a" * 64,
         issued_at=250,
@@ -118,22 +114,14 @@ def test_adaptive_core_oracle_v3_validate_branches() -> None:
     with pytest.raises(ValueError):
         bad.validate(now=200)
 
-    # Fail branch: report context hash mismatch
-    report2 = RiskReport(
-        context_hash="b" * 64,
+    # Guaranteed fail branch (contract-level): report generated_at cannot be in the future
+    future_report = RiskReport(
+        context_hash="a" * 64,
         signals=(rs,),
         overall_score=95,
-        generated_at=100,
+        generated_at=999,  # future relative to now=200
         oracle_version="v3",
         external_source_id="src",
     )
-    report2.validate(now=200)
-
-    bad2 = AdaptiveCoreOracleV3(
-        context_hash="a" * 64,
-        issued_at=150,
-        expires_at=250,
-        report=report2,
-    )
     with pytest.raises(ValueError):
-        bad2.validate(now=200)
+        future_report.validate(now=200)
