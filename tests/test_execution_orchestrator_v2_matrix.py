@@ -76,7 +76,7 @@ def _shield_signal(*, layer: str, signal_id: str, context_hash: str, ext_reason:
 
 
 def _shield_bundle(*, context_hash: str, required_layers: list[str]) -> dict[str, Any]:
-    # Signals MUST be sorted by (layer, signal_id). Lexicographic layer order works for our chosen ids.
+    # Signals MUST be sorted by (layer, signal_id) for adapter determinism.
     signals = [
         _shield_signal(layer="adn", signal_id="a-1", context_hash=context_hash),
         _shield_signal(layer="dqsn", signal_id="d-1", context_hash=context_hash),
@@ -96,7 +96,15 @@ def _shield_bundle(*, context_hash: str, required_layers: list[str]) -> dict[str
     }
 
 
-def _envelope_v2(*, now: int, context_hash: str, shield_required_layers: list[str], oracle_score: int, with_wsqk: bool) -> dict[str, Any]:
+def _envelope_v2(
+    *,
+    now: int,
+    context_hash: str,
+    shield_context_hash: str | None = None,
+    shield_required_layers: list[str],
+    oracle_score: int,
+    with_wsqk: bool,
+) -> dict[str, Any]:
     issued_iso = "2024-02-03T20:00:00Z"
     expires_iso = "2024-02-03T20:01:00Z"
 
@@ -139,7 +147,10 @@ def _envelope_v2(*, now: int, context_hash: str, shield_required_layers: list[st
                     generated_at=now - 1,
                     score=oracle_score,
                 ),
-                "shield": _shield_bundle(context_hash=context_hash, required_layers=shield_required_layers),
+                "shield": _shield_bundle(
+                    context_hash=(shield_context_hash if shield_context_hash is not None else context_hash),
+                    required_layers=shield_required_layers,
+                ),
             },
             "body": {"ui_confirmed": True},
         },
@@ -207,6 +218,83 @@ def test_deny_if_missing_any_required_shield_layer() -> None:
     assert executor.called is False
 
 
+def test_deny_if_unknown_required_layer_present() -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = _policy(min_score=85)
+
+    # Replace one required layer with an unknown layer string.
+    bad = list(REQUIRED_SHIELD_LAYERS_V3)
+    bad[2] = "unknown_layer"
+
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=bad,
+        oracle_score=99,
+        with_wsqk=True,
+    )
+
+    resp = orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
+    assert executor.called is False
+
+
+def test_deny_if_duplicate_required_layer_present() -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = _policy(min_score=85)
+
+    # Add a duplicate layer (extra length => fails exact tuple match).
+    bad = list(REQUIRED_SHIELD_LAYERS_V3) + ["dqsn"]
+
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=bad,
+        oracle_score=99,
+        with_wsqk=True,
+    )
+
+    resp = orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
+    assert executor.called is False
+
+
+def test_deny_if_required_layers_wrong_order() -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = _policy(min_score=85)
+
+    # Same elements, wrong ordering => must fail exact tuple match.
+    bad = list(REQUIRED_SHIELD_LAYERS_V3)
+    bad[0], bad[1] = bad[1], bad[0]
+
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=bad,
+        oracle_score=99,
+        with_wsqk=True,
+    )
+
+    resp = orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
+    assert executor.called is False
+
+
 def test_deny_if_oracle_score_below_threshold() -> None:
     now = 1706990400
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
@@ -227,6 +315,29 @@ def test_deny_if_oracle_score_below_threshold() -> None:
     assert resp["status"] == "deny"
     assert resp["reason_id"] == ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD.value
     assert _d(resp, "decision", "allowed") is False
+    assert executor.called is False
+
+
+def test_deny_if_shield_context_hash_mismatch() -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = _policy(min_score=85)
+
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_context_hash="0" * 64,  # mismatch
+        shield_required_layers=list(REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=99,
+        with_wsqk=True,
+    )
+
+    resp = orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.DENY_ADAPTER_INVALID.value
     assert executor.called is False
 
 
