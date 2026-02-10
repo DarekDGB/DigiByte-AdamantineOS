@@ -158,6 +158,7 @@ def orchestrate_execution_v2(
     - ALLOW path: EQC(v2) -> WSQK(proof) -> TVA -> executor
     - v1 contracts remain sealed; v2 is additive-only
     """
+    # Fail-closed: normalize payload for safe error handling in ALL exception paths.
     p: Mapping[str, Any] = payload if isinstance(payload, Mapping) else {}
 
     try:
@@ -304,20 +305,23 @@ def orchestrate_execution_v2(
         )
 
     except AdapterError as e:
+        # v2 semantics: external evidence parse failures are DENY (fail-closed),
+        # not ERROR, because evidence is required and invalid evidence must block.
         request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
-        action = _safe_str((_require_mapping(p.get("context")) or {}).get("action"), fallback="invalid-action")
+        ctx = _require_mapping(p.get("context")) or {}
+        action = _safe_str(ctx.get("action"), fallback="invalid-action")
         return build_execution_response_v1(
             request_id=request_id,
             intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
             context_hash="0" * 64,
-            status="error",
+            status="deny",
             reason_id=e.reason_id,
             tva_allowed=False,
             eqc_allowed=False,
             wsqk_allowed=False,
             nonce_consumed=False,
-            timebox_valid=False,
+            timebox_valid=True,
             artifacts={"error": e.message},
         )
 
