@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from adamantine.v1.contracts.external_reason_registry import (
+    ExternalReasonLayerAllowlist,
+    ExternalReasonRegistryV1,
+)
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
 from adamantine.v1.integrations.errors import AdapterError
@@ -16,6 +20,26 @@ def _reason_map() -> ExternalReasonMap:
             ExternalReasonMapEntry(external_id="OK", internal_reason_id=ReasonId.EVIDENCE_OK.value),
         )
     )
+
+
+def _registry() -> ExternalReasonRegistryV1:
+    # Phase M hard-lock: registry is mandatory and deny-by-default.
+    # These tests only use qwg + guardian_wallet layers.
+    reg = ExternalReasonRegistryV1(
+        oracle_allowed_external_reason_ids=("OK",),
+        shield_layer_allowlists=(
+            ExternalReasonLayerAllowlist(
+                layer="qwg",
+                allowed_external_reason_ids=("QWG_DEVICE_COMPROMISED", "OK"),
+            ),
+            ExternalReasonLayerAllowlist(
+                layer="guardian_wallet",
+                allowed_external_reason_ids=("GW_POLICY_BLOCK", "OK"),
+            ),
+        ),
+    )
+    reg.validate()
+    return reg
 
 
 def _bundle(*, signals: list[dict], required_layers: list[str] | None = None) -> dict:
@@ -57,6 +81,7 @@ def test_shield_v3_accepts_valid_bundle() -> None:
         now=123,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
+        reason_registry=_registry(),
     )
     assert out.bundle_id == "b1"
     assert len(out.signals) == 2
@@ -73,6 +98,7 @@ def test_shield_v3_rejects_unknown_layer() -> None:
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
+            reason_registry=_registry(),
         )
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
@@ -88,6 +114,7 @@ def test_shield_v3_rejects_unknown_external_reason() -> None:
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
+            reason_registry=_registry(),
         )
     assert e.value.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
 
@@ -102,6 +129,7 @@ def test_shield_v3_rejects_missing_required_layer() -> None:
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
+            reason_registry=_registry(),
         )
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
@@ -118,6 +146,7 @@ def test_shield_v3_rejects_unsorted_signals() -> None:
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
+            reason_registry=_registry(),
         )
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
@@ -134,6 +163,7 @@ def test_shield_v3_rejects_duplicate_layer() -> None:
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
+            reason_registry=_registry(),
         )
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
@@ -151,6 +181,7 @@ def test_shield_v3_rejects_nested_facts_object() -> None:
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
+            reason_registry=_registry(),
         )
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
@@ -161,16 +192,19 @@ def test_shield_v3_determinism_replay() -> None:
         _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
     ]
     payload = _bundle(signals=signals)
+
     out1 = parse_shield_bundle_v3(
         payload=payload,
         now=123,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
+        reason_registry=_registry(),
     )
     out2 = parse_shield_bundle_v3(
         payload=payload,
         now=123,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
+        reason_registry=_registry(),
     )
     assert out1 == out2
