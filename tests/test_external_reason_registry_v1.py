@@ -4,10 +4,7 @@ from typing import Any
 
 import pytest
 
-from adamantine.v1.contracts.external_reason_registry import (
-    ExternalReasonLayerAllowlist,
-    ExternalReasonRegistryV1,
-)
+from adamantine.v1.contracts.external_reason_registry import ExternalReasonLayerAllowlist, ExternalReasonRegistryV1
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
 from adamantine.v1.eqc.context_hash import compute_context_hash
@@ -19,7 +16,6 @@ from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
 def _reason_map() -> ExternalReasonMap:
-    # Small deterministic table for tests.
     return ExternalReasonMap(
         entries=(
             ExternalReasonMapEntry(external_id="OK", internal_reason_id=ReasonId.EVIDENCE_OK.value),
@@ -75,11 +71,8 @@ def _shield_bundle(*, ctx: str, required_layers: list[str], ext_reason_by_layer:
 def test_registry_validate_rejects_unknown_layer() -> None:
     reg = ExternalReasonRegistryV1(
         oracle_allowed_external_reason_ids=("AC_OK",),
-        shield_layer_allowlists=(
-            ExternalReasonLayerAllowlist(layer="not_a_layer", allowed_external_reason_ids=("OK",)),
-        ),
+        shield_layer_allowlists=(ExternalReasonLayerAllowlist(layer="not_a_layer", allowed_external_reason_ids=("OK",)),),
     )
-
     with pytest.raises(ValueError):
         reg.validate()
 
@@ -88,12 +81,10 @@ def test_shield_adapter_denies_reason_not_allowed_for_layer() -> None:
     now = 1706990400
     ctx = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
 
-    # Allow only OK for sentinel_ai; deny-by-default for other layers (missing entries).
+    # Only sentinel_ai is allowlisted; adn missing => deny-by-default
     reg = ExternalReasonRegistryV1(
         oracle_allowed_external_reason_ids=("AC_OK",),
-        shield_layer_allowlists=(
-            ExternalReasonLayerAllowlist(layer="sentinel_ai", allowed_external_reason_ids=("OK",)),
-        ),
+        shield_layer_allowlists=(ExternalReasonLayerAllowlist(layer="sentinel_ai", allowed_external_reason_ids=("OK",)),),
     )
 
     bundle = _shield_bundle(
@@ -102,7 +93,6 @@ def test_shield_adapter_denies_reason_not_allowed_for_layer() -> None:
         ext_reason_by_layer={"adn": "OK"},
     )
 
-    # adn layer has no allowlist entry => deny-by-default
     with pytest.raises(AdapterError) as ei:
         parse_shield_bundle_v3(
             payload=bundle,
@@ -119,10 +109,10 @@ def test_oracle_adapter_denies_reason_not_allowed_by_registry() -> None:
     now = 1706990400
     ctx = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
 
-    # Deny-by-default registry that does NOT allow AC_OK for oracle.
+    # Registry does NOT allow AC_OK for oracle.
     reg = ExternalReasonRegistryV1(
         oracle_allowed_external_reason_ids=("OK",),
-        shield_layer_allowlists=(),
+        shield_layer_allowlists=(ExternalReasonLayerAllowlist(layer="sentinel_ai", allowed_external_reason_ids=("OK",)),),
     )
 
     pack = PolicyPack(
@@ -132,7 +122,6 @@ def test_oracle_adapter_denies_reason_not_allowed_by_registry() -> None:
     )
     pol = RiskPolicy(min_overall_score=85, policy_pack=pack)
 
-    # Provide explicit reason_map so parse_risk_report can map.
     payload = _oracle_payload(ctx=ctx, now=now, reason_id="AC_OK")
 
     with pytest.raises(AdapterError) as ei:
