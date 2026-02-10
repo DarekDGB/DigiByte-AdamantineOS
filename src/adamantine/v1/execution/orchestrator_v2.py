@@ -48,6 +48,21 @@ def _reason_from_message(msg: str) -> ReasonId:
         return ReasonId.DENY_SCHEMA_INVALID
 
 
+def _coerce_reason_id(value: Any) -> ReasonId:
+    """
+    EQCResult.reason_ids are strings (ReasonId.value). Convert safely.
+    Fail-closed to DENY_SCHEMA_INVALID if unknown.
+    """
+    if isinstance(value, ReasonId):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            return ReasonId(value)
+        except Exception:
+            return ReasonId.DENY_SCHEMA_INVALID
+    return ReasonId.DENY_SCHEMA_INVALID
+
+
 def _require_mapping(obj: Any) -> Mapping[str, Any] | None:
     if obj is None:
         return None
@@ -226,13 +241,15 @@ def orchestrate_execution_v2(
         )
 
         if eqc.verdict is not Verdict.ALLOW:
+            # EQCResult.reason_ids are strings -> coerce to ReasonId enum for response builder.
+            rid = _coerce_reason_id(eqc.reason_ids[0] if eqc.reason_ids else ReasonId.DENY_SCHEMA_INVALID.value)
             return build_execution_response_v1(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
                 context_hash=eqc.context_hash,
                 status="deny",
-                reason_id=eqc.reason_ids[0],
+                reason_id=rid,
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
