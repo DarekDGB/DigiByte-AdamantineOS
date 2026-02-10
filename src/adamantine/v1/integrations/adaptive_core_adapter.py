@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.risk import RiskReport, RiskSignal
 from adamantine.v1.contracts.shield import ExternalReasonMap
-from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.obs.metrics import Metrics
 from adamantine.v1.policy.risk_policy import RiskPolicy, UnknownReasonMode
@@ -27,21 +27,6 @@ def parse_risk_report(
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> RiskReport:
-    """
-    External Adaptive Core payload -> RiskReport (contract)
-
-    Fail-closed:
-      - missing required fields
-      - invalid types/ranges
-      - context_hash mismatch
-      - unknown external reason ids (per policy allowlist)
-      - unmapped external reason ids (mapping table)
-
-    Mapping resolution precedence:
-      1) explicit reason_map argument
-      2) policy.policy_pack.external_reason_map (via policy.effective_external_reason_map())
-      3) fail-closed
-    """
     if not isinstance(now, int):
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
 
@@ -54,7 +39,6 @@ def parse_risk_report(
     p = policy or RiskPolicy()
     p.validate()
 
-    # Resolve mapping source (strict precedence)
     resolved_map: ExternalReasonMap | None = reason_map
     if resolved_map is None and policy is not None:
         resolved_map = policy.effective_external_reason_map()
@@ -100,7 +84,6 @@ def parse_risk_report(
 
     if not isinstance(signals_raw, Sequence) or isinstance(signals_raw, (str, bytes)):
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "signals must be a sequence")
-
     if len(signals_raw) == 0:
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "signals must not be empty")
 
@@ -127,15 +110,13 @@ def parse_risk_report(
             if not isinstance(rid, str) or not rid:
                 _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, f"signal[{idx}].reason_ids must be non-empty str")
 
-            # Policy allowlist gate (external code)
             if rid not in allowed_reason_ids and p.unknown_reason_mode is UnknownReasonMode.DENY_EXPLICIT:
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unknown external reason_id: {rid}")
 
-            # Contract governance: optional deny-by-default registry (oracle bucket)
+            # Phase M governance: optional registry check (orchestrator will make it mandatory)
             if reason_registry is not None and not reason_registry.is_oracle_reason_allowed(rid):
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for oracle: {rid}")
 
-            # Mapping table (external -> internal ReasonId)
             internal = resolved_map.lookup(rid)
             if internal is None:
                 _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {rid}")
