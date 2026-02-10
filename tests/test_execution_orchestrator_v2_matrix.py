@@ -198,7 +198,6 @@ def test_deny_if_missing_any_required_shield_layer() -> None:
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
 
-    # Remove one layer from required_layers declaration
     bad_layers = [x for x in REQUIRED_SHIELD_LAYERS_V3 if x != "dqsn"]
 
     payload = _envelope_v2(
@@ -225,7 +224,6 @@ def test_deny_if_unknown_required_layer_present() -> None:
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
 
-    # Replace one required layer with an unknown layer string.
     bad = list(REQUIRED_SHIELD_LAYERS_V3)
     bad[2] = "unknown_layer"
 
@@ -240,7 +238,8 @@ def test_deny_if_unknown_required_layer_present() -> None:
     resp = orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
 
     assert resp["status"] == "deny"
-    assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
+    # Unknown layer is rejected by Shield adapter before orchestrator layer-set enforcement.
+    assert resp["reason_id"] == ReasonId.DENY_ADAPTER_INVALID.value
     assert executor.called is False
 
 
@@ -251,7 +250,6 @@ def test_deny_if_duplicate_required_layer_present() -> None:
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
 
-    # Add a duplicate layer (extra length => fails exact tuple match).
     bad = list(REQUIRED_SHIELD_LAYERS_V3) + ["dqsn"]
 
     payload = _envelope_v2(
@@ -276,7 +274,6 @@ def test_deny_if_required_layers_wrong_order() -> None:
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
 
-    # Same elements, wrong ordering => must fail exact tuple match.
     bad = list(REQUIRED_SHIELD_LAYERS_V3)
     bad[0], bad[1] = bad[1], bad[0]
 
@@ -306,7 +303,7 @@ def test_deny_if_oracle_score_below_threshold() -> None:
         now=now,
         context_hash=ctx_hash,
         shield_required_layers=list(REQUIRED_SHIELD_LAYERS_V3),
-        oracle_score=10,  # below threshold
+        oracle_score=10,
         with_wsqk=True,
     )
 
@@ -328,7 +325,7 @@ def test_deny_if_shield_context_hash_mismatch() -> None:
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
-        shield_context_hash="0" * 64,  # mismatch
+        shield_context_hash="0" * 64,
         shield_required_layers=list(REQUIRED_SHIELD_LAYERS_V3),
         oracle_score=99,
         with_wsqk=True,
