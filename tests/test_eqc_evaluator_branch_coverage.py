@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
@@ -12,90 +10,95 @@ from adamantine.v1.contracts.shield import ShieldSignal
 from adamantine.v1.contracts.shield_v3 import ShieldBundleV3
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.eqc.evaluator import evaluate_eqc, evaluate_eqc_v2
-from adamantine.v1.obs.metrics import InMemoryMetrics
+from adamantine.v1.obs.metrics import Metrics
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
-
 NOW = 100
+
+REQUIRED_LAYERS_V3: tuple[str, ...] = (
+    "sentinel_ai",
+    "adn",
+    "dqsn",
+    "qwg",
+    "guardian_wallet",
+)
 
 
 def _session(*, now: int, issued_at_delta: int = -10, ttl: int = 60) -> QIDSessionProof:
     """
-    Build a minimal VALID QIDSessionProof for evaluator branches.
+    Minimal VALID QIDSessionProof for evaluator branches (matches current contract).
     """
     return QIDSessionProof(
         subject="w1",
         issued_at=now + issued_at_delta,
         expires_at=now + issued_at_delta + ttl,
-        session_id="sid",
-        pqc_algo="ML-DSA",
-        pqc_pub="p" * 16,
-        pqc_sig="s" * 16,
-        nonce="n1",
+        proof_hash="b" * 64,
+        device_binding=None,
+        issuer_version="v1",
     )
 
 
-def _risk_report(*, ctx_hash: str, score: int = 95, generated_at: int = 10) -> RiskReport:
-    sig = RiskSignal(source="ac", severity=10, reason_ids=(ReasonId.EVIDENCE_OK.value,))
-    sig.validate()
-    rr = RiskReport(
+def _oracle(*, ctx_hash: str, now: int, overall_score: int = 95) -> AdaptiveCoreOracleV3:
+    rs = RiskSignal(source="ac", severity=10, reason_ids=(ReasonId.EVIDENCE_OK.value,))
+    rs.validate()
+
+    report = RiskReport(
         context_hash=ctx_hash,
-        signals=(sig,),
-        overall_score=score,
-        generated_at=generated_at,
+        signals=(rs,),
+        overall_score=overall_score,
+        generated_at=now - 1,
         oracle_version="v3",
         external_source_id="src",
     )
-    rr.validate(now=NOW)
-    return rr
+    report.validate(now=now)
 
-
-def _oracle(*, ctx_hash: str, report_ctx_hash: str | None = None, issued_at: int = 50, expires_at: int = 150) -> AdaptiveCoreOracleV3:
-    rr = _risk_report(ctx_hash=report_ctx_hash or ctx_hash, score=95, generated_at=10)
-    o = AdaptiveCoreOracleV3(
+    oracle = AdaptiveCoreOracleV3(
         context_hash=ctx_hash,
-        issued_at=issued_at,
-        expires_at=expires_at,
-        report=rr,
+        issued_at=now - 10,
+        expires_at=now + 60,
+        report=report,
     )
-    # oracle.validate is called by evaluator; we keep this valid by default.
-    return o
+    oracle.validate(now=now)
+    return oracle
 
 
-def _shield_ok(*, ctx_hash: str, issued_at: int = 50, expires_at: int = 150) -> ShieldBundleV3:
-    s1 = ShieldSignal(layer="guardian_wallet", signal_id="gw-1", reason_ids=(ReasonId.EVIDENCE_OK.value,), facts={})
-    s2 = ShieldSignal(layer="qwg", signal_id="qwg-1", reason_ids=(ReasonId.EVIDENCE_OK.value,), facts={})
-    # Sorted by (layer, signal_id): guardian_wallet < qwg
-    s1.validate()
-    s2.validate()
-    b = ShieldBundleV3(
-        context_hash=ctx_hash,
-        issued_at=issued_at,
-        expires_at=expires_at,
-        required_layers=("sentinel_ai", "adn", "dqsn", "qwg", "guardian_wallet"),
-        signals=(s1, s2),
+def _shield_ok(*, ctx_hash: str, now: int) -> ShieldBundleV3:
+    sig = ShieldSignal(layer="sentinel_ai", severity=1, reason_ids=(ReasonId.EVIDENCE_OK.value,))
+    sig.validate()
+
+    sh = ShieldBundleV3(
         bundle_id="b1",
+        required_layers=REQUIRED_LAYERS_V3,
+        context_hash=ctx_hash,
+        issued_at=now - 10,
+        expires_at=now + 60,
+        signals=(sig,),
     )
-    # shield.validate is called by evaluator; keep valid by default.
-    return b
+    sh.validate()
+    return sh
 
 
 def test_eqc_v1_metrics_increment_on_missing_now() -> None:
-    metrics = InMemoryMetrics()
+    metrics = Metrics()
     out = evaluate_eqc(wallet_id="w1", action="send", now=None, metrics=metrics)  # type: ignore[arg-type]
+
     assert out.verdict.value == "DENY"
     assert ReasonId.EQC_MISSING_NOW.value in out.reason_ids
-    assert metrics.counters.get(ReasonId.EQC_MISSING_NOW.value, 0) == 1
+
+    snap = metrics.snapshot()
+    assert snap.get(ReasonId.EQC_MISSING_NOW.value, 0) == 1
 
 
 def test_eqc_v2_oracle_report_context_hash_mismatch() -> None:
     now = NOW
+    # evaluator computes ctx_hash from fields; bind everything to that.
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"a": "1"})
+
     session = _session(now=now)
 
-    # report.context_hash != computed ctx_hash => EQC_RISK_CONTEXT_HASH_MISMATCH
-    oracle = _oracle(ctx_hash=ctx_hash, report_ctx_hash=("b" * 64))
-    shield = _shield_ok(ctx_hash=ctx_hash)
+    # Oracle report context_hash mismatch triggers EQC_RISK_CONTEXT_HASH_MISMATCH
+    oracle = _oracle(ctx_hash=("c" * 64), now=now, overall_score=95)
+    shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
     out = evaluate_eqc_v2(
         wallet_id="w1",
@@ -105,8 +108,8 @@ def test_eqc_v2_oracle_report_context_hash_mismatch() -> None:
         oracle=oracle,
         shield=shield,
         now=now,
-        policy=RiskPolicy(),
     )
+
     assert out.verdict.value == "DENY"
     assert out.reason_ids == (ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH.value,)
 
@@ -116,19 +119,38 @@ def test_eqc_v2_oracle_validate_failure_maps_to_invalid_risk_report() -> None:
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
     session = _session(now=now)
 
-    # Make oracle.validate fail by invalid timebox.
-    oracle = _oracle(ctx_hash=ctx_hash, issued_at=200, expires_at=100)
-    shield = _shield_ok(ctx_hash=ctx_hash)
+    # Make oracle invalid via timebox (issued_at > expires_at)
+    rs = RiskSignal(source="ac", severity=10, reason_ids=(ReasonId.EVIDENCE_OK.value,))
+    rs.validate()
+    report = RiskReport(
+        context_hash=ctx_hash,
+        signals=(rs,),
+        overall_score=95,
+        generated_at=now - 1,
+        oracle_version="v3",
+        external_source_id="src",
+    )
+    report.validate(now=now)
+
+    bad_oracle = AdaptiveCoreOracleV3(
+        context_hash=ctx_hash,
+        issued_at=now + 10,
+        expires_at=now - 10,
+        report=report,
+    )
+
+    shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
     out = evaluate_eqc_v2(
         wallet_id="w1",
         action="send",
+        fields=None,
         session=session,
-        oracle=oracle,
+        oracle=bad_oracle,
         shield=shield,
         now=now,
-        policy=RiskPolicy(),
     )
+
     assert out.verdict.value == "DENY"
     assert out.reason_ids == (ReasonId.EQC_INVALID_RISK_REPORT.value,)
 
@@ -138,20 +160,23 @@ def test_eqc_v2_score_below_threshold() -> None:
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
     session = _session(now=now)
 
-    # overall_score below default threshold (85)
-    rr = _risk_report(ctx_hash=ctx_hash, score=10, generated_at=10)
-    oracle = AdaptiveCoreOracleV3(context_hash=ctx_hash, issued_at=50, expires_at=150, report=rr)
-    shield = _shield_ok(ctx_hash=ctx_hash)
+    policy = RiskPolicy(min_overall_score=90)
+    policy.validate()
+
+    oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=10)  # below threshold
+    shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
     out = evaluate_eqc_v2(
         wallet_id="w1",
         action="send",
+        fields=None,
         session=session,
         oracle=oracle,
         shield=shield,
         now=now,
-        policy=RiskPolicy(),
+        policy=policy,
     )
+
     assert out.verdict.value == "DENY"
     assert out.reason_ids == (ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD.value,)
 
@@ -160,32 +185,28 @@ def test_eqc_v2_shield_invalid_bundle() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
     session = _session(now=now)
-    oracle = _oracle(ctx_hash=ctx_hash)
+    oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
 
-    s1 = ShieldSignal(layer="guardian_wallet", signal_id="gw-1", reason_ids=(ReasonId.EVIDENCE_OK.value,), facts={})
-    s2 = ShieldSignal(layer="qwg", signal_id="qwg-1", reason_ids=(ReasonId.EVIDENCE_OK.value,), facts={})
-    s1.validate()
-    s2.validate()
-
-    # Invalid required_layers order -> shield.validate() raises -> EQC_INVALID_SHIELD_BUNDLE
+    # Invalid: required_layers missing -> validate() raises -> EQC_INVALID_SHIELD_BUNDLE
     bad_shield = ShieldBundleV3(
-        context_hash=ctx_hash,
-        issued_at=50,
-        expires_at=150,
-        required_layers=("qwg", "guardian_wallet"),  # unsorted -> invalid
-        signals=(s1, s2),
         bundle_id="b1",
+        required_layers=(),
+        context_hash=ctx_hash,
+        issued_at=now - 10,
+        expires_at=now + 60,
+        signals=(),
     )
 
     out = evaluate_eqc_v2(
         wallet_id="w1",
         action="send",
+        fields=None,
         session=session,
         oracle=oracle,
         shield=bad_shield,
         now=now,
-        policy=RiskPolicy(),
     )
+
     assert out.verdict.value == "DENY"
     assert out.reason_ids == (ReasonId.EQC_INVALID_SHIELD_BUNDLE.value,)
 
@@ -194,19 +215,20 @@ def test_eqc_v2_shield_context_hash_mismatch() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
     session = _session(now=now)
-    oracle = _oracle(ctx_hash=ctx_hash)
+    oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
 
-    shield = _shield_ok(ctx_hash=("c" * 64))  # mismatch
+    shield = _shield_ok(ctx_hash=("d" * 64), now=now)  # mismatch vs computed ctx_hash
 
     out = evaluate_eqc_v2(
         wallet_id="w1",
         action="send",
+        fields=None,
         session=session,
         oracle=oracle,
         shield=shield,
         now=now,
-        policy=RiskPolicy(),
     )
+
     assert out.verdict.value == "DENY"
     assert out.reason_ids == (ReasonId.EQC_SHIELD_CONTEXT_HASH_MISMATCH.value,)
 
@@ -215,55 +237,69 @@ def test_eqc_v2_shield_stale_window() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
     session = _session(now=now)
-    oracle = _oracle(ctx_hash=ctx_hash)
+    oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
+    shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
-    # stale: issued_at > now
-    shield = _shield_ok(ctx_hash=ctx_hash, issued_at=200, expires_at=300)
+    # Make stale: expires_at <= now
+    stale = ShieldBundleV3(
+        bundle_id=shield.bundle_id,
+        required_layers=shield.required_layers,
+        context_hash=shield.context_hash,
+        issued_at=shield.issued_at,
+        expires_at=now,  # stale (window is issued_at <= now < expires_at)
+        signals=shield.signals,
+    )
+    stale.validate()
 
     out = evaluate_eqc_v2(
         wallet_id="w1",
         action="send",
+        fields=None,
         session=session,
         oracle=oracle,
-        shield=shield,
+        shield=stale,
         now=now,
-        policy=RiskPolicy(),
     )
+
     assert out.verdict.value == "DENY"
     assert out.reason_ids == (ReasonId.EQC_SHIELD_STALE.value,)
 
 
 def test_eqc_v2_final_presence_reasons_after_valid_evidence() -> None:
     """
-    Covers the late fail-closed branch:
+    Covers late fail-closed branch:
       - wallet_id missing
-      - BUT evidence checks all pass (so we hit the final `if reasons:` block)
+      - BUT evidence checks all pass
+      - hits final `if reasons:` block.
     """
     now = NOW
-    ctx_hash = compute_context_hash(wallet_id="", action="send", fields={"x": "1"})
 
+    ctx_hash = compute_context_hash(wallet_id="", action="send", fields={"x": "1"})
     session = _session(now=now)
-    oracle = _oracle(ctx_hash=ctx_hash)
-    shield = _shield_ok(ctx_hash=ctx_hash)
+    oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
+    shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
     out = evaluate_eqc_v2(
-        wallet_id="",
+        wallet_id="",  # triggers EQC_MISSING_WALLET_ID
         action="send",
         fields={"x": "1"},
         session=session,
         oracle=oracle,
         shield=shield,
         now=now,
-        policy=RiskPolicy(),
     )
+
     assert out.verdict.value == "DENY"
     assert out.reason_ids == (ReasonId.EQC_MISSING_WALLET_ID.value,)
 
 
 def test_eqc_v2_metrics_increment_multiple_reasons() -> None:
-    metrics = InMemoryMetrics()
+    metrics = Metrics()
     out = evaluate_eqc_v2(wallet_id="", action="", now=None, metrics=metrics)  # type: ignore[arg-type]
+
     assert out.verdict.value == "DENY"
-    assert metrics.counters.get(ReasonId.EQC_MISSING_WALLET_ID.value, 0) == 1
-    assert metrics.counters.get(ReasonId.EQC_MISSING_ACTION.value, 0) == 1
-    assert metrics.counters.get(ReasonId.EQC_MISSING_NOW.value, 0) == 1
+
+    snap = metrics.snapshot()
+    assert snap.get(ReasonId.EQC_MISSING_WALLET_ID.value, 0) == 1
+    assert snap.get(ReasonId.EQC_MISSING_ACTION.value, 0) == 1
+    assert snap.get(ReasonId.EQC_MISSING_NOW.value, 0) == 1
