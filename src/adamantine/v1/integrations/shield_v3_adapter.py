@@ -2,13 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
-from adamantine.v1.contracts.reason_ids import ReasonId
-from adamantine.v1.contracts.shield import (
-    ExternalReasonMap,
-    ShieldSignal,
-    ShieldSource,
-)
 from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
+from adamantine.v1.contracts.reason_ids import ReasonId
+from adamantine.v1.contracts.shield import ExternalReasonMap, ShieldSignal, ShieldSource
 from adamantine.v1.contracts.shield_v3 import ShieldBundleV3
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.obs.metrics import Metrics
@@ -59,7 +55,6 @@ def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> "NoReturn":  # ty
 def _is_hex_64(s: Any) -> bool:
     if not isinstance(s, str) or len(s) != 64:
         return False
-    # fast-ish hex check, deterministic
     for ch in s:
         if ch not in "0123456789abcdefABCDEF":
             return False
@@ -93,13 +88,6 @@ def _require_int(metrics: Metrics | None, m: Mapping[str, Any], key: str, rid: R
 
 
 def _validate_facts(metrics: Metrics | None, facts: Any) -> None:
-    """
-    Facts rules (per shield_signal_v3 contract):
-    - object with str keys
-    - values are str/int/bool OR list of those scalars
-    - no floats
-    - no nested objects
-    """
     if not isinstance(facts, Mapping):
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts must be object")
 
@@ -127,7 +115,7 @@ def _parse_signal_v3(
     bundle_issued_at: int,
     bundle_expires_at: int,
     reason_map: ExternalReasonMap,
-    reason_registry: ExternalReasonRegistryV1 | None,
+    reason_registry: ExternalReasonRegistryV1,
 ) -> tuple[str, ShieldSignal]:
     _deny_unknown_keys(metrics, signal, _SIGNAL_ALLOWED_KEYS, ReasonId.DENY_ADAPTER_INVALID, "signal")
 
@@ -160,18 +148,18 @@ def _parse_signal_v3(
 
     ext_reason = _require_str(metrics, signal, "reason_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
 
-    # Contract governance: deny-by-default allowlist (optional).
-    if reason_registry is not None:
-        try:
-            reason_registry.validate()
-        except Exception:
-            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "reason_registry invalid")
+    # Phase M hard governance: deny-by-default registry is mandatory
+    try:
+        reason_registry.validate()
+    except Exception:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "reason_registry invalid")
 
-        if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
-            _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
+    if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
+        _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
+
     mapped = reason_map.lookup(ext_reason)
     if mapped is None:
-        _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unknown external reason_id: {ext_reason}")
+        _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {ext_reason}")
 
     confidence = _require_int(metrics, signal, "confidence", ReasonId.DENY_ADAPTER_INVALID, "signal")
     if confidence < 0 or confidence > 100:
@@ -180,12 +168,10 @@ def _parse_signal_v3(
     facts = signal.get("facts")
     _validate_facts(metrics, facts)
 
-    # meta is optional, but must be object if present
     meta = signal.get("meta")
     if meta is not None and not isinstance(meta, Mapping):
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.meta must be object when present")
 
-    # Internalize: evidence-only signal (severity uses confidence; reason_ids are internal ReasonId values)
     internal = ShieldSignal(
         source=_ALLOWED_LAYERS[layer],
         severity=confidence,
@@ -202,23 +188,9 @@ def parse_shield_bundle_v3(
     now: int,
     expected_context_hash: str,
     reason_map: ExternalReasonMap,
-    reason_registry: ExternalReasonRegistryV1 | None = None,
+    reason_registry: ExternalReasonRegistryV1,
     metrics: Metrics | None = None,
 ) -> ShieldBundleV3:
-    """
-    External Shield v3 bundle -> ShieldBundleV3 (internal contract)
-
-    Fail-closed:
-      - unknown fields
-      - invalid versions
-      - unknown layers
-      - invalid facts shapes
-      - context/time mismatches
-      - unsorted signals
-      - duplicate layer signals
-      - missing required layers
-      - unknown external reason ids
-    """
     if not isinstance(now, int):
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "now must be int")
 
@@ -228,6 +200,11 @@ def parse_shield_bundle_v3(
     if not isinstance(reason_map, ExternalReasonMap):
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "reason_map must be ExternalReasonMap")
     reason_map.validate()
+
+    try:
+        reason_registry.validate()
+    except Exception:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "reason_registry invalid")
 
     top = _require_mapping(metrics, payload, ReasonId.DENY_ADAPTER_INVALID, "bundle")
     _deny_unknown_keys(metrics, top, _BUNDLE_ALLOWED_KEYS, ReasonId.DENY_ADAPTER_INVALID, "bundle")
@@ -249,10 +226,10 @@ def parse_shield_bundle_v3(
     if expires_at < issued_at:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.expires_at must be >= issued_at")
 
-    # required_layers
     req = top.get("required_layers")
     if not isinstance(req, Sequence) or isinstance(req, (str, bytes, bytearray)) or len(req) == 0:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers must be non-empty array")
+
     required_layers: list[str] = []
     for x in req:
         if not isinstance(x, str) or not x.strip():
@@ -261,12 +238,10 @@ def parse_shield_bundle_v3(
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"unknown required layer: {x}")
         required_layers.append(x)
 
-    # signals
     sigs = top.get("signals")
     if not isinstance(sigs, Sequence) or isinstance(sigs, (str, bytes, bytearray)) or len(sigs) == 0:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.signals must be non-empty array")
 
-    # enforce deterministic ordering: (layer, signal_id)
     def _key(raw: Any) -> tuple[str, str]:
         if not isinstance(raw, Mapping):
             return ("", "")
@@ -278,7 +253,6 @@ def parse_shield_bundle_v3(
     if list(sigs) != sorted_sigs:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.signals must be sorted by (layer, signal_id)")
 
-    # Parse signals; enforce one per layer and completeness for required_layers.
     seen_layers: set[str] = set()
     parsed: list[ShieldSignal] = []
     for raw in sigs:
@@ -301,7 +275,6 @@ def parse_shield_bundle_v3(
         if rl not in seen_layers:
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"missing required layer signal: {rl}")
 
-    # meta optional object
     meta = top.get("meta")
     if meta is not None and not isinstance(meta, Mapping):
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.meta must be object when present")
