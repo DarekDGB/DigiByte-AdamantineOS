@@ -61,7 +61,7 @@
             "source": "ac_model",
             "severity": 10,
             "reason_ids": [
-              "BLOCK"
+              "AC_OK"
             ]
           }
         ],
@@ -71,7 +71,7 @@
       "shield": {
         "v": "shield_bundle_v3",
         "bundle_id": "b1",
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a3b041333112eda64b4b971d47735353215d5c",
+        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
         "issued_at": 1706990400,
         "expires_at": 1706990460,
         "required_layers": [
@@ -89,9 +89,9 @@
             "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
-            "verdict": "deny",
-            "reason_id": "BLOCK",
-            "confidence": 10,
+            "verdict": "allow",
+            "reason_id": "OK",
+            "confidence": 90,
             "facts": {
               "k": "v"
             },
@@ -104,9 +104,9 @@
             "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
-            "verdict": "deny",
-            "reason_id": "BLOCK",
-            "confidence": 10,
+            "verdict": "allow",
+            "reason_id": "OK",
+            "confidence": 90,
             "facts": {
               "k": "v"
             },
@@ -119,9 +119,9 @@
             "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
-            "verdict": "deny",
-            "reason_id": "BLOCK",
-            "confidence": 10,
+            "verdict": "allow",
+            "reason_id": "OK",
+            "confidence": 90,
             "facts": {
               "k": "v"
             },
@@ -134,9 +134,9 @@
             "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
-            "verdict": "deny",
-            "reason_id": "BLOCK",
-            "confidence": 10,
+            "verdict": "allow",
+            "reason_id": "OK",
+            "confidence": 90,
             "facts": {
               "k": "v"
             },
@@ -149,9 +149,9 @@
             "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
-            "verdict": "deny",
-            "reason_id": "BLOCK",
-            "confidence": 10,
+            "verdict": "allow",
+            "reason_id": "OK",
+            "confidence": 90,
             "facts": {
               "k": "v"
             },
