@@ -6,11 +6,11 @@ from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
 from adamantine.v1.contracts.qid import QIDSessionProof
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.risk import RiskReport, RiskSignal
-from adamantine.v1.contracts.shield import ShieldSignal
+from adamantine.v1.contracts.shield import ShieldSignal, ShieldSource
 from adamantine.v1.contracts.shield_v3 import ShieldBundleV3
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.eqc.evaluator import evaluate_eqc, evaluate_eqc_v2
-from adamantine.v1.obs.metrics import Metrics
+from adamantine.v1.obs.metrics import InMemoryMetrics
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 NOW = 100
@@ -33,6 +33,7 @@ def _session(*, now: int, issued_at_delta: int = -10, ttl: int = 60) -> QIDSessi
         issued_at=now + issued_at_delta,
         expires_at=now + issued_at_delta + ttl,
         proof_hash="b" * 64,
+        nonce="n1",
         device_binding=None,
         issuer_version="v1",
     )
@@ -63,7 +64,7 @@ def _oracle(*, ctx_hash: str, now: int, overall_score: int = 95) -> AdaptiveCore
 
 
 def _shield_ok(*, ctx_hash: str, now: int) -> ShieldBundleV3:
-    sig = ShieldSignal(layer="sentinel_ai", severity=1, reason_ids=(ReasonId.EVIDENCE_OK.value,))
+    sig = ShieldSignal(source=ShieldSource.SENTINEL_AI.value, reason_ids=(ReasonId.EVIDENCE_OK.value,))
     sig.validate()
 
     sh = ShieldBundleV3(
@@ -79,7 +80,7 @@ def _shield_ok(*, ctx_hash: str, now: int) -> ShieldBundleV3:
 
 
 def test_eqc_v1_metrics_increment_on_missing_now() -> None:
-    metrics = Metrics()
+    metrics = InMemoryMetrics()
     out = evaluate_eqc(wallet_id="w1", action="send", now=None, metrics=metrics)  # type: ignore[arg-type]
 
     assert out.verdict.value == "DENY"
@@ -294,7 +295,7 @@ def test_eqc_v2_final_presence_reasons_after_valid_evidence() -> None:
 
 
 def test_eqc_v2_metrics_increment_multiple_reasons() -> None:
-    metrics = Metrics()
+    metrics = InMemoryMetrics()
     out = evaluate_eqc_v2(wallet_id="", action="", now=None, metrics=metrics)  # type: ignore[arg-type]
 
     assert out.verdict.value == "DENY"
