@@ -1,14 +1,17 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)\
-![Status](https://img.shields.io/badge/status-v1.1.0--execution--boundary--hardened-brightgreen.svg)\
+![Status](https://img.shields.io/badge/status-v1.2.0--os--proof--pack-brightgreen.svg)\
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)\
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)\
 ![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)
 
 ------------------------------------------------------------------------
 
-## Status: Execution Boundary Hardened (v1.1.0)
+## Status: OS Proof Pack (v1.2.0)
+
+This repository contains the sealed foundation of the **Adamantine
+Wallet OS**.
 
 This repository contains the sealed foundation of the **Adamantine
 Wallet OS**.
