@@ -1,9 +1,9 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-foundation--sealed-brightgreen.svg)
-![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
-![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)\
+![Status](https://img.shields.io/badge/status-v1.1.0--execution--boundary--hardened-brightgreen.svg)\
+![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)\
+![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)\
 ![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)
 
 ------------------------------------------------------------------------
@@ -14,9 +14,10 @@ This repository contains the sealed foundation of the **Adamantine
 Wallet OS**.
 
 Adamantine is a deterministic security decision engine for DigiByte
-wallets. It defines **what is allowed to execute**, **under which
-conditions**, and **why** --- without managing keys, signing
-transactions, or running a wallet UI.
+wallets.\
+It defines **what is allowed to execute**, **under which conditions**,
+and **why** --- without managing keys, signing transactions, or running
+a wallet UI.
 
 All critical boundaries are versioned, tested, and fail-closed.
 
@@ -27,52 +28,69 @@ All critical boundaries are versioned, tested, and fail-closed.
 ### Decision & Authority Core
 
 -   **EQC v1 + v2**
-    -   v1: deterministic baseline decision logic
+    -   v1: deterministic baseline decision logic\
     -   v2: multi-evidence reasoning (Q-ID + Shield + Adaptive Core)
 -   **WSQK v1**
-    -   scoped, time-bound authority (no key custody)
+    -   Scoped, time-bound authority (no key custody)
 -   **TVA Gate**
-    -   authority binding, expiry enforcement, replay protection
+    -   Authority binding\
+    -   Expiry enforcement\
+    -   Replay protection
 -   **Nonce Store**
-    -   injected, single-use replay prevention
+    -   Injected, single-use replay prevention
+
+------------------------------------------------------------------------
 
 ### Evidence & Adapters (Fail-Closed)
 
 -   **Q-ID Adapter**
-    -   session validity, time window enforcement
+    -   Session validity\
+    -   Time window enforcement
 -   **Shield v3**
-    -   evidence-only defensive signals (Sentinel AI, ADN, DQSN, QWG,
-        Guardian Wallet)
-    -   strict adapter validation (no authority, no execution)
+    -   Evidence-only defensive signals (Sentinel AI, ADN, DQSN, QWG,
+        Guardian Wallet)\
+    -   Strict adapter validation (no authority, no execution)
 -   **Adaptive Core v3 Oracle**
-    -   deterministic risk evidence
-    -   context-bound, time-bound, evidence-only
+    -   Deterministic risk evidence\
+    -   Context-bound\
+    -   Time-bound\
+    -   Evidence-only
 -   **ExternalReasonRegistry**
-    -   strict mapping of external signals → internal `ReasonId`
-    -   deny-by-default governance (no free-form external reasons)
+    -   Strict mapping of external signals → internal `ReasonId`\
+    -   Deny-by-default governance (no free-form external reasons)
 -   **PolicyPack**
-    -   explicit thresholds, allowlists, and deny-by-default rules
+    -   Explicit thresholds\
+    -   Allowlists\
+    -   Deny-by-default rules
+
+------------------------------------------------------------------------
 
 ### Mobile Consumption (No Runtime)
 
--   Mobile execution boundary (v1)
--   Mobile decision result contract
--   ReasonId → UX-safe reason mapping
+-   Mobile execution boundary (v1)\
+-   Mobile decision result contract\
+-   ReasonId → UX-safe reason mapping\
 -   Deterministic mobile result builder
 
-Mobile apps consume decisions only --- they never execute core logic.
+Mobile apps consume **decisions only** --- they never execute core
+logic.
 
 ------------------------------------------------------------------------
 
 ## Explicitly NOT Included (By Design)
 
-Adamantine does not: - manage or store private keys - sign or broadcast
-transactions - build wallet UI - persist user data - sync to cloud
-services - perform learning or AI inference - act as a DigiByte node or
-consensus component
+Adamantine does **not**:
 
-Adamantine is not a wallet. It is the security operating system that
-wallets embed.
+-   Manage or store private keys\
+-   Sign or broadcast transactions\
+-   Build wallet UI\
+-   Persist user data\
+-   Sync to cloud services\
+-   Perform learning or AI inference\
+-   Act as a DigiByte node or consensus component
+
+Adamantine is **not a wallet**.\
+It is the **security operating system** that wallets embed.
 
 ------------------------------------------------------------------------
 
@@ -123,16 +141,16 @@ flowchart TD
 
 ## Core Invariants
 
--   deny-by-default
--   fail-closed on ambiguity
--   evidence ≠ authority ≠ execution
--   deterministic behaviour only
--   explicit versioned contracts
--   no hidden power
--   explainability over automation
--   external reasons must be registered and governed
--   shield signals can only strengthen deny, never force allow
--   oracle evidence can influence deny, never grant authority
+-   Deny-by-default\
+-   Fail-closed on ambiguity\
+-   Evidence ≠ authority ≠ execution\
+-   Deterministic behaviour only\
+-   Explicit versioned contracts\
+-   No hidden power\
+-   Explainability over automation\
+-   External reasons must be registered and governed\
+-   Shield signals can only strengthen deny, never force allow\
+-   Oracle evidence can influence deny, never grant authority
 
 These invariants are enforced in code and tests.
 
@@ -140,10 +158,10 @@ These invariants are enforced in code and tests.
 
 ## Coverage & Testing Philosophy
 
--   High coverage focused on security-critical paths
--   Contract validation tested separately from adapters
--   Negative-first testing
--   Determinism and replay safety enforced
+-   High coverage focused on security-critical paths\
+-   Contract validation tested separately from adapters\
+-   Negative-first testing\
+-   Determinism and replay safety enforced\
 -   Governance rules tested explicitly
 
 Current coverage: **\>90%**, with all critical logic covered.
@@ -155,9 +173,12 @@ Current coverage: **\>90%**, with all critical logic covered.
 This repository represents a sealed foundation designed for additive
 extension only.
 
-Future work: - mobile SDK integration - wallet runtime implementations
-(outside this repo) - UI/UX layers - additional shield/oracle
-implementations
+Future work:
+
+-   Mobile SDK integration\
+-   Wallet runtime implementations (outside this repo)\
+-   UI/UX layers\
+-   Additional shield/oracle implementations
 
 All future work must respect the frozen contracts and invariants defined
 here.
