@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "adamantine-wallet-os"
-version = "0.1.0"
+version = "1.2.0"
 description = "DigiByte Adamantine Wallet OS (foundation)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -25,9 +25,6 @@ where = ["src"]
 testpaths = ["tests"]
 addopts = "-q --cov=adamantine --cov-report=term-missing --cov-fail-under=90"
 
-# Coverage configuration
-# Runtime adapters are intentionally frozen placeholders (Phase E).
-# They are excluded from coverage by design.
 [tool.coverage.run]
 omit = [
   "src/adamantine/v1/runtime/*"
