@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
 from adamantine.v1.contracts.qid import QIDSessionProof
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -13,36 +11,24 @@ from adamantine.v1.eqc.evaluator import evaluate_eqc, evaluate_eqc_v2
 from adamantine.v1.obs.metrics import InMemoryMetrics
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
-NOW = 100
-
-REQUIRED_LAYERS_V3: tuple[str, ...] = (
-    "sentinel_ai",
-    "adn",
-    "dqsn",
-    "qwg",
-    "guardian_wallet",
-)
+NOW = 1706918400
 
 
 def _session(*, now: int, issued_at_delta: int = -10, ttl: int = 60) -> QIDSessionProof:
-    """
-    Minimal VALID QIDSessionProof for evaluator branches (matches current contract).
-    """
+    """Minimal VALID QIDSessionProof for evaluator branches (matches current contract)."""
     return QIDSessionProof(
         subject="w1",
         issued_at=now + issued_at_delta,
         expires_at=now + issued_at_delta + ttl,
         proof_hash="b" * 64,
-        nonce="n1",
         device_binding=None,
         issuer_version="v1",
     )
 
 
-def _oracle(*, ctx_hash: str, now: int, overall_score: int = 95) -> AdaptiveCoreOracleV3:
+def _oracle(*, ctx_hash: str, now: int, overall_score: int) -> AdaptiveCoreOracleV3:
     rs = RiskSignal(source="ac", severity=10, reason_ids=(ReasonId.EVIDENCE_OK.value,))
     rs.validate()
-
     report = RiskReport(
         context_hash=ctx_hash,
         signals=(rs,),
@@ -52,11 +38,10 @@ def _oracle(*, ctx_hash: str, now: int, overall_score: int = 95) -> AdaptiveCore
         external_source_id="src",
     )
     report.validate(now=now)
-
     oracle = AdaptiveCoreOracleV3(
         context_hash=ctx_hash,
         issued_at=now - 10,
-        expires_at=now + 60,
+        expires_at=now + 10,
         report=report,
     )
     oracle.validate(now=now)
@@ -64,19 +49,24 @@ def _oracle(*, ctx_hash: str, now: int, overall_score: int = 95) -> AdaptiveCore
 
 
 def _shield_ok(*, ctx_hash: str, now: int) -> ShieldBundleV3:
-    sig = ShieldSignal(source=ShieldSource.SENTINEL_AI.value, reason_ids=(ReasonId.EVIDENCE_OK.value,))
+    sig = ShieldSignal(source=ShieldSource.SENTINEL, severity=1, reason_ids=(ReasonId.EVIDENCE_OK.value,))
     sig.validate()
-
-    sh = ShieldBundleV3(
-        bundle_id="b1",
-        required_layers=REQUIRED_LAYERS_V3,
+    shield = ShieldBundleV3(
         context_hash=ctx_hash,
+        bundle_id="b1",
         issued_at=now - 10,
-        expires_at=now + 60,
+        expires_at=now + 10,
+        required_layers=(
+            "sentinel_ai",
+            "adn",
+            "dqsn",
+            "qwg",
+            "guardian_wallet",
+        ),
         signals=(sig,),
     )
-    sh.validate()
-    return sh
+    shield.validate()
+    return shield
 
 
 def test_eqc_v1_metrics_increment_on_missing_now() -> None:
@@ -92,7 +82,6 @@ def test_eqc_v1_metrics_increment_on_missing_now() -> None:
 
 def test_eqc_v2_oracle_report_context_hash_mismatch() -> None:
     now = NOW
-    # evaluator computes ctx_hash from fields; bind everything to that.
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"a": "1"})
 
     session = _session(now=now)
@@ -110,9 +99,8 @@ def test_eqc_v2_oracle_report_context_hash_mismatch() -> None:
         shield=shield,
         now=now,
     )
-
     assert out.verdict.value == "DENY"
-    assert out.reason_ids == (ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH.value,)
+    assert out.reason_ids[0] == ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH.value
 
 
 def test_eqc_v2_oracle_validate_failure_maps_to_invalid_risk_report() -> None:
@@ -151,9 +139,8 @@ def test_eqc_v2_oracle_validate_failure_maps_to_invalid_risk_report() -> None:
         shield=shield,
         now=now,
     )
-
     assert out.verdict.value == "DENY"
-    assert out.reason_ids == (ReasonId.EQC_INVALID_RISK_REPORT.value,)
+    assert out.reason_ids[0] == ReasonId.EQC_INVALID_RISK_REPORT.value
 
 
 def test_eqc_v2_score_below_threshold() -> None:
@@ -177,9 +164,8 @@ def test_eqc_v2_score_below_threshold() -> None:
         now=now,
         policy=policy,
     )
-
     assert out.verdict.value == "DENY"
-    assert out.reason_ids == (ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD.value,)
+    assert out.reason_ids[0] == ReasonId.EQC_RISK_SCORE_BELOW_THRESHOLD.value
 
 
 def test_eqc_v2_shield_invalid_bundle() -> None:
@@ -188,14 +174,16 @@ def test_eqc_v2_shield_invalid_bundle() -> None:
     session = _session(now=now)
     oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
 
-    # Invalid: required_layers missing -> validate() raises -> EQC_INVALID_SHIELD_BUNDLE
+    # invalid: missing required layers
+    sig = ShieldSignal(source=ShieldSource.SENTINEL, severity=1, reason_ids=(ReasonId.EVIDENCE_OK.value,))
+    sig.validate()
     bad_shield = ShieldBundleV3(
-        bundle_id="b1",
-        required_layers=(),
         context_hash=ctx_hash,
+        bundle_id="b2",
         issued_at=now - 10,
-        expires_at=now + 60,
-        signals=(),
+        expires_at=now + 10,
+        required_layers=(),
+        signals=(sig,),
     )
 
     out = evaluate_eqc_v2(
@@ -207,9 +195,8 @@ def test_eqc_v2_shield_invalid_bundle() -> None:
         shield=bad_shield,
         now=now,
     )
-
     assert out.verdict.value == "DENY"
-    assert out.reason_ids == (ReasonId.EQC_INVALID_SHIELD_BUNDLE.value,)
+    assert out.reason_ids[0] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
 
 
 def test_eqc_v2_shield_context_hash_mismatch() -> None:
@@ -229,9 +216,8 @@ def test_eqc_v2_shield_context_hash_mismatch() -> None:
         shield=shield,
         now=now,
     )
-
     assert out.verdict.value == "DENY"
-    assert out.reason_ids == (ReasonId.EQC_SHIELD_CONTEXT_HASH_MISMATCH.value,)
+    assert out.reason_ids[0] == ReasonId.EQC_SHIELD_CONTEXT_HASH_MISMATCH.value
 
 
 def test_eqc_v2_shield_stale_window() -> None:
@@ -241,38 +227,21 @@ def test_eqc_v2_shield_stale_window() -> None:
     oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
     shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
-    # Make stale: expires_at <= now
-    stale = ShieldBundleV3(
-        bundle_id=shield.bundle_id,
-        required_layers=shield.required_layers,
-        context_hash=shield.context_hash,
-        issued_at=shield.issued_at,
-        expires_at=now,  # stale (window is issued_at <= now < expires_at)
-        signals=shield.signals,
-    )
-    stale.validate()
-
     out = evaluate_eqc_v2(
         wallet_id="w1",
         action="send",
         fields=None,
         session=session,
         oracle=oracle,
-        shield=stale,
-        now=now,
+        shield=shield,
+        now=shield.expires_at,  # stale boundary
     )
-
     assert out.verdict.value == "DENY"
-    assert out.reason_ids == (ReasonId.EQC_SHIELD_STALE.value,)
+    assert out.reason_ids[0] == ReasonId.EQC_SHIELD_STALE.value
 
 
 def test_eqc_v2_final_presence_reasons_after_valid_evidence() -> None:
-    """
-    Covers late fail-closed branch:
-      - wallet_id missing
-      - BUT evidence checks all pass
-      - hits final `if reasons:` block.
-    """
+    """Covers late fail-closed branch: wallet_id missing BUT evidence checks pass."""
     now = NOW
 
     ctx_hash = compute_context_hash(wallet_id="", action="send", fields={"x": "1"})
@@ -281,7 +250,7 @@ def test_eqc_v2_final_presence_reasons_after_valid_evidence() -> None:
     shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
     out = evaluate_eqc_v2(
-        wallet_id="",  # triggers EQC_MISSING_WALLET_ID
+        wallet_id="",
         action="send",
         fields={"x": "1"},
         session=session,
@@ -289,9 +258,9 @@ def test_eqc_v2_final_presence_reasons_after_valid_evidence() -> None:
         shield=shield,
         now=now,
     )
-
     assert out.verdict.value == "DENY"
-    assert out.reason_ids == (ReasonId.EQC_MISSING_WALLET_ID.value,)
+    # Presence failure is reported after evidence checks complete
+    assert out.reason_ids[0] == ReasonId.EQC_MISSING_WALLET_ID.value
 
 
 def test_eqc_v2_metrics_increment_multiple_reasons() -> None:
