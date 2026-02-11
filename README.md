@@ -13,9 +13,6 @@
 This repository contains the sealed foundation of the **Adamantine
 Wallet OS**.
 
-This repository contains the sealed foundation of the **Adamantine
-Wallet OS**.
-
 Adamantine is a deterministic security decision engine for DigiByte
 wallets.\
 It defines **what is allowed to execute**, **under which conditions**,
