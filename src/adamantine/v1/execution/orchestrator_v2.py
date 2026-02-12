@@ -163,6 +163,20 @@ def _build_mandatory_reason_registry(policy: RiskPolicy) -> ExternalReasonRegist
     return reg
 
 
+def _map_shield_adapter_reason(rid: ReasonId) -> ReasonId:
+    """Map shield adapter failures to stable, wallet-facing reasons.
+
+    Governance:
+    - Structural invalidity in shield payloads should surface as EQC_INVALID_SHIELD_BUNDLE
+      (so callers don't see generic adapter internals).
+    - External reason disallow/unmapped reasons remain UNKNOWN_EXTERNAL_REASON.
+    """
+
+    if rid in (ReasonId.DENY_ADAPTER_INVALID, ReasonId.DENY_VERSION_MISMATCH):
+        return ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    return rid
+
+
 def orchestrate_execution_v2(
     *,
     payload: Any,
@@ -211,13 +225,34 @@ def orchestrate_execution_v2(
             policy=pol,
         )
 
-        shield = parse_shield_bundle_v3(
-            payload=req.evidence_shield,
-            now=now,
-            expected_context_hash=req.context.context_hash,
-            reason_map=reason_map,
-            reason_registry=reason_registry,
-        )
+        # Governance: map shield adapter failures to stable EQC-facing reasons.
+        try:
+            shield = parse_shield_bundle_v3(
+                payload=req.evidence_shield,
+                now=now,
+                expected_context_hash=req.context.context_hash,
+                reason_map=reason_map,
+                reason_registry=reason_registry,
+            )
+        except AdapterError as e:
+            mapped = _map_shield_adapter_reason(e.reason_id)
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=mapped,
+                tva_allowed=False,
+                eqc_allowed=False,
+                wsqk_allowed=False,
+                nonce_consumed=False,
+                timebox_valid=True,
+                artifacts={
+                    "shield_adapter_reason": e.reason_id.value,
+                    "shield_adapter_message": e.message,
+                },
+            )
 
         if tuple(shield.required_layers) != REQUIRED_SHIELD_LAYERS_V3:
             expected = list(REQUIRED_SHIELD_LAYERS_V3)
