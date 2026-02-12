@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-
 from typing import Any, Mapping, Sequence
 
 from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
@@ -20,6 +19,7 @@ _ALLOWED_LAYERS = {
     "guardian_wallet": ShieldSource.GUARDIAN,
 }
 
+# Phase A: canonical ordering for required_layers (enforced only when require_versions=True)
 _CANONICAL_LAYER_ORDER: tuple[str, ...] = (
     "sentinel_ai",
     "adn",
@@ -28,6 +28,7 @@ _CANONICAL_LAYER_ORDER: tuple[str, ...] = (
     "guardian_wallet",
 )
 
+# Phase A: allow new version fields (enforced only when require_versions=True)
 _SIGNAL_ALLOWED_KEYS = {
     "v",
     "layer",
@@ -36,11 +37,11 @@ _SIGNAL_ALLOWED_KEYS = {
     "issued_at",
     "expires_at",
     "verdict",
-    "layer_version",
     "reason_id",
     "confidence",
     "facts",
     "meta",
+    "layer_version",  # Phase A
 }
 
 _BUNDLE_ALLOWED_KEYS = {
@@ -51,11 +52,17 @@ _BUNDLE_ALLOWED_KEYS = {
     "expires_at",
     "signals",
     "required_layers",
-    "shield_bundle_version",
     "meta",
+    "shield_bundle_version",  # Phase A
 }
 
 _FACT_SCALAR_TYPES = (str, int, bool)
+
+_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+
+
+def _is_semver(s: Any) -> bool:
+    return isinstance(s, str) and bool(_SEMVER_RE.match(s.strip()))
 
 
 def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> "NoReturn":  # type: ignore[name-defined]
@@ -71,13 +78,6 @@ def _is_hex_64(s: Any) -> bool:
         if ch not in "0123456789abcdefABCDEF":
             return False
     return True
-
-
-_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
-
-
-def _is_semver(s: Any) -> bool:
-    return isinstance(s, str) and bool(_SEMVER_RE.match(s.strip()))
 
 
 def _require_mapping(metrics: Metrics | None, obj: Any, rid: ReasonId, name: str) -> Mapping[str, Any]:
@@ -131,11 +131,11 @@ def _parse_signal_v3(
     signal: Mapping[str, Any],
     metrics: Metrics | None,
     expected_context_hash: str,
-    require_versions: bool,
     bundle_issued_at: int,
     bundle_expires_at: int,
     reason_map: ExternalReasonMap,
     reason_registry: ExternalReasonRegistryV1,
+    require_versions: bool,
 ) -> tuple[str, ShieldSignal]:
     _deny_unknown_keys(metrics, signal, _SIGNAL_ALLOWED_KEYS, ReasonId.DENY_ADAPTER_INVALID, "signal")
 
@@ -147,12 +147,13 @@ def _parse_signal_v3(
     if layer not in _ALLOWED_LAYERS:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"unknown shield layer: {layer}")
 
+    # Phase A (strict only)
     if require_versions:
         lv = _require_str(metrics, signal, "layer_version", ReasonId.DENY_ADAPTER_INVALID, "signal")
         if not _is_semver(lv):
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.layer_version must be semver (X.Y.Z)")
 
-    signal_id = _require_str(metrics, signal, "signal_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
+    _require_str(metrics, signal, "signal_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
 
     ctx_hash = _require_str(metrics, signal, "context_hash", ReasonId.DENY_ADAPTER_INVALID, "signal")
     if not _is_hex_64(ctx_hash):
@@ -182,20 +183,20 @@ def _parse_signal_v3(
     _validate_facts(metrics, facts)
 
     ext_reason = _require_str(metrics, signal, "reason_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
-    try:
-        reason_registry.assert_allowed(layer=layer, external_reason_id=ext_reason)
-    except Exception:
-        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.reason_id not allowed by registry")
 
-    internal_rids = reason_map.map_external_reason_ids((ext_reason,))
-    if len(internal_rids) != 1:
-        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.reason_id mapping produced unexpected count")
+    # ✅ Correct registry API + correct reason id
+    if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
+        _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
 
-    internal_reason = internal_rids[0]
+    # ✅ Correct reason map API
+    mapped = reason_map.lookup(ext_reason)
+    if mapped is None:
+        _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {ext_reason}")
+
     src = _ALLOWED_LAYERS[layer]
     severity = 100 if verdict == "deny" else 0
 
-    out = ShieldSignal(source=src, severity=severity, reason_ids=(internal_reason,))
+    out = ShieldSignal(source=src, severity=severity, reason_ids=(mapped,))
     out.validate()
     return (layer, out)
 
@@ -232,6 +233,7 @@ def parse_shield_bundle_v3(
     if v != "shield_bundle_v3":
         _fail(metrics, ReasonId.DENY_VERSION_MISMATCH, "bundle.v must be shield_bundle_v3")
 
+    # Phase A (strict only)
     if require_versions:
         bv = _require_str(metrics, top, "shield_bundle_version", ReasonId.DENY_ADAPTER_INVALID, "bundle")
         if not _is_semver(bv):
@@ -262,13 +264,14 @@ def parse_shield_bundle_v3(
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"unknown required layer: {x}")
         required_layers.append(x)
 
+    # Phase A strict: enforce canonical ordering + no duplicates
     if require_versions:
-        order_index = {name: i for i, name in enumerate(_CANONICAL_LAYER_ORDER)}
-        sorted_req = sorted(required_layers, key=lambda x: order_index.get(x, 10_000))
-        if required_layers != sorted_req:
-            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers must follow canonical layer order")
         if len(set(required_layers)) != len(required_layers):
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers must not contain duplicates")
+        order_index = {name: i for i, name in enumerate(_CANONICAL_LAYER_ORDER)}
+        sorted_req = sorted(required_layers, key=lambda name: order_index.get(name, 10_000))
+        if required_layers != sorted_req:
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers must follow canonical layer order")
 
     sigs = top.get("signals")
     if not isinstance(sigs, Sequence) or isinstance(sigs, (str, bytes, bytearray)) or len(sigs) == 0:
@@ -293,11 +296,11 @@ def parse_shield_bundle_v3(
             signal=sig_map,
             metrics=metrics,
             expected_context_hash=expected_context_hash,
-            require_versions=require_versions,
             bundle_issued_at=issued_at,
             bundle_expires_at=expires_at,
             reason_map=reason_map,
             reason_registry=reason_registry,
+            require_versions=require_versions,
         )
         if layer in seen_layers:
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"duplicate layer signal in bundle: {layer}")
