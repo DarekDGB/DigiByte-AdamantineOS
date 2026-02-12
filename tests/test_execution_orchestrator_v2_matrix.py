@@ -238,8 +238,8 @@ def test_deny_if_unknown_required_layer_present() -> None:
     resp = orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
 
     assert resp["status"] == "deny"
-    # Unknown layer is rejected by Shield adapter before orchestrator layer-set enforcement.
-    assert resp["reason_id"] == ReasonId.DENY_ADAPTER_INVALID.value
+    # Governance (v1.3): structural shield invalid -> EQC_INVALID_SHIELD_BUNDLE (stable, wallet-facing)
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
     assert executor.called is False
 
 
@@ -334,7 +334,8 @@ def test_deny_if_shield_context_hash_mismatch() -> None:
     resp = orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
 
     assert resp["status"] == "deny"
-    assert resp["reason_id"] == ReasonId.DENY_ADAPTER_INVALID.value
+    # Governance (v1.3): structural shield invalid -> EQC_INVALID_SHIELD_BUNDLE (stable, wallet-facing)
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
     assert executor.called is False
 
 
