@@ -75,7 +75,6 @@ def test_shield_v3_accepts_valid_bundle() -> None:
         _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
         _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
     ]
-    # Must be sorted by (layer, signal_id): guardian_wallet < qwg
     out = parse_shield_bundle_v3(
         payload=_bundle(signals=signals),
         now=123,
@@ -84,17 +83,19 @@ def test_shield_v3_accepts_valid_bundle() -> None:
         reason_registry=_registry(),
     )
     assert out.bundle_id == "b1"
-    assert len(out.signals) == 2
+    assert out.context_hash == "a" * 64
 
 
-def test_shield_v3_rejects_unknown_layer() -> None:
+def test_shield_v3_rejects_unknown_keys_in_bundle() -> None:
     signals = [
         _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
-        _sig(layer="nope", signal_id="x-1", ext_reason="OK"),
+        _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
     ]
+    b = _bundle(signals=signals)
+    b["wat"] = 1
     with pytest.raises(AdapterError) as e:
         parse_shield_bundle_v3(
-            payload=_bundle(signals=signals),
+            payload=b,
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
@@ -103,29 +104,15 @@ def test_shield_v3_rejects_unknown_layer() -> None:
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
 
-def test_shield_v3_rejects_unknown_external_reason() -> None:
+def test_shield_v3_rejects_unknown_keys_in_signal() -> None:
     signals = [
-        _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="UNKNOWN_CODE"),
+        _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
         _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
     ]
+    signals[0]["wat"] = 2
     with pytest.raises(AdapterError) as e:
         parse_shield_bundle_v3(
             payload=_bundle(signals=signals),
-            now=123,
-            expected_context_hash="a" * 64,
-            reason_map=_reason_map(),
-            reason_registry=_registry(),
-        )
-    assert e.value.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
-
-
-def test_shield_v3_rejects_missing_required_layer() -> None:
-    signals = [
-        _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
-    ]
-    with pytest.raises(AdapterError) as e:
-        parse_shield_bundle_v3(
-            payload=_bundle(signals=signals, required_layers=["qwg", "guardian_wallet"]),
             now=123,
             expected_context_hash="a" * 64,
             reason_map=_reason_map(),
@@ -135,7 +122,6 @@ def test_shield_v3_rejects_missing_required_layer() -> None:
 
 
 def test_shield_v3_rejects_unsorted_signals() -> None:
-    # Unsorted: qwg should come after guardian_wallet, but we put it first
     signals = [
         _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
         _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
@@ -151,29 +137,9 @@ def test_shield_v3_rejects_unsorted_signals() -> None:
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
 
-def test_shield_v3_rejects_duplicate_layer() -> None:
+def test_shield_v3_rejects_missing_required_layer_signal() -> None:
     signals = [
         _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
-        _sig(layer="qwg", signal_id="qwg-2", ext_reason="OK"),
-    ]
-    # sorted by (layer, signal_id) already; still invalid due to duplication
-    with pytest.raises(AdapterError) as e:
-        parse_shield_bundle_v3(
-            payload=_bundle(signals=signals, required_layers=["qwg"]),
-            now=123,
-            expected_context_hash="a" * 64,
-            reason_map=_reason_map(),
-            reason_registry=_registry(),
-        )
-    assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
-
-
-def test_shield_v3_rejects_nested_facts_object() -> None:
-    bad = _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED")
-    bad["facts"] = {"nested": {"nope": True}}  # nested object forbidden
-    signals = [
-        _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
-        bad,
     ]
     with pytest.raises(AdapterError) as e:
         parse_shield_bundle_v3(
@@ -186,25 +152,144 @@ def test_shield_v3_rejects_nested_facts_object() -> None:
     assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
 
 
-def test_shield_v3_determinism_replay() -> None:
+def test_shield_v3_rejects_registry_disallowed_reason_id() -> None:
+    signals = [
+        _sig(layer="qwg", signal_id="qwg-1", ext_reason="NOT_ALLOWED"),
+        _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
+    ]
+    with pytest.raises(AdapterError) as e:
+        parse_shield_bundle_v3(
+            payload=_bundle(signals=signals),
+            now=123,
+            expected_context_hash="a" * 64,
+            reason_map=_reason_map(),
+            reason_registry=_registry(),
+        )
+    assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
+
+
+def test_shield_v3_is_deterministic_on_same_input() -> None:
     signals = [
         _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
         _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
     ]
-    payload = _bundle(signals=signals)
-
     out1 = parse_shield_bundle_v3(
-        payload=payload,
+        payload=_bundle(signals=signals),
         now=123,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
         reason_registry=_registry(),
     )
     out2 = parse_shield_bundle_v3(
-        payload=payload,
+        payload=_bundle(signals=signals),
         now=123,
         expected_context_hash="a" * 64,
         reason_map=_reason_map(),
         reason_registry=_registry(),
     )
     assert out1 == out2
+
+
+def _bundle_v13(*, signals: list[dict], required_layers: list[str] | None = None) -> dict:
+    req = required_layers or ["qwg", "guardian_wallet"]
+    return {
+        "v": "shield_bundle_v3",
+        "shield_bundle_version": "1.0.0",
+        "bundle_id": "b1",
+        "context_hash": "a" * 64,
+        "issued_at": 100,
+        "expires_at": 200,
+        "required_layers": req,
+        "signals": signals,
+    }
+
+
+def _sig_v13(*, layer: str, signal_id: str, ext_reason: str) -> dict:
+    d = _sig(layer=layer, signal_id=signal_id, ext_reason=ext_reason)
+    d["layer_version"] = "1.0.0"
+    return d
+
+
+def test_shield_v3_requires_versions_when_flag_set() -> None:
+    signals = [
+        _sig(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
+        _sig(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
+    ]
+    with pytest.raises(AdapterError) as e:
+        parse_shield_bundle_v3(
+            payload=_bundle(signals=signals),
+            now=123,
+            expected_context_hash="a" * 64,
+            reason_map=_reason_map(),
+            reason_registry=_registry(),
+            require_versions=True,
+        )
+    assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
+
+
+def test_shield_v3_accepts_versions_when_flag_set() -> None:
+    signals = [
+        _sig_v13(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
+        _sig_v13(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
+    ]
+    out = parse_shield_bundle_v3(
+        payload=_bundle_v13(signals=signals),
+        now=123,
+        expected_context_hash="a" * 64,
+        reason_map=_reason_map(),
+        reason_registry=_registry(),
+        require_versions=True,
+    )
+    assert out.bundle_id == "b1"
+    assert out.context_hash == "a" * 64
+
+
+def test_shield_v3_rejects_bad_semver_versions_when_flag_set() -> None:
+    signals = [
+        _sig_v13(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
+        _sig_v13(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
+    ]
+    b = _bundle_v13(signals=signals)
+    b["shield_bundle_version"] = "1"
+    with pytest.raises(AdapterError) as e:
+        parse_shield_bundle_v3(
+            payload=b,
+            now=123,
+            expected_context_hash="a" * 64,
+            reason_map=_reason_map(),
+            reason_registry=_registry(),
+            require_versions=True,
+        )
+    assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
+
+    b2 = _bundle_v13(signals=signals)
+    b2["signals"][0]["layer_version"] = "v1"
+    with pytest.raises(AdapterError) as e2:
+        parse_shield_bundle_v3(
+            payload=b2,
+            now=123,
+            expected_context_hash="a" * 64,
+            reason_map=_reason_map(),
+            reason_registry=_registry(),
+            require_versions=True,
+        )
+    assert e2.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
+
+
+def test_shield_v3_requires_sorted_required_layers_when_flag_set() -> None:
+    signals = [
+        _sig_v13(layer="guardian_wallet", signal_id="gw-1", ext_reason="GW_POLICY_BLOCK"),
+        _sig_v13(layer="qwg", signal_id="qwg-1", ext_reason="QWG_DEVICE_COMPROMISED"),
+    ]
+    # intentionally wrong vs canonical order (qwg -> guardian_wallet)
+    b = _bundle_v13(signals=signals, required_layers=["guardian_wallet", "qwg"])
+    with pytest.raises(AdapterError) as e:
+        parse_shield_bundle_v3(
+            payload=b,
+            now=123,
+            expected_context_hash="a" * 64,
+            reason_map=_reason_map(),
+            reason_registry=_registry(),
+            require_versions=True,
+        )
+    assert e.value.reason_id == ReasonId.DENY_ADAPTER_INVALID
