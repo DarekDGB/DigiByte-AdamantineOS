@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from typing import Any, Mapping, Sequence
 
 from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
@@ -18,6 +20,14 @@ _ALLOWED_LAYERS = {
     "guardian_wallet": ShieldSource.GUARDIAN,
 }
 
+_CANONICAL_LAYER_ORDER: tuple[str, ...] = (
+    "sentinel_ai",
+    "adn",
+    "dqsn",
+    "qwg",
+    "guardian_wallet",
+)
+
 _SIGNAL_ALLOWED_KEYS = {
     "v",
     "layer",
@@ -26,6 +36,7 @@ _SIGNAL_ALLOWED_KEYS = {
     "issued_at",
     "expires_at",
     "verdict",
+    "layer_version",
     "reason_id",
     "confidence",
     "facts",
@@ -40,6 +51,7 @@ _BUNDLE_ALLOWED_KEYS = {
     "expires_at",
     "signals",
     "required_layers",
+    "shield_bundle_version",
     "meta",
 }
 
@@ -59,6 +71,13 @@ def _is_hex_64(s: Any) -> bool:
         if ch not in "0123456789abcdefABCDEF":
             return False
     return True
+
+
+_SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+
+
+def _is_semver(s: Any) -> bool:
+    return isinstance(s, str) and bool(_SEMVER_RE.match(s.strip()))
 
 
 def _require_mapping(metrics: Metrics | None, obj: Any, rid: ReasonId, name: str) -> Mapping[str, Any]:
@@ -112,6 +131,7 @@ def _parse_signal_v3(
     signal: Mapping[str, Any],
     metrics: Metrics | None,
     expected_context_hash: str,
+    require_versions: bool,
     bundle_issued_at: int,
     bundle_expires_at: int,
     reason_map: ExternalReasonMap,
@@ -127,6 +147,11 @@ def _parse_signal_v3(
     if layer not in _ALLOWED_LAYERS:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"unknown shield layer: {layer}")
 
+    if require_versions:
+        lv = _require_str(metrics, signal, "layer_version", ReasonId.DENY_ADAPTER_INVALID, "signal")
+        if not _is_semver(lv):
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.layer_version must be semver (X.Y.Z)")
+
     signal_id = _require_str(metrics, signal, "signal_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
 
     ctx_hash = _require_str(metrics, signal, "context_hash", ReasonId.DENY_ADAPTER_INVALID, "signal")
@@ -139,47 +164,40 @@ def _parse_signal_v3(
     expires_at = _require_int(metrics, signal, "expires_at", ReasonId.DENY_ADAPTER_INVALID, "signal")
     if expires_at < issued_at:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.expires_at must be >= issued_at")
-    if issued_at < bundle_issued_at or expires_at > bundle_expires_at:
-        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal time window must be within bundle time window")
+
+    if issued_at < bundle_issued_at:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.issued_at must be >= bundle.issued_at")
+    if expires_at > bundle_expires_at:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.expires_at must be <= bundle.expires_at")
 
     verdict = _require_str(metrics, signal, "verdict", ReasonId.DENY_ADAPTER_INVALID, "signal")
-    if verdict not in {"allow", "deny", "unknown"}:
-        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.verdict must be allow/deny/unknown")
-
-    ext_reason = _require_str(metrics, signal, "reason_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
-
-    # Phase M hard governance: deny-by-default registry is mandatory
-    try:
-        reason_registry.validate()
-    except Exception:
-        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "reason_registry invalid")
-
-    if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
-        _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
-
-    mapped = reason_map.lookup(ext_reason)
-    if mapped is None:
-        _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {ext_reason}")
+    if verdict not in ("allow", "deny"):
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.verdict must be allow|deny")
 
     confidence = _require_int(metrics, signal, "confidence", ReasonId.DENY_ADAPTER_INVALID, "signal")
-    if confidence < 0 or confidence > 100:
+    if not (0 <= confidence <= 100):
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.confidence must be 0..100")
 
     facts = signal.get("facts")
     _validate_facts(metrics, facts)
 
-    meta = signal.get("meta")
-    if meta is not None and not isinstance(meta, Mapping):
-        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.meta must be object when present")
+    ext_reason = _require_str(metrics, signal, "reason_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
+    try:
+        reason_registry.assert_allowed(layer=layer, external_reason_id=ext_reason)
+    except Exception:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.reason_id not allowed by registry")
 
-    internal = ShieldSignal(
-        source=_ALLOWED_LAYERS[layer],
-        severity=confidence,
-        reason_ids=(mapped,),
-    )
-    internal.validate()
+    internal_rids = reason_map.map_external_reason_ids((ext_reason,))
+    if len(internal_rids) != 1:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.reason_id mapping produced unexpected count")
 
-    return layer, internal
+    internal_reason = internal_rids[0]
+    src = _ALLOWED_LAYERS[layer]
+    severity = 100 if verdict == "deny" else 0
+
+    out = ShieldSignal(source=src, severity=severity, reason_ids=(internal_reason,))
+    out.validate()
+    return (layer, out)
 
 
 def parse_shield_bundle_v3(
@@ -189,6 +207,7 @@ def parse_shield_bundle_v3(
     expected_context_hash: str,
     reason_map: ExternalReasonMap,
     reason_registry: ExternalReasonRegistryV1,
+    require_versions: bool = False,
     metrics: Metrics | None = None,
 ) -> ShieldBundleV3:
     if not isinstance(now, int):
@@ -212,6 +231,11 @@ def parse_shield_bundle_v3(
     v = _require_str(metrics, top, "v", ReasonId.DENY_ADAPTER_INVALID, "bundle")
     if v != "shield_bundle_v3":
         _fail(metrics, ReasonId.DENY_VERSION_MISMATCH, "bundle.v must be shield_bundle_v3")
+
+    if require_versions:
+        bv = _require_str(metrics, top, "shield_bundle_version", ReasonId.DENY_ADAPTER_INVALID, "bundle")
+        if not _is_semver(bv):
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.shield_bundle_version must be semver (X.Y.Z)")
 
     bundle_id = _require_str(metrics, top, "bundle_id", ReasonId.DENY_ADAPTER_INVALID, "bundle")
 
@@ -238,6 +262,14 @@ def parse_shield_bundle_v3(
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"unknown required layer: {x}")
         required_layers.append(x)
 
+    if require_versions:
+        order_index = {name: i for i, name in enumerate(_CANONICAL_LAYER_ORDER)}
+        sorted_req = sorted(required_layers, key=lambda x: order_index.get(x, 10_000))
+        if required_layers != sorted_req:
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers must follow canonical layer order")
+        if len(set(required_layers)) != len(required_layers):
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers must not contain duplicates")
+
     sigs = top.get("signals")
     if not isinstance(sigs, Sequence) or isinstance(sigs, (str, bytes, bytearray)) or len(sigs) == 0:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.signals must be non-empty array")
@@ -261,6 +293,7 @@ def parse_shield_bundle_v3(
             signal=sig_map,
             metrics=metrics,
             expected_context_hash=expected_context_hash,
+            require_versions=require_versions,
             bundle_issued_at=issued_at,
             bundle_expires_at=expires_at,
             reason_map=reason_map,
