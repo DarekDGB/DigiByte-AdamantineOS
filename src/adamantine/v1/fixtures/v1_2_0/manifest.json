@@ -1,4 +1,4 @@
 {
-  "allow.json": "REPLACE_WITH_NEW_HASH_AFTER_CI_RUN",
+  "allow.json": "e0f81c56888d184772108544479b79e29c5f30f9f30fc30935ded951949e74f9",
   "deny.json": "REPLACE_WITH_NEW_HASH_AFTER_CI_RUN"
 }
