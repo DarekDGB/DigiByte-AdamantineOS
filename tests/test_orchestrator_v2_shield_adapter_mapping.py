@@ -62,6 +62,8 @@ def _shield_signal(*, layer: str, signal_id: str, context_hash: str, ext_reason:
     return {
         "v": "shield_signal_v3",
         "layer": layer,
+        # v1.3 strict
+        "layer_version": "1.0.0",
         "signal_id": signal_id,
         "context_hash": context_hash,
         "issued_at": 1706990400,
@@ -85,6 +87,8 @@ def _shield_bundle(*, context_hash: str, required_layers: list[str]) -> dict[str
     ]
     return {
         "v": "shield_bundle_v3",
+        # v1.3 strict
+        "shield_bundle_version": "1.0.0",
         "bundle_id": "b1",
         "context_hash": context_hash,
         "issued_at": 1706990400,
@@ -197,7 +201,6 @@ def test_orchestrator_preserves_unknown_external_reason_from_shield_adapter() ->
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
 
     shield = _shield_bundle(context_hash=ctx_hash, required_layers=list(REQUIRED_SHIELD_LAYERS_V3))
-    # Make one layer use a disallowed external reason id.
     for s in shield["signals"]:
         if s.get("layer") == "adn":
             s["reason_id"] = "NOT_ALLOWED"
