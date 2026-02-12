@@ -1,6 +1,6 @@
 {
   "v": "execution_request_v2",
-  "request_id": "req-allow-1",
+  "request_id": "req-1",
   "intent": "authorize",
   "context": {
     "wallet_id": "w1",
@@ -22,7 +22,7 @@
       "wsqk": {
         "wallet_id": "w1",
         "action": "send",
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "issued_at": 1706990400,
         "expires_at": 1706990460,
         "nonce": "n1"
@@ -51,7 +51,7 @@
       },
       "oracle": {
         "ac_iface_version": "adaptive_core_oracle_v3",
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "issued_at": 1706990395,
         "expires_at": 1706990405,
         "generated_at": 1706990399,
@@ -70,8 +70,9 @@
       },
       "shield": {
         "v": "shield_bundle_v3",
+        "shield_bundle_version": "1.0.0",
         "bundle_id": "b1",
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "issued_at": 1706990400,
         "expires_at": 1706990460,
         "required_layers": [
@@ -85,8 +86,9 @@
           {
             "v": "shield_signal_v3",
             "layer": "adn",
+            "layer_version": "1.0.0",
             "signal_id": "a-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
             "verdict": "allow",
@@ -100,8 +102,9 @@
           {
             "v": "shield_signal_v3",
             "layer": "dqsn",
+            "layer_version": "1.0.0",
             "signal_id": "d-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
             "verdict": "allow",
@@ -115,8 +118,9 @@
           {
             "v": "shield_signal_v3",
             "layer": "guardian_wallet",
+            "layer_version": "1.0.0",
             "signal_id": "g-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
             "verdict": "allow",
@@ -130,8 +134,9 @@
           {
             "v": "shield_signal_v3",
             "layer": "qwg",
+            "layer_version": "1.0.0",
             "signal_id": "q-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
             "verdict": "allow",
@@ -145,8 +150,9 @@
           {
             "v": "shield_signal_v3",
             "layer": "sentinel_ai",
+            "layer_version": "1.0.0",
             "signal_id": "s-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "issued_at": 1706990400,
             "expires_at": 1706990460,
             "verdict": "allow",
