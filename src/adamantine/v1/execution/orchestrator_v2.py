@@ -233,6 +233,7 @@ def orchestrate_execution_v2(
                 expected_context_hash=req.context.context_hash,
                 reason_map=reason_map,
                 reason_registry=reason_registry,
+                require_versions=True,
             )
         except AdapterError as e:
             mapped = _map_shield_adapter_reason(e.reason_id)
