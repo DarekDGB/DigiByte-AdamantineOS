@@ -210,3 +210,8 @@ External interfaces are treated as **hostile entry points**, not conveniences.
 Anything not explicitly allowed is rejected.
 
 This model ensures that Adamantine remains deterministic, auditable, and resistant to ambiguity-based attacks.
+
+## Protection Mode (v1.3.0)
+
+Execution responses include `decision.protection_mode` to make the security posture auditable and deterministic:
+- `legacy` / `minimal` / `full` (see `docs/CONTRACTS/mobile_decision_result_v1.md`).
