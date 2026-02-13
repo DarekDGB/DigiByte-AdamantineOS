@@ -90,3 +90,16 @@ Given the same decision input, the mobile decision result MUST be byte-identical
 
 **Author:** DarekDGB  
 **License:** MIT
+
+## Protection Mode (v1.3.0)
+
+Mobile MUST treat `decision.protection_mode` as an **auditable posture indicator**:
+
+- `legacy`: protected call not requested OR Q-ID invalid/missing
+- `minimal`: Q-ID valid, but Oracle and/or Shield invalid/missing
+- `full`: Q-ID valid + Oracle valid + Shield valid (as configured)
+
+This field is deterministic and regression-locked.
+
+**Type:** `"legacy" | "minimal" | "full"`  
+**Location:** `decision.protection_mode`
