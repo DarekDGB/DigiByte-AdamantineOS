@@ -45,11 +45,10 @@ class RiskPolicy:
     resilience_mode: ResilienceMode = ResilienceMode.STRICT_FAIL_CLOSED
     policy_pack: PolicyPack | None = None
 
-    # Step 4 (v1.3.x): posture requirements (no silent downgrade)
-    # If True, caller must request a protected call (wsqk present) or we fail closed.
+    # v1.3.0 Step 4 posture latches
+    # These are explicit policy-level requirements that the orchestrator must enforce.
+    # They prevent silent security downgrades in production configurations.
     require_protected_call: bool = False
-    # If True, orchestrator must not proceed unless protection_mode would be "full".
-    # (This is a policy-level posture latch; defaults to False to preserve proof packs.)
     require_full_mode: bool = False
 
     def validate(self) -> None:
