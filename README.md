@@ -40,7 +40,7 @@ From this point forward, contracts are sealed. Only status evolves.
 
 # 🧱 Architecture Overview
 
-``` mermaid
+```mermaid
 flowchart TD
   A[Mobile Wallet Request] --> B[Q-ID Session Proof]
   B --> C[Adaptive Core v3 Oracle]
