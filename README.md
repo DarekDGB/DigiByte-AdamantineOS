@@ -42,30 +42,29 @@ From this point forward, contracts are sealed. Only status evolves.
 
 ``` mermaid
 flowchart TD
+  A[Mobile Wallet Request] --> B[Q-ID Session Proof]
+  B --> C[Adaptive Core v3 Oracle]
+  C --> D[Shield v3 Bundle]
 
-    A[Mobile Wallet Request] --> B[Q-ID Session Proof]
-    B --> C[Adaptive Core v3 Oracle]
-    C --> D[Shield v3 Bundle]
+  D --> D1[Sentinel AI]
+  D --> D2[ADN]
+  D --> D3[DQSN]
+  D --> D4[QWG]
+  D --> D5[Guardian Wallet]
 
-    D --> D1[Sentinel AI]
-    D --> D2[ADN]
-    D --> D3[DQSN]
-    D --> D4[QWG]
-    D --> D5[Guardian Wallet]
+  D1 --> E[EQC Evaluator]
+  D2 --> E
+  D3 --> E
+  D4 --> E
+  D5 --> E
+  C --> E
+  B --> E
 
-    D1 --> E[EQC Evaluator]
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    D5 --> E
-    C --> E
-    B --> E
+  E -->|ALLOW| F[WSQK Authority Check]
+  F -->|VALID| G[TVA Gate]
+  G -->|EXECUTE| H[Executor]
 
-    E -->|ALLOW| F[WSQK Authority Check]
-    F -->|VALID| G[TVA Gate]
-    G -->|EXECUTE| H[Executor]
-
-    E -->|DENY| X[Deterministic Denial]
+  E -->|DENY| X[Deterministic Denial]
 ```
 
 Adamantine enforces layered validation before any execution is
