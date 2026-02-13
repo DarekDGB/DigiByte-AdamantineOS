@@ -24,15 +24,22 @@ contract**.
 
 ## 2. Foundation Status
 
-**Current status:** v1.2.0 Integration Harness Sealed
+**Current status:** v1.3.0 Shield Interfaces Frozen + Posture Locked
 
-Foundation includes: - Contracts - Deterministic reasoning - Fail-closed
-gates - Authority model - Execution boundaries - Canonical fixture proof
-pack (v1.2.0)
+Foundation includes:
+- Contracts
+- Deterministic reasoning
+- Fail-closed gates
+- Authority model
+- Execution boundaries
+- Canonical fixture proof packs (v1.2.0, v1.3.0)
 
-Explicitly not included: - Wallet runtime - Transaction construction -
-Signing or broadcasting - Client SDKs - Shield or Adaptive Core
-implementations (evidence only)
+Explicitly not included:
+- Wallet runtime
+- Transaction construction
+- Signing or broadcasting
+- Client SDKs
+- Shield or Adaptive Core implementations (evidence only)
 
 ------------------------------------------------------------------------
 
@@ -89,7 +96,8 @@ If code or documentation conflicts with these, **these documents win**.
 
 ## 7. Deterministic Proof Packs
 
--   `docs/OS_PROOF_PACK_v1_2_0.md`\
+- `docs/OS_PROOF_PACK_v1_2_0.md`\
+- `docs/OS_PROOF_PACK_v1_3_0.md`\
     Canonical JSON fixture system, manifest enforcement, and
     reproducible execution validation.
 
