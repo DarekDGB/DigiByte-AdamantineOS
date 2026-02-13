@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Literal
 
 from adamantine.v1.contracts.reason_ids import ReasonId
+
+
+ProtectionMode = Literal["legacy", "minimal", "full"]
 
 
 def build_execution_response_v1(
@@ -13,6 +16,7 @@ def build_execution_response_v1(
     context_hash: str,
     status: str,
     reason_id: ReasonId,
+    protection_mode: ProtectionMode,
     tva_allowed: bool,
     eqc_allowed: bool,
     wsqk_allowed: bool,
@@ -28,6 +32,7 @@ def build_execution_response_v1(
     - status ∈ {"allow","deny","error"}
     - status=="allow" => allowed==True and reason_id==OK_ALLOW
     - status in {"deny","error"} => allowed==False
+    - protection_mode ∈ {"legacy","minimal","full"} (required; auditable posture)
     - No nondeterministic fields are inserted (no timestamps, no random ids)
     - Unknown keys are not added (shape is fixed)
     """
@@ -43,6 +48,9 @@ def build_execution_response_v1(
     if status not in {"allow", "deny", "error"}:
         raise ValueError("status must be one of: allow, deny, error")
 
+    if protection_mode not in {"legacy", "minimal", "full"}:
+        raise ValueError("protection_mode must be one of: legacy, minimal, full")
+
     if status == "allow" and reason_id is not ReasonId.OK_ALLOW:
         raise ValueError("allow status requires ReasonId.OK_ALLOW")
 
@@ -52,6 +60,7 @@ def build_execution_response_v1(
         "intent": intent,
         "action": action,
         "allowed": allowed,
+        "protection_mode": protection_mode,
         "tva": {"allowed": bool(tva_allowed)},
         "eqc": {"allowed": bool(eqc_allowed)},
         "wsqk": {"allowed": bool(wsqk_allowed)},
