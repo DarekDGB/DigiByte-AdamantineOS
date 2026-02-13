@@ -1,6 +1,6 @@
 """
 Utility functions to load and execute deterministic end-to-end fixtures for
-Adamantine Wallet OS v1.2.0 OS Proof Pack.
+Adamantine Wallet OS v1.3.0 OS Proof Pack.
 
 Manifest enforcement is semantic and deterministic:
 - We reject duplicate keys when parsing JSON (deny-by-default)
@@ -33,7 +33,7 @@ class DuplicateKeyError(CanonicalJSONError):
     """Raised when a duplicate key is encountered in a JSON object."""
 
 
-_FIXTURE_DIR = Path(__file__).parent.parent / "fixtures" / "v1_2_0"
+_FIXTURE_DIR = Path(__file__).parent.parent / "fixtures" / "v1_3_0"
 _MANIFEST = "manifest.json"
 
 
