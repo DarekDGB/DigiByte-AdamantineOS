@@ -16,22 +16,22 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ## 🛡 Shield Interfaces Frozen + Posture Locked (v1.3.0)
 
-Adamantine Wallet OS is a **deterministic security execution boundary**
-for DigiByte wallets.
+Adamantine Wallet OS is a deterministic security execution boundary for
+DigiByte wallets.
 
-It does **not** hold keys.
-It does **not** sign transactions.
-It decides --- deterministically and fail‑closed --- whether an action
-is allowed.
+It does not hold keys.\
+It does not sign transactions.\
+It decides deterministically and fail‑closed whether an action is
+allowed.
 
 v1.3.0 permanently locks:
 
 -   Shield v3 strict schema + canonical ordering
 -   Deterministic size caps + toxic input denial
--   No‑silent‑downgrade enforcement
--   Protection mode posture output (`legacy` | `minimal` | `full`)
--   Shield "never weaken deny" invariant
--   Protection mode matrix regression lock\
+-   No silent downgrade enforcement
+-   Protection mode posture output (legacy \| minimal \| full)
+-   Shield never weaken deny invariant
+-   Protection mode matrix regression lock
 -   Proof pack fixtures + manifest freeze
 
 From this point forward, contracts are sealed. Only status evolves.
@@ -40,22 +40,7 @@ From this point forward, contracts are sealed. Only status evolves.
 
 # 🧱 Architecture Overview
 
-```mermaid
-flowchart LR
-    Request --> QID
-    QID --> Oracle
-    Oracle --> Shield
-    Shield --> EQC
-    EQC --> WSQK
-    WSQK --> TVA
-    TVA --> Executor
-
-    Shield --> Sentinel
-    Shield --> ADN
-    Shield --> DQSN
-    Shield --> QWG
-    Shield --> Guardian
-```
+![Adamantine Architecture](adamantine_architecture.png)
 
 Adamantine enforces layered validation before any execution is
 permitted.
@@ -66,14 +51,13 @@ permitted.
 
 Every execution response includes a deterministic security posture:
 
-  Mode          Meaning
-  ------------- ------------------------------------------------------
-  **legacy**    Q-ID missing/invalid OR protected call not requested
-  **minimal**   Q-ID valid but Shield/Oracle incomplete
-  **full**      Q-ID + Shield v3 + Oracle v3 all valid
+  Mode      Meaning
+  --------- ---------------------------------------------------------
+  legacy    Q-ID missing or invalid OR protected call not requested
+  minimal   Q-ID valid but Shield or Oracle incomplete
+  full      Q-ID + Shield v3 + Oracle v3 all valid
 
-Protection mode is regression-locked.
-Any change in semantics breaks CI.
+Protection mode is regression locked. Any change in semantics breaks CI.
 
 ------------------------------------------------------------------------
 
@@ -113,7 +97,7 @@ Excluded:
 -   Transaction building
 -   Network broadcasting
 
-Adamantine is a **decision engine**, not a wallet.
+Adamantine is a decision engine, not a wallet.
 
 ------------------------------------------------------------------------
 
@@ -124,8 +108,7 @@ Adamantine is a **decision engine**, not a wallet.
 -   Proof packs frozen
 -   Regression locks for posture + shield invariants
 
-Security changes require test changes.
-Silent drift is impossible.
+Security changes require test changes. Silent drift is impossible.
 
 ------------------------------------------------------------------------
 
@@ -141,11 +124,11 @@ Next phase:
 
 ------------------------------------------------------------------------
 
-**Adamantine Wallet OS**
+Adamantine Wallet OS\
 Deterministic. Fail‑Closed. Future‑Ready.
 
 ------------------------------------------------------------------------
 
 ## License
 
-MIT License --- **DarekDGB**
+MIT License --- DarekDGB
