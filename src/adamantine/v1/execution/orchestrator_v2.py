@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, cast
+from typing import Any, Mapping, cast, Literal
 
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.authority import WSQKAuthority
@@ -18,7 +18,7 @@ from adamantine.v1.execution.boundary import run_with_tva
 from adamantine.v1.execution.envelope_v2 import parse_execution_request_envelope_v2
 from adamantine.v1.execution.errors import EnvelopeError
 from adamantine.v1.execution.executor import Executor
-from adamantine.v1.execution.response_v1 import build_execution_response_v1
+from adamantine.v1.execution.response_v1 import build_execution_response_v1, ProtectionMode
 from adamantine.v1.integrations.adaptive_core_oracle_v3_adapter import parse_adaptive_core_oracle_v3
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_session
@@ -177,6 +177,43 @@ def _map_shield_adapter_reason(rid: ReasonId) -> ReasonId:
     return rid
 
 
+def _protected_call_requested(authority_proofs: Mapping[str, Any] | None) -> bool:
+    """
+    Best-effort signal for whether the caller requested a *protected* execution.
+
+    In v1.3.0, we treat the presence of a 'wsqk' proof object as the request signal.
+    """
+    if authority_proofs is None:
+        return False
+    return "wsqk" in authority_proofs
+
+
+def _compute_protection_mode(
+    *,
+    protected_requested: bool,
+    qid_ok: bool,
+    oracle_ok: bool,
+    shield_ok: bool,
+) -> ProtectionMode:
+    """
+    Deterministic security posture output (auditable).
+
+    legacy:
+      - Q-ID invalid/missing OR protected call not requested
+    minimal:
+      - Q-ID valid, but Shield/Oracle missing/invalid
+    full:
+      - Q-ID valid + Shield valid + Oracle valid
+    """
+    if not protected_requested:
+        return "legacy"
+    if not qid_ok:
+        return "legacy"
+    if qid_ok and oracle_ok and shield_ok:
+        return "full"
+    return "minimal"
+
+
 def orchestrate_execution_v2(
     *,
     payload: Any,
@@ -190,6 +227,8 @@ def orchestrate_execution_v2(
     try:
         req = parse_execution_request_envelope_v2(payload=cast(Mapping[str, Any], p), now=now)
         fields = _extract_fields(p)
+
+        protected_requested = _protected_call_requested(req.authority_proofs)
 
         pol = policy or RiskPolicy()
         pol.validate()
@@ -206,6 +245,12 @@ def orchestrate_execution_v2(
                 context_hash=req.context.context_hash,
                 status="deny",
                 reason_id=ReasonId.DENY_POLICY,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=False,
+                    oracle_ok=False,
+                    shield_ok=False,
+                ),
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
@@ -214,16 +259,62 @@ def orchestrate_execution_v2(
                 artifacts={"error": f"reason registry build failed: {e}"},
             )
 
-        session = parse_qid_session(payload=req.evidence_qid, now=now)
+        # Q-ID must validate first (legacy if invalid).
+        try:
+            session = parse_qid_session(payload=req.evidence_qid, now=now)
+        except AdapterError as e:
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=e.reason_id,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=False,
+                    oracle_ok=False,
+                    shield_ok=False,
+                ),
+                tva_allowed=False,
+                eqc_allowed=False,
+                wsqk_allowed=False,
+                nonce_consumed=False,
+                timebox_valid=True,
+                artifacts={"error": e.message},
+            )
 
-        oracle = parse_adaptive_core_oracle_v3(
-            payload=req.evidence_oracle,
-            now=now,
-            expected_context_hash=req.context.context_hash,
-            reason_map=reason_map,
-            reason_registry=reason_registry,
-            policy=pol,
-        )
+        # Oracle (minimal if invalid).
+        try:
+            oracle = parse_adaptive_core_oracle_v3(
+                payload=req.evidence_oracle,
+                now=now,
+                expected_context_hash=req.context.context_hash,
+                reason_map=reason_map,
+                reason_registry=reason_registry,
+                policy=pol,
+            )
+        except AdapterError as e:
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=e.reason_id,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=True,
+                    oracle_ok=False,
+                    shield_ok=False,
+                ),
+                tva_allowed=False,
+                eqc_allowed=False,
+                wsqk_allowed=False,
+                nonce_consumed=False,
+                timebox_valid=True,
+                artifacts={"error": e.message},
+            )
 
         # Governance: map shield adapter failures to stable EQC-facing reasons.
         try:
@@ -244,6 +335,12 @@ def orchestrate_execution_v2(
                 context_hash=req.context.context_hash,
                 status="deny",
                 reason_id=mapped,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=True,
+                    oracle_ok=True,
+                    shield_ok=False,
+                ),
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
@@ -267,6 +364,12 @@ def orchestrate_execution_v2(
                 context_hash=req.context.context_hash,
                 status="deny",
                 reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=True,
+                    oracle_ok=True,
+                    shield_ok=False,
+                ),
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
@@ -300,6 +403,12 @@ def orchestrate_execution_v2(
                 context_hash=eqc.context_hash,
                 status="deny",
                 reason_id=rid,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=True,
+                    oracle_ok=True,
+                    shield_ok=True,
+                ),
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
@@ -325,6 +434,12 @@ def orchestrate_execution_v2(
                 context_hash=req.context.context_hash,
                 status="deny",
                 reason_id=ReasonId.DENY_AUTHORITY_INVALID,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=True,
+                    oracle_ok=True,
+                    shield_ok=True,
+                ),
                 tva_allowed=False,
                 eqc_allowed=True,
                 wsqk_allowed=False,
@@ -355,6 +470,12 @@ def orchestrate_execution_v2(
             context_hash=req.context.context_hash,
             status="allow",
             reason_id=ReasonId.OK_ALLOW,
+            protection_mode=_compute_protection_mode(
+                protected_requested=protected_requested,
+                qid_ok=True,
+                oracle_ok=True,
+                shield_ok=True,
+            ),
             tva_allowed=True,
             eqc_allowed=True,
             wsqk_allowed=True,
@@ -374,6 +495,7 @@ def orchestrate_execution_v2(
             context_hash="0" * 64,
             status="deny",
             reason_id=e.reason_id,
+            protection_mode="legacy",
             tva_allowed=False,
             eqc_allowed=False,
             wsqk_allowed=False,
@@ -393,6 +515,7 @@ def orchestrate_execution_v2(
             context_hash="0" * 64,
             status="deny",
             reason_id=rid,
+            protection_mode="full",
             tva_allowed=False,
             eqc_allowed=True,
             wsqk_allowed=True,
@@ -412,6 +535,7 @@ def orchestrate_execution_v2(
             context_hash="0" * 64,
             status="error",
             reason_id=e.reason_id,
+            protection_mode="legacy",
             tva_allowed=False,
             eqc_allowed=False,
             wsqk_allowed=False,
@@ -431,6 +555,7 @@ def orchestrate_execution_v2(
             context_hash="0" * 64,
             status="error",
             reason_id=ReasonId.DENY_SCHEMA_INVALID,
+            protection_mode="legacy",
             tva_allowed=False,
             eqc_allowed=False,
             wsqk_allowed=False,
