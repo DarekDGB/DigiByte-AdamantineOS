@@ -1,187 +1,163 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)\
-![Status](https://img.shields.io/badge/status-v1.2.0--os--proof--pack-brightgreen.svg)\
-![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)\
-![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)\
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-v1.3.0--shield--frozen-brightgreen.svg)
+![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
+![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)
 
-------------------------------------------------------------------------
-
-## Status: OS Proof Pack (v1.2.0)
-
-This repository contains the sealed foundation of the **Adamantine
-Wallet OS**.
-
-Adamantine is a deterministic security decision engine for DigiByte
-wallets.\
-It defines **what is allowed to execute**, **under which conditions**,
-and **why** --- without managing keys, signing transactions, or running
-a wallet UI.
-
-All critical boundaries are versioned, tested, and fail-closed.
+![Q-ID](https://img.shields.io/badge/Q--ID-session--validated-0A66C2.svg)
+![Adaptive Core
+v3](https://img.shields.io/badge/Adaptive%20Core-v3%20oracle-0052CC.svg)
+![Shield
+v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ------------------------------------------------------------------------
 
-## What Is Included
+## 🛡 Shield Interfaces Frozen + Posture Locked (v1.3.0)
 
-### Decision & Authority Core
+Adamantine Wallet OS is a **deterministic security execution boundary**
+for DigiByte wallets.
 
--   **EQC v1 + v2**
-    -   v1: deterministic baseline decision logic\
-    -   v2: multi-evidence reasoning (Q-ID + Shield + Adaptive Core)
--   **WSQK v1**
-    -   Scoped, time-bound authority (no key custody)
--   **TVA Gate**
-    -   Authority binding\
-    -   Expiry enforcement\
-    -   Replay protection
--   **Nonce Store**
-    -   Injected, single-use replay prevention
+It does **not** hold keys.
+It does **not** sign transactions.
+It decides --- deterministically and fail‑closed --- whether an action
+is allowed.
 
-------------------------------------------------------------------------
+v1.3.0 permanently locks:
 
-### Evidence & Adapters (Fail-Closed)
+-   Shield v3 strict schema + canonical ordering
+-   Deterministic size caps + toxic input denial
+-   No‑silent‑downgrade enforcement
+-   Protection mode posture output (`legacy` | `minimal` | `full`)
+-   Shield "never weaken deny" invariant
+-   Protection mode matrix regression lock
+-   Proof pack fixtures + manifest freeze
 
--   **Q-ID Adapter**
-    -   Session validity\
-    -   Time window enforcement
--   **Shield v3**
-    -   Evidence-only defensive signals (Sentinel AI, ADN, DQSN, QWG,
-        Guardian Wallet)\
-    -   Strict adapter validation (no authority, no execution)
--   **Adaptive Core v3 Oracle**
-    -   Deterministic risk evidence\
-    -   Context-bound\
-    -   Time-bound\
-    -   Evidence-only
--   **ExternalReasonRegistry**
-    -   Strict mapping of external signals → internal `ReasonId`\
-    -   Deny-by-default governance (no free-form external reasons)
--   **PolicyPack**
-    -   Explicit thresholds\
-    -   Allowlists\
-    -   Deny-by-default rules
+From this point forward, contracts are sealed. Only status evolves.
 
 ------------------------------------------------------------------------
 
-### Mobile Consumption (No Runtime)
-
--   Mobile execution boundary (v1)\
--   Mobile decision result contract\
--   ReasonId → UX-safe reason mapping\
--   Deterministic mobile result builder
-
-Mobile apps consume **decisions only** --- they never execute core
-logic.
-
-------------------------------------------------------------------------
-
-## Explicitly NOT Included (By Design)
-
-Adamantine does **not**:
-
--   Manage or store private keys\
--   Sign or broadcast transactions\
--   Build wallet UI\
--   Persist user data\
--   Sync to cloud services\
--   Perform learning or AI inference\
--   Act as a DigiByte node or consensus component
-
-Adamantine is **not a wallet**.\
-It is the **security operating system** that wallets embed.
-
-------------------------------------------------------------------------
-
-## Architecture Diagram
+# 🧱 Architecture Overview
 
 ``` mermaid
 flowchart TD
-  subgraph Evidence["Evidence (external, no authority)"]
-    QID["Q-ID Session"]
-    SHIELD["Shield v3 Signals"]
-    ORACLE["Adaptive Core v3 Oracle"]
-  end
 
-  subgraph Adapters["Fail-Closed Adapters"]
-    QIDA["Q-ID Adapter"]
-    SHAD["Shield v3 Adapter"]
-    ORAD["Oracle v3 Adapter"]
-    REG["ExternalReasonRegistry"]
-    PACK["PolicyPack"]
-  end
+    A[Mobile Wallet Request] --> B[Q-ID Session Proof]
+    B --> C[Adaptive Core v3 Oracle]
+    C --> D[Shield v3 Bundle]
 
-  subgraph Core["Adamantine Core (sealed)"]
-    CTX["Execution Context"]
-    HASH["Context Hash"]
-    EQC["EQC v2"]
-    WSQK["WSQK Authority"]
-    TVA["TVA Gate"]
-    DEC["Allow / Deny"]
-  end
+    D --> D1[Sentinel AI]
+    D --> D2[ADN]
+    D --> D3[DQSN]
+    D --> D4[QWG]
+    D --> D5[Guardian Wallet]
 
-  QID --> QIDA
-  SHIELD --> SHAD
-  ORACLE --> ORAD
+    D1 --> E[EQC Evaluator]
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    D5 --> E
+    C --> E
+    B --> E
 
-  REG --> EQC
-  PACK --> EQC
+    E -->|ALLOW| F[WSQK Authority Check]
+    F -->|VALID| G[TVA Gate]
+    G -->|EXECUTE| H[Executor]
 
-  CTX --> HASH --> EQC
-  QIDA --> EQC
-  SHAD --> EQC
-  ORAD --> EQC
-
-  EQC -->|ALLOW| WSQK --> TVA --> DEC
-  EQC -->|DENY| DEC
+    E -->|DENY| X[Deterministic Denial]
 ```
 
-------------------------------------------------------------------------
-
-## Core Invariants
-
--   Deny-by-default\
--   Fail-closed on ambiguity\
--   Evidence ≠ authority ≠ execution\
--   Deterministic behaviour only\
--   Explicit versioned contracts\
--   No hidden power\
--   Explainability over automation\
--   External reasons must be registered and governed\
--   Shield signals can only strengthen deny, never force allow\
--   Oracle evidence can influence deny, never grant authority
-
-These invariants are enforced in code and tests.
+Adamantine enforces layered validation before any execution is
+permitted.
 
 ------------------------------------------------------------------------
 
-## Coverage & Testing Philosophy
+# 🔐 Protection Modes
 
--   High coverage focused on security-critical paths\
--   Contract validation tested separately from adapters\
--   Negative-first testing\
--   Determinism and replay safety enforced\
--   Governance rules tested explicitly
+Every execution response includes a deterministic security posture:
 
-Current coverage: **\>90%**, with all critical logic covered.
+  Mode          Meaning
+  ------------- ------------------------------------------------------
+  **legacy**    Q-ID missing/invalid OR protected call not requested
+  **minimal**   Q-ID valid but Shield/Oracle incomplete
+  **full**      Q-ID + Shield v3 + Oracle v3 all valid
+
+Protection mode is regression-locked.
+Any change in semantics breaks CI.
 
 ------------------------------------------------------------------------
 
-## Roadmap Position
+# 🔒 Core Invariants
 
-This repository represents a sealed foundation designed for additive
-extension only.
+Adamantine enforces:
 
-Future work:
+-   Fail-closed evaluation
+-   Canonical Shield ordering
+-   No duplicate layers
+-   Strict version discipline
+-   No silent downgrade under policy
+-   Shield evidence can only strengthen deny
+-   Deterministic outputs for identical inputs
 
--   Mobile SDK integration\
--   Wallet runtime implementations (outside this repo)\
--   UI/UX layers\
--   Additional shield/oracle implementations
+If any invariant weakens, tests fail.
 
-All future work must respect the frozen contracts and invariants defined
-here.
+------------------------------------------------------------------------
+
+# 📦 Scope
+
+Included:
+
+-   Execution envelope contracts
+-   Orchestrator v2
+-   EQC evaluator
+-   Shield v3 adapter
+-   Adaptive Core v3 adapter
+-   Q-ID adapter
+-   TVA boundary enforcement
+-   Deterministic proof packs
+
+Excluded:
+
+-   Wallet UI
+-   Key custody
+-   Transaction building
+-   Network broadcasting
+
+Adamantine is a **decision engine**, not a wallet.
+
+------------------------------------------------------------------------
+
+# 🧪 Determinism & Testing
+
+-   90% coverage enforced
+
+-   Fixture hashes locked
+
+-   Proof packs frozen
+
+-   Regression locks for posture + shield invariants
+
+Security changes require test changes.
+Silent drift is impossible.
+
+------------------------------------------------------------------------
+
+# 🧭 Roadmap
+
+v1.3.0 completes Shield v3 freeze and posture enforcement.
+
+Next phase:
+
+-   Integration harness expansion
+-   Cross-repo deterministic contracts
+-   Orchestrator compatibility envelope sealing
+
+------------------------------------------------------------------------
+
+**Adamantine Wallet OS**
+Deterministic. Fail‑Closed. Future‑Ready.
+
 
 ------------------------------------------------------------------------
 
