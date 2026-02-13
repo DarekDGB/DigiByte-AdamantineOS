@@ -45,6 +45,13 @@ class RiskPolicy:
     resilience_mode: ResilienceMode = ResilienceMode.STRICT_FAIL_CLOSED
     policy_pack: PolicyPack | None = None
 
+    # Step 4 (v1.3.x): posture requirements (no silent downgrade)
+    # If True, caller must request a protected call (wsqk present) or we fail closed.
+    require_protected_call: bool = False
+    # If True, orchestrator must not proceed unless protection_mode would be "full".
+    # (This is a policy-level posture latch; defaults to False to preserve proof packs.)
+    require_full_mode: bool = False
+
     def validate(self) -> None:
         if self.policy_pack is not None:
             if not isinstance(self.policy_pack, PolicyPack):
@@ -66,6 +73,12 @@ class RiskPolicy:
 
         if not isinstance(self.resilience_mode, ResilienceMode):
             raise ValueError("resilience_mode must be ResilienceMode")
+
+        if not isinstance(self.require_protected_call, bool):
+            raise ValueError("require_protected_call must be bool")
+
+        if not isinstance(self.require_full_mode, bool):
+            raise ValueError("require_full_mode must be bool")
 
     def effective_allowed_external_reason_ids(self) -> tuple[str, ...]:
         """
