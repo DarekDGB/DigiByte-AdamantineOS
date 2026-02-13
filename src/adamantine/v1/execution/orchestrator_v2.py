@@ -234,6 +234,53 @@ def orchestrate_execution_v2(
         pol.validate()
         reason_map = _default_reason_map(pol)
 
+        # Step 4: policy posture latches (no silent downgrade)
+        # - require_protected_call: caller MUST request protected execution (wsqk present)
+        # - require_full_mode: caller MUST request protected execution; otherwise full mode is impossible
+        if getattr(pol, "require_protected_call", False) and not protected_requested:
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=ReasonId.DENY_POLICY,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=False,
+                    oracle_ok=False,
+                    shield_ok=False,
+                ),
+                tva_allowed=False,
+                eqc_allowed=False,
+                wsqk_allowed=False,
+                nonce_consumed=False,
+                timebox_valid=True,
+                artifacts={"error": "policy requires protected execution"},
+            )
+
+        if getattr(pol, "require_full_mode", False) and not protected_requested:
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=ReasonId.DENY_POLICY,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=False,
+                    oracle_ok=False,
+                    shield_ok=False,
+                ),
+                tva_allowed=False,
+                eqc_allowed=False,
+                wsqk_allowed=False,
+                nonce_consumed=False,
+                timebox_valid=True,
+                artifacts={"error": "policy requires full protection mode"},
+            )
+
         # Phase M hard-lock: registry MUST exist and be valid (deny-by-default).
         try:
             reason_registry = _build_mandatory_reason_registry(pol)
