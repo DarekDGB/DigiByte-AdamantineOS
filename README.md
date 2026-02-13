@@ -5,7 +5,6 @@
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)
-
 ![Q-ID](https://img.shields.io/badge/Q--ID-session--validated-0A66C2.svg)
 ![Adaptive Core
 v3](https://img.shields.io/badge/Adaptive%20Core-v3%20oracle-0052CC.svg)
@@ -21,7 +20,7 @@ DigiByte wallets.
 
 It does not hold keys.\
 It does not sign transactions.\
-It decides deterministically and fail‑closed whether an action is
+It decides deterministically and fail-closed whether an action is
 allowed.
 
 v1.3.0 permanently locks:
@@ -38,16 +37,33 @@ From this point forward, contracts are sealed. Only status evolves.
 
 ------------------------------------------------------------------------
 
-# 🧱 Architecture Overview
+## 🧱 Architecture Overview
 
-![Adamantine Architecture](adamantine_architecture.png)
+``` mermaid
+flowchart LR
+  Request[Mobile Wallet Request] --> QID[Q-ID Session Proof]
+  QID --> Oracle[Adaptive Core v3 Oracle]
+  Oracle --> Shield[Shield v3 Bundle]
+  Shield --> EQC[EQC Evaluator]
+  EQC --> WSQK[WSQK Authority Check]
+  WSQK --> TVA[TVA Gate]
+  TVA --> Exec[Executor]
+
+  Shield --> Sentinel[Sentinel AI]
+  Shield --> ADN[ADN]
+  Shield --> DQSN[DQSN]
+  Shield --> QWG[QWG]
+  Shield --> GW[Guardian Wallet]
+
+  EQC --> Deny[Deterministic Denial]
+```
 
 Adamantine enforces layered validation before any execution is
 permitted.
 
 ------------------------------------------------------------------------
 
-# 🔐 Protection Modes
+## 🔐 Protection Modes
 
 Every execution response includes a deterministic security posture:
 
@@ -61,7 +77,7 @@ Protection mode is regression locked. Any change in semantics breaks CI.
 
 ------------------------------------------------------------------------
 
-# 🔒 Core Invariants
+## 🔒 Core Invariants
 
 Adamantine enforces:
 
@@ -77,7 +93,7 @@ If any invariant weakens, tests fail.
 
 ------------------------------------------------------------------------
 
-# 📦 Scope
+## 📦 Scope
 
 Included:
 
@@ -101,18 +117,18 @@ Adamantine is a decision engine, not a wallet.
 
 ------------------------------------------------------------------------
 
-# 🧪 Determinism & Testing
+## 🧪 Determinism & Testing
 
 -   90% coverage enforced
 -   Fixture hashes locked
 -   Proof packs frozen
--   Regression locks for posture + shield invariants
+-   Regression locks for posture and shield invariants
 
 Security changes require test changes. Silent drift is impossible.
 
 ------------------------------------------------------------------------
 
-# 🧭 Roadmap
+## 🧭 Roadmap
 
 v1.3.0 completes Shield v3 freeze and posture enforcement.
 
@@ -124,11 +140,11 @@ Next phase:
 
 ------------------------------------------------------------------------
 
-Adamantine Wallet OS\
-Deterministic. Fail‑Closed. Future‑Ready.
+**Adamantine Wallet OS**\
+Deterministic. Fail-Closed. Future-Ready.
 
 ------------------------------------------------------------------------
 
 ## License
 
-MIT License --- DarekDGB
+MIT License --- **DarekDGB**
