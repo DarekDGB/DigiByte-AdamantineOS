@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, NoReturn, Sequence
 
 from adamantine.v1.contracts.external_reason_registry import ExternalReasonRegistryV1
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -56,6 +56,20 @@ _BUNDLE_ALLOWED_KEYS = {
     "shield_bundle_version",  # Phase A
 }
 
+# ---- Deterministic Size Caps (v1.3.0 hardening) ----
+_MAX_REQUIRED_LAYERS = 8
+_MAX_SIGNALS = 32
+
+_MAX_FACTS_ENTRIES = 32
+_MAX_META_ENTRIES = 32
+_MAX_LIST_LEN = 32
+
+_MAX_STR = 256
+_MAX_LAYER_STR = 64
+_MAX_ID_STR = 128
+_MAX_VERSION_STR = 64
+
+# NOTE: facts allow str/int/bool scalars and lists of those (bounded).
 _FACT_SCALAR_TYPES = (str, int, bool)
 
 _SEMVER_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
@@ -65,7 +79,7 @@ def _is_semver(s: Any) -> bool:
     return isinstance(s, str) and bool(_SEMVER_RE.match(s.strip()))
 
 
-def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> "NoReturn":  # type: ignore[name-defined]
+def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> NoReturn:
     if metrics is not None:
         metrics.inc(rid.value)
     raise AdapterError(rid, msg)
@@ -99,6 +113,22 @@ def _require_str(metrics: Metrics | None, m: Mapping[str, Any], key: str, rid: R
     return v
 
 
+def _require_str_max(
+    metrics: Metrics | None,
+    m: Mapping[str, Any],
+    key: str,
+    *,
+    rid: ReasonId,
+    name: str,
+    max_len: int,
+    label: str,
+) -> str:
+    v = _require_str(metrics, m, key, rid, name)
+    if len(v) > max_len:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"{label} too long")
+    return v
+
+
 def _require_int(metrics: Metrics | None, m: Mapping[str, Any], key: str, rid: ReasonId, name: str) -> int:
     v = m.get(key)
     if not isinstance(v, int):
@@ -110,20 +140,57 @@ def _validate_facts(metrics: Metrics | None, facts: Any) -> None:
     if not isinstance(facts, Mapping):
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts must be object")
 
+    if len(facts) > _MAX_FACTS_ENTRIES:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts too many entries")
+
     for k, v in facts.items():
         if not isinstance(k, str) or not k.strip():
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts keys must be non-empty str")
+        if len(k) > _MAX_STR:
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts key too long")
 
-        if isinstance(v, _FACT_SCALAR_TYPES):
+        if isinstance(v, str):
+            if len(v) > _MAX_STR:
+                _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts string value too long")
+            continue
+
+        if isinstance(v, (int, bool)):
             continue
 
         if isinstance(v, Sequence) and not isinstance(v, (str, bytes, bytearray)):
+            if len(v) > _MAX_LIST_LEN:
+                _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts list too long")
             for item in v:
-                if not isinstance(item, _FACT_SCALAR_TYPES):
-                    _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts list values must be str/int/bool")
+                if isinstance(item, str):
+                    if len(item) > _MAX_STR:
+                        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts list string value too long")
+                    continue
+                if isinstance(item, (int, bool)):
+                    continue
+                _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts list values must be str/int/bool")
             continue
 
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.facts values must be str/int/bool or list[str|int|bool]")
+
+
+def _validate_meta(metrics: Metrics | None, meta: Any, *, name: str) -> None:
+    if meta is None:
+        return
+    if not isinstance(meta, Mapping):
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"{name}.meta must be object when present")
+
+    if len(meta) > _MAX_META_ENTRIES:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"{name}.meta too many entries")
+
+    for k, v in meta.items():
+        if not isinstance(k, str) or not k.strip():
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"{name}.meta keys must be non-empty str")
+        if len(k) > _MAX_STR:
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"{name}.meta key too long")
+        if not isinstance(v, str) or not v.strip():
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"{name}.meta values must be non-empty str")
+        if len(v) > _MAX_STR:
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"{name}.meta value too long")
 
 
 def _parse_signal_v3(
@@ -143,17 +210,35 @@ def _parse_signal_v3(
     if v != "shield_signal_v3":
         _fail(metrics, ReasonId.DENY_VERSION_MISMATCH, "signal.v must be shield_signal_v3")
 
-    layer = _require_str(metrics, signal, "layer", ReasonId.DENY_ADAPTER_INVALID, "signal")
+    layer = _require_str_max(
+        metrics, signal, "layer", rid=ReasonId.DENY_ADAPTER_INVALID, name="signal", max_len=_MAX_LAYER_STR, label="signal.layer"
+    )
     if layer not in _ALLOWED_LAYERS:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"unknown shield layer: {layer}")
 
     # Phase A (strict only)
     if require_versions:
-        lv = _require_str(metrics, signal, "layer_version", ReasonId.DENY_ADAPTER_INVALID, "signal")
+        lv = _require_str_max(
+            metrics,
+            signal,
+            "layer_version",
+            rid=ReasonId.DENY_ADAPTER_INVALID,
+            name="signal",
+            max_len=_MAX_VERSION_STR,
+            label="signal.layer_version",
+        )
         if not _is_semver(lv):
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "signal.layer_version must be semver (X.Y.Z)")
 
-    _require_str(metrics, signal, "signal_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
+    _require_str_max(
+        metrics,
+        signal,
+        "signal_id",
+        rid=ReasonId.DENY_ADAPTER_INVALID,
+        name="signal",
+        max_len=_MAX_ID_STR,
+        label="signal.signal_id",
+    )
 
     ctx_hash = _require_str(metrics, signal, "context_hash", ReasonId.DENY_ADAPTER_INVALID, "signal")
     if not _is_hex_64(ctx_hash):
@@ -182,7 +267,17 @@ def _parse_signal_v3(
     facts = signal.get("facts")
     _validate_facts(metrics, facts)
 
-    ext_reason = _require_str(metrics, signal, "reason_id", ReasonId.DENY_ADAPTER_INVALID, "signal")
+    _validate_meta(metrics, signal.get("meta"), name="signal")
+
+    ext_reason = _require_str_max(
+        metrics,
+        signal,
+        "reason_id",
+        rid=ReasonId.DENY_ADAPTER_INVALID,
+        name="signal",
+        max_len=_MAX_STR,
+        label="signal.reason_id",
+    )
 
     # ✅ Correct registry API + correct reason id
     if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
@@ -235,11 +330,27 @@ def parse_shield_bundle_v3(
 
     # Phase A (strict only)
     if require_versions:
-        bv = _require_str(metrics, top, "shield_bundle_version", ReasonId.DENY_ADAPTER_INVALID, "bundle")
+        bv = _require_str_max(
+            metrics,
+            top,
+            "shield_bundle_version",
+            rid=ReasonId.DENY_ADAPTER_INVALID,
+            name="bundle",
+            max_len=_MAX_VERSION_STR,
+            label="bundle.shield_bundle_version",
+        )
         if not _is_semver(bv):
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.shield_bundle_version must be semver (X.Y.Z)")
 
-    bundle_id = _require_str(metrics, top, "bundle_id", ReasonId.DENY_ADAPTER_INVALID, "bundle")
+    bundle_id = _require_str_max(
+        metrics,
+        top,
+        "bundle_id",
+        rid=ReasonId.DENY_ADAPTER_INVALID,
+        name="bundle",
+        max_len=_MAX_ID_STR,
+        label="bundle.bundle_id",
+    )
 
     ctx_hash = _require_str(metrics, top, "context_hash", ReasonId.DENY_ADAPTER_INVALID, "bundle")
     if not _is_hex_64(ctx_hash):
@@ -256,10 +367,15 @@ def parse_shield_bundle_v3(
     if not isinstance(req, Sequence) or isinstance(req, (str, bytes, bytearray)) or len(req) == 0:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers must be non-empty array")
 
+    if len(req) > _MAX_REQUIRED_LAYERS:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers too many entries")
+
     required_layers: list[str] = []
     for x in req:
         if not isinstance(x, str) or not x.strip():
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers entries must be non-empty str")
+        if len(x) > _MAX_LAYER_STR:
+            _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.required_layers entry too long")
         if x not in _ALLOWED_LAYERS:
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"unknown required layer: {x}")
         required_layers.append(x)
@@ -276,6 +392,9 @@ def parse_shield_bundle_v3(
     sigs = top.get("signals")
     if not isinstance(sigs, Sequence) or isinstance(sigs, (str, bytes, bytearray)) or len(sigs) == 0:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.signals must be non-empty array")
+
+    if len(sigs) > _MAX_SIGNALS:
+        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.signals too many entries")
 
     def _key(raw: Any) -> tuple[str, str]:
         if not isinstance(raw, Mapping):
@@ -311,9 +430,7 @@ def parse_shield_bundle_v3(
         if rl not in seen_layers:
             _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, f"missing required layer signal: {rl}")
 
-    meta = top.get("meta")
-    if meta is not None and not isinstance(meta, Mapping):
-        _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "bundle.meta must be object when present")
+    _validate_meta(metrics, top.get("meta"), name="bundle")
 
     out = ShieldBundleV3(
         bundle_id=bundle_id,
