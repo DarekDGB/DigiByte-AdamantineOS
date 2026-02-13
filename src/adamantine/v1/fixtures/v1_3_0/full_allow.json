@@ -1,0 +1,135 @@
+{
+  "authority": {
+    "class": "user",
+    "proofs": {
+      "wsqk": {
+        "action": "send",
+        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "expires_at": 1706990460,
+        "issued_at": 1706990400,
+        "nonce": "n1",
+        "wallet_id": "w1"
+      }
+    },
+    "scope": {
+      "policy_pack": "default"
+    }
+  },
+  "context": {
+    "action": "send",
+    "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+    "fields": {
+      "amount": "1",
+      "to": "DGB1"
+    },
+    "wallet_id": "w1"
+  },
+  "intent": "authorize",
+  "nonce": "n1",
+  "payload": {
+    "body": {
+      "ui_confirmed": true
+    },
+    "evidence": {
+      "oracle": {
+        "ac_iface_version": "adaptive-core-oracle-v3",
+        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "external_source_id": "ac-1",
+        "generated_at": 1706990400,
+        "oracle_version": "ac-v3",
+        "overall_score": 90,
+        "signals": [
+          {
+            "reason_ids": [
+              "ok"
+            ],
+            "severity": 1,
+            "source": "adaptive-core"
+          }
+        ]
+      },
+      "qid": {
+        "device_binding": "device-1",
+        "expires_at": 1706990460,
+        "issued_at": 1706990400,
+        "issuer_version": "qid-v0",
+        "proof_hash": "proofhash123",
+        "qid_iface_version": "qid-session-v0",
+        "subject": "did:example:123"
+      },
+      "shield": {
+        "required_layers": [
+          "sentinel_ai",
+          "adn",
+          "dqsn",
+          "qwg",
+          "guardian_wallet"
+        ],
+        "shield_bundle_version": "shield-bundle-v3",
+        "signals": [
+          {
+            "facts": {
+              "ok": "1"
+            },
+            "layer": "adn",
+            "layer_version": "adn-signal-v0",
+            "meta": {
+              "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b"
+            },
+            "signal_id": "adn-1"
+          },
+          {
+            "facts": {
+              "ok": "1"
+            },
+            "layer": "dqsn",
+            "layer_version": "dqsn-signal-v0",
+            "meta": {
+              "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b"
+            },
+            "signal_id": "dqsn-1"
+          },
+          {
+            "facts": {
+              "ok": "1"
+            },
+            "layer": "guardian_wallet",
+            "layer_version": "guardian-wallet-signal-v0",
+            "meta": {
+              "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b"
+            },
+            "signal_id": "gw-1"
+          },
+          {
+            "facts": {
+              "ok": "1"
+            },
+            "layer": "qwg",
+            "layer_version": "qwg-signal-v0",
+            "meta": {
+              "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b"
+            },
+            "signal_id": "qwg-1"
+          },
+          {
+            "facts": {
+              "ok": "1"
+            },
+            "layer": "sentinel_ai",
+            "layer_version": "sentinel-signal-v0",
+            "meta": {
+              "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b"
+            },
+            "signal_id": "sentinel-1"
+          }
+        ]
+      }
+    }
+  },
+  "request_id": "req-1",
+  "timebox": {
+    "expires_at": 1706990460,
+    "issued_at": 1706990400
+  },
+  "v": "execution_request_v2"
+}
