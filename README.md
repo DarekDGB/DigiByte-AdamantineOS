@@ -19,18 +19,18 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 Adamantine Wallet OS is a **deterministic security execution boundary**
 for DigiByte wallets.
 
-It does **not** hold keys.\
-It does **not** sign transactions.\
+It does **not** hold keys.
+It does **not** sign transactions.
 It decides --- deterministically and fail‑closed --- whether an action
 is allowed.
 
 v1.3.0 permanently locks:
 
--   Shield v3 strict schema + canonical ordering\
--   Deterministic size caps + toxic input denial\
--   No‑silent‑downgrade enforcement\
--   Protection mode posture output (`legacy` \| `minimal` \| `full`)\
--   Shield "never weaken deny" invariant\
+-   Shield v3 strict schema + canonical ordering
+-   Deterministic size caps + toxic input denial
+-   No‑silent‑downgrade enforcement
+-   Protection mode posture output (`legacy` | `minimal` | `full`)
+-   Shield "never weaken deny" invariant
 -   Protection mode matrix regression lock\
 -   Proof pack fixtures + manifest freeze
 
@@ -41,30 +41,20 @@ From this point forward, contracts are sealed. Only status evolves.
 # 🧱 Architecture Overview
 
 ```mermaid
-flowchart TD
-  A[Mobile Wallet Request] --> B[Q-ID Session Proof]
-  B --> C[Adaptive Core v3 Oracle]
-  C --> D[Shield v3 Bundle]
+flowchart LR
+    Request --> QID
+    QID --> Oracle
+    Oracle --> Shield
+    Shield --> EQC
+    EQC --> WSQK
+    WSQK --> TVA
+    TVA --> Executor
 
-  D --> D1[Sentinel AI]
-  D --> D2[ADN]
-  D --> D3[DQSN]
-  D --> D4[QWG]
-  D --> D5[Guardian Wallet]
-
-  D1 --> E[EQC Evaluator]
-  D2 --> E
-  D3 --> E
-  D4 --> E
-  D5 --> E
-  C --> E
-  B --> E
-
-  E -->|ALLOW| F[WSQK Authority Check]
-  F -->|VALID| G[TVA Gate]
-  G -->|EXECUTE| H[Executor]
-
-  E -->|DENY| X[Deterministic Denial]
+    Shield --> Sentinel
+    Shield --> ADN
+    Shield --> DQSN
+    Shield --> QWG
+    Shield --> Guardian
 ```
 
 Adamantine enforces layered validation before any execution is
@@ -82,7 +72,7 @@ Every execution response includes a deterministic security posture:
   **minimal**   Q-ID valid but Shield/Oracle incomplete
   **full**      Q-ID + Shield v3 + Oracle v3 all valid
 
-Protection mode is regression-locked.\
+Protection mode is regression-locked.
 Any change in semantics breaks CI.
 
 ------------------------------------------------------------------------
@@ -91,12 +81,12 @@ Any change in semantics breaks CI.
 
 Adamantine enforces:
 
--   Fail-closed evaluation\
--   Canonical Shield ordering\
--   No duplicate layers\
--   Strict version discipline\
--   No silent downgrade under policy\
--   Shield evidence can only strengthen deny\
+-   Fail-closed evaluation
+-   Canonical Shield ordering
+-   No duplicate layers
+-   Strict version discipline
+-   No silent downgrade under policy
+-   Shield evidence can only strengthen deny
 -   Deterministic outputs for identical inputs
 
 If any invariant weakens, tests fail.
@@ -107,20 +97,20 @@ If any invariant weakens, tests fail.
 
 Included:
 
--   Execution envelope contracts\
--   Orchestrator v2\
--   EQC evaluator\
--   Shield v3 adapter\
--   Adaptive Core v3 adapter\
--   Q-ID adapter\
--   TVA boundary enforcement\
+-   Execution envelope contracts
+-   Orchestrator v2
+-   EQC evaluator
+-   Shield v3 adapter
+-   Adaptive Core v3 adapter
+-   Q-ID adapter
+-   TVA boundary enforcement
 -   Deterministic proof packs
 
 Excluded:
 
--   Wallet UI\
--   Key custody\
--   Transaction building\
+-   Wallet UI
+-   Key custody
+-   Transaction building
 -   Network broadcasting
 
 Adamantine is a **decision engine**, not a wallet.
@@ -129,12 +119,12 @@ Adamantine is a **decision engine**, not a wallet.
 
 # 🧪 Determinism & Testing
 
--   90% coverage enforced\
--   Fixture hashes locked\
--   Proof packs frozen\
+-   90% coverage enforced
+-   Fixture hashes locked
+-   Proof packs frozen
 -   Regression locks for posture + shield invariants
 
-Security changes require test changes.\
+Security changes require test changes.
 Silent drift is impossible.
 
 ------------------------------------------------------------------------
@@ -145,13 +135,13 @@ v1.3.0 completes Shield v3 freeze and posture enforcement.
 
 Next phase:
 
--   Integration harness expansion\
--   Cross-repo deterministic contracts\
+-   Integration harness expansion
+-   Cross-repo deterministic contracts
 -   Orchestrator compatibility envelope sealing
 
 ------------------------------------------------------------------------
 
-**Adamantine Wallet OS**\
+**Adamantine Wallet OS**
 Deterministic. Fail‑Closed. Future‑Ready.
 
 ------------------------------------------------------------------------
