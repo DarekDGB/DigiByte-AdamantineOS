@@ -1,12 +1,11 @@
-"""
-Utility functions to load and execute deterministic end-to-end fixtures for
-Adamantine Wallet OS v1.3.0 OS Proof Pack.
+"""Deterministic OS Proof Pack fixture harness.
 
-Manifest enforcement is semantic and deterministic:
-- We reject duplicate keys when parsing JSON (deny-by-default)
-- We hash canonicalized JSON (sort_keys + stable separators)
-  so whitespace/formatting changes do NOT break the manifest,
-  but any semantic change DOES.
+This module enforces semantic fixture locking via a manifest:
+- Reject duplicate JSON keys
+- Canonicalize JSON (sort_keys + stable separators)
+- Hash canonical JSON with SHA-256
+
+Supports multiple proof packs (v1_2_0, v1_3_0) without mixing them.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Mapping
 
 from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -33,7 +32,7 @@ class DuplicateKeyError(CanonicalJSONError):
     """Raised when a duplicate key is encountered in a JSON object."""
 
 
-_FIXTURE_DIR = Path(__file__).parent.parent / "fixtures" / "v1_3_0"
+_FIXTURES_BASE = Path(__file__).parent.parent / "fixtures"
 _MANIFEST = "manifest.json"
 
 
@@ -61,16 +60,10 @@ def load_canonical_json(path: Path) -> Any:
 
 
 def canonical_json_dumps(obj: Any) -> str:
-    # Deterministic representation
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def sha256_hex_of_canonical_json_file(path: Path) -> str:
-    """
-    Semantic hash:
-    - parse with duplicate-key rejection
-    - hash canonical dumps
-    """
     obj = load_canonical_json(path)
     s = canonical_json_dumps(obj)
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
@@ -94,14 +87,16 @@ def _default_policy() -> RiskPolicy:
     return RiskPolicy(min_overall_score=85, policy_pack=pack)
 
 
-def verify_manifest_strict() -> None:
-    """
-    Strict CI contract (semantic):
-    - manifest must list exactly all fixture .json files (excluding itself)
-    - SHA256 is over canonical JSON (whitespace doesn't matter)
-    - mismatch error prints the correct hash for iPhone copy/paste updates
-    """
-    base = _FIXTURE_DIR.resolve()
+def _fixture_dir(pack_dirname: str) -> Path:
+    base = (_FIXTURES_BASE / pack_dirname).resolve()
+    if not base.exists() or not base.is_dir():
+        raise CanonicalJSONError(f"fixture pack directory missing: {base}")
+    return base
+
+
+def verify_manifest_strict_for(pack_dirname: str) -> None:
+    """Verify a proof pack manifest strictly (semantic)."""
+    base = _fixture_dir(pack_dirname)
     manifest_path = base / _MANIFEST
 
     obj = load_canonical_json(manifest_path)
@@ -132,31 +127,37 @@ def verify_manifest_strict() -> None:
             )
 
 
-def verify_manifest() -> bool:
-    try:
-        verify_manifest_strict()
-        return True
-    except Exception:
-        return False
+def verify_manifest_strict() -> None:
+    """Default: v1_3_0 OS Proof Pack."""
+    verify_manifest_strict_for("v1_3_0")
 
 
-def run_fixture(fixture_name: str, *, now: int) -> Dict[str, Any]:
-    verify_manifest_strict()
+def verify_manifest_strict_v1_2_0() -> None:
+    verify_manifest_strict_for("v1_2_0")
 
-    payload = load_canonical_json((_FIXTURE_DIR / fixture_name).resolve())
+
+def verify_manifest_strict_v1_3_0() -> None:
+    verify_manifest_strict_for("v1_3_0")
+
+
+def run_fixture(pack_dirname: str, fixture_name: str, *, now: int) -> Dict[str, Any]:
+    verify_manifest_strict_for(pack_dirname)
+
+    payload = load_canonical_json((_fixture_dir(pack_dirname) / fixture_name).resolve())
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _default_policy()
     return orchestrate_execution_v2(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
 
 
-def run_all(*, now: int) -> Dict[str, Dict[str, Any]]:
-    verify_manifest_strict()
+def run_all(pack_dirname: str, *, now: int) -> Dict[str, Dict[str, Any]]:
+    verify_manifest_strict_for(pack_dirname)
     results: Dict[str, Dict[str, Any]] = {}
-    for p in _FIXTURE_DIR.iterdir():
+    base = _fixture_dir(pack_dirname)
+    for p in base.iterdir():
         if p.suffix != ".json":
             continue
         if p.name == _MANIFEST:
             continue
-        results[p.name] = run_fixture(p.name, now=now)
+        results[p.name] = run_fixture(pack_dirname, p.name, now=now)
     return results
