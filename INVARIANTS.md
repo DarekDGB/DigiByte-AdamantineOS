@@ -144,3 +144,27 @@ Invariants define the identity of Adamantine Wallet OS.
 
 They are not guidelines.
 They are laws.
+
+## 3. v1.3.0 Invariants
+
+### 3.1 Protection Mode Semantics Are Fixed
+`protection_mode` is an auditable output field with deterministic semantics:
+
+- `legacy`: protected call not requested OR Q-ID invalid/missing
+- `minimal`: Q-ID valid, but Oracle and/or Shield invalid/missing
+- `full`: Q-ID valid + Oracle valid + Shield valid (as configured)
+
+These semantics are regression-locked by a truth-table test.
+
+### 3.2 No Silent Downgrade Under Policy
+If policy requires a stricter posture, orchestrator must fail-closed:
+
+- `require_protected_call=True` and protected request missing → DENY (ReasonId.DENY_POLICY)
+- `require_full_mode=True` and full mode impossible → DENY (ReasonId.DENY_POLICY)
+
+### 3.3 Shield Can Only Strengthen Deny
+If Shield evidence results in DENY, then:
+- adding more “OK/allow-looking” evidence must never flip to ALLOW
+- reordering signals must never flip to ALLOW
+
+This is regression-locked permanently.
