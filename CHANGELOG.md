@@ -6,6 +6,38 @@ Repository: DigiByte Adamantine Wallet OS
 Scope: Foundation Releases and Contract History
 
 ⸻
+⸻
+
+v1.3.0 — Shield Interfaces Frozen + Posture Locked
+
+Status: Locked
+Type: Contract hardening (Shield v3 + posture + regression locks)
+Compatibility: Additive only — response adds `protection_mode` and new strict fixtures
+
+This release freezes the Shield v3 external evidence interface and locks deterministic, auditable posture outputs.
+
+1. Shield v3 Strict Interface Freeze
+	•	Global `shield_bundle_version` (strict only)
+	•	Per-signal `layer_version` (strict only)
+	•	Deterministic ordering rules:
+		•	signals sorted by (layer, signal_id)
+		•	required_layers canonical order (strict only)
+	•	Unknown fields rejected (bundle + signal)
+	•	Duplicates denied (layers/signals)
+
+2. Protection Mode Output (auditable)
+	•	Execution response includes `protection_mode: legacy | minimal | full`
+	•	Deterministic semantics locked by tests
+
+3. No Silent Downgrade (policy posture latches)
+	•	`require_protected_call` and `require_full_mode` policy latches added
+	•	Hard-deny when requested posture cannot be satisfied
+
+4. Regression Locks
+	•	Shield can only strengthen deny (never-weaken invariant)
+	•	Protection mode matrix regression lock
+
+See: docs/OS_PROOF_PACK_v1_3_0.md
 
 v1.2.0 — Integration Harness Sealed
 
