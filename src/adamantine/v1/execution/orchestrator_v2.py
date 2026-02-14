@@ -21,7 +21,7 @@ from adamantine.v1.execution.executor import Executor
 from adamantine.v1.execution.response_v1 import build_execution_response_v1, ProtectionMode
 from adamantine.v1.integrations.adaptive_core_oracle_v3_adapter import parse_adaptive_core_oracle_v3
 from adamantine.v1.integrations.errors import AdapterError
-from adamantine.v1.integrations.qid_adapter import parse_qid_session
+from adamantine.v1.integrations.qid_adapter import parse_qid_replay_proof, parse_qid_session
 from adamantine.v1.integrations.shield_v3_adapter import parse_shield_bundle_v3
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
@@ -331,7 +331,43 @@ def orchestrate_execution_v2(
                 artifacts={"error": e.message},
             )
 
-        # Oracle (minimal if invalid).
+        
+        # v1.4.0: Q-ID linkage hardening (clock-free replay gate).
+        # If caller requested protected execution, a replay proof is mandatory.
+        if protected_requested and getattr(pol, "require_qid_replay_proof", False):
+            try:
+                _ = parse_qid_replay_proof(
+                    evidence_qid=req.evidence_qid,
+                    expected_wallet_id=req.context.wallet_id,
+                    expected_subject=session.subject,
+                    expected_proof_hash=session.proof_hash,
+                    expected_device_binding=session.device_binding,
+                    expected_session_nonce=req.nonce_value,
+                    require_fresh=True,
+                )
+            except AdapterError as e:
+                return build_execution_response_v1(
+                    request_id=req.request_id,
+                    intent=req.intent,
+                    action=req.context.action,
+                    context_hash=req.context.context_hash,
+                    status="deny",
+                    reason_id=e.reason_id,
+                    protection_mode=_compute_protection_mode(
+                        protected_requested=protected_requested,
+                        qid_ok=False,
+                        oracle_ok=False,
+                        shield_ok=False,
+                    ),
+                    tva_allowed=False,
+                    eqc_allowed=False,
+                    wsqk_allowed=False,
+                    nonce_consumed=False,
+                    timebox_valid=True,
+                    artifacts={"error": e.message},
+                )
+
+# Oracle (minimal if invalid).
         try:
             oracle = parse_adaptive_core_oracle_v3(
                 payload=req.evidence_oracle,
