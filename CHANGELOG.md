@@ -8,6 +8,21 @@ Scope: Foundation Releases and Contract History
 ⸻
 ⸻
 
+v1.4.0 — Q-ID Linkage Hardened (Replay Proof Gate)
+
+Status: Locked
+Type: Contract hardening (Q-ID binding + replay-proof validation)
+Compatibility: Additive — legacy/v1.3 proof packs remain valid unless policy enables the latch
+
+What’s locked:
+- New Q-ID replay proof contract (`QIDReplayProof`) and deterministic adapter validation
+- Distinct reason IDs for missing/invalid replay proof and binding mismatches
+- New policy latch `require_qid_replay_proof` (deny-by-default; opt-in hardening)
+- New OS Proof Pack v1_4_0 fixtures + manifest lock (allow + fail-closed deny cases)
+
+⸻
+⸻
+
 v1.3.0 — Shield Interfaces Frozen + Posture Locked
 
 Status: Locked
