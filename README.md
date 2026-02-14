@@ -20,8 +20,8 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ## 🛡 Q-ID Linkage Hardened + Shield Frozen (v1.4.0)
 
-Adamantine Wallet OS is a **deterministic security execution boundary**
-for DigiByte wallets.
+Adamantine Wallet OS is a deterministic security execution boundary for wallets.
+Originally developed for DigiByte wallets. Designed to be chain-agnostic.
 
 It does **not** hold keys.
 It does **not** sign transactions.
