@@ -1,38 +1,34 @@
-# Adamantine Wallet OS --- Documentation Index
+# Adamantine Wallet OS — Documentation Index
 
-**License:** MIT License\
-**Author:** DarekDGB\
-**Repository:** DigiByte Adamantine Wallet OS\
+**License:** MIT License  
+**Author:** DarekDGB  
+**Repository:** DigiByte Adamantine Wallet OS  
 **Scope:** Foundation Documentation Index
 
-------------------------------------------------------------------------
+---
 
 ## 1. Purpose
 
-This document is the **authoritative index** of all documentation that
-defines the Adamantine Wallet OS foundation.
+This document is the **authoritative index** of all documentation that defines the Adamantine Wallet OS foundation.
 
-The foundation is **contract-first**, **invariant-driven**, and
-**deterministic**.\
-Runtime wallet execution, UI, clients, and integrations are
-intentionally excluded from this repository.
+The foundation is **contract-first**, **invariant-driven**, and **deterministic**.  
+Runtime wallet execution, UI, clients, and integrations are intentionally excluded from this repository.
 
-If a document is not listed here, it is **not part of the foundation
-contract**.
+If a document is not listed here, it is **not part of the foundation contract**.
 
-------------------------------------------------------------------------
+---
 
 ## 2. Foundation Status
 
-**Current status:** v1.3.0 Shield Interfaces Frozen + Posture Locked
+**Current status:** v1.4.0 — Q-ID linkage hardened (clock-free replay framework)
 
-Foundation includes:
+Included:
 - Contracts
 - Deterministic reasoning
 - Fail-closed gates
 - Authority model
 - Execution boundaries
-- Canonical fixture proof packs (v1.2.0, v1.3.0)
+- Proof packs / fixture manifests
 
 Explicitly not included:
 - Wallet runtime
@@ -41,108 +37,47 @@ Explicitly not included:
 - Client SDKs
 - Shield or Adaptive Core implementations (evidence only)
 
-------------------------------------------------------------------------
+---
 
 ## 3. Normative Sources (Highest Authority)
 
-The following documents define **non-negotiable truth**.\
-If code or documentation conflicts with these, **these documents win**.
+The following documents define **non-negotiable truth**.  
+If anything conflicts with these, **these win**.
 
--   `INVARIANTS.md`\
--   `FOUNDATIONS.md`
+### 3.1 Execution Boundary and Envelope Contracts
+- `docs/CONTRACTS/execution_request_v2.md`
+- `docs/CONTRACTS/mobile_execution_call_v1.md` (if present)
+- Any additional `docs/CONTRACTS/*` referenced by the orchestrator
 
-------------------------------------------------------------------------
+### 3.2 Q-ID Linkage and Replay Protection
+- `docs/CONTRACTS/qid_linkage_v1.md` (NEW in v1.4.0)
+- `docs/DURABLE_NONCE_STORE_INTEGRATION.md` (UPDATED in v1.4.0, clock-free)
 
-## 4. Architectural Definition
+### 3.3 Proof Packs
+- `docs/OS_PROOF_PACK_v1_2_0.md` (if present)
+- `docs/OS_PROOF_PACK_v1_3_0.md` (if present)
+- `docs/OS_PROOF_PACK_v1_4_0.md` (NEW)
 
--   `ARCHITECTURE.md`\
--   `DECISION_AUTHORITY_EXECUTION.md`\
--   `TRUST_BOUNDARIES.md`\
--   `THREAT_MODEL.md`
+---
 
-------------------------------------------------------------------------
+## 4. Non-Normative / Supporting Documents
 
-## 5. Interface & Boundary Contracts
+The following may explain intent, but do not override contracts or tests.
 
--   `INTERFACES.md`\
--   `EXTERNAL_INTERFACES.md`\
--   `KEY_EXECUTION_BOUNDARY.md`
+- Architecture overviews
+- Diagrams
+- Roadmaps
+- Release notes
 
-------------------------------------------------------------------------
+---
 
-## 6. Contract Specifications
+## 5. Index Discipline
 
-### Execution & Mobile
+- Contract changes MUST be reflected here.
+- Adding a new contract doc without updating this index is a process failure.
+- Tests + fixtures are the ultimate enforcement of these documents.
 
--   `docs/CONTRACTS/mobile_execution_call_v1.md`
--   `docs/CONTRACTS/mobile_decision_result_v1.md`
--   `docs/execution_request_v1.md`
--   `docs/execution_response_v1.md`
+---
 
-### Shield v3
-
--   `docs/CONTRACTS/shield_signal_v3.md`
--   `docs/CONTRACTS/shield_bundle_v3.md`
-
-### Runtime Boundary
-
--   `docs/CONTRACTS/wallet_runtime_boundary_v1.md`
-
-### Context
-
--   `docs/CONTEXT_HASH_SPEC.md`
-
-------------------------------------------------------------------------
-
-## 7. Deterministic Proof Packs
-
-- `docs/OS_PROOF_PACK_v1_2_0.md`\
-- `docs/OS_PROOF_PACK_v1_3_0.md`\
-    Canonical JSON fixture system, manifest enforcement, and
-    reproducible execution validation.
-
-------------------------------------------------------------------------
-
-## 8. Authority & Key Custody
-
--   `KEY_CUSTODY.md`
--   `KEY_CUSTODY_OPTIONS.md`
--   `DEVICE_LOSS_AND_RECOVERY_MODEL.md`
-
-------------------------------------------------------------------------
-
-## 9. Observability & Operations
-
--   `OBSERVABILITY.md`
--   `SECURITY.md`
-
-------------------------------------------------------------------------
-
-## 10. Change Control
-
--   `CHANGELOG.md`
-
-Breaking changes: - require new versions - require updated contracts -
-require explicit documentation
-
-------------------------------------------------------------------------
-
-## 11. Reading Order (Recommended)
-
-1.  `INVARIANTS.md`
-2.  `FOUNDATIONS.md`
-3.  `ARCHITECTURE.md`
-4.  `DECISION_AUTHORITY_EXECUTION.md`
-5.  `INTERFACES.md`
-6.  `EXTERNAL_INTERFACES.md`
-7.  Contract specifications
-8.  Proof pack documentation
-
-------------------------------------------------------------------------
-
-## 12. Final Rule
-
-If something is unclear, **assume denial** until proven otherwise by a
-contract.
-
-This index reflects the foundation state as of **v1.2.0**.
+**Adamantine Wallet OS**  
+Deterministic. Fail-Closed. Future-Ready.
