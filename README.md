@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/adamantineos-logo-primary.png" width="420"/>
+  <img src="assets/branding/adamantineos-logo-primary.PNG" width="420"/>
 </p>
 
 # 🔷 DigiByte Adamantine Wallet OS
