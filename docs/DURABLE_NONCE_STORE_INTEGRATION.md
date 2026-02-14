@@ -1,82 +1,125 @@
-# Durable Nonce Store Integration (v1)
+# Durable Nonce Store Integration (Clock-Free) — v1.4.0
 
-Author attribution: **DarekDGB**
-
-This document defines how a mobile runtime MUST integrate a durable nonce store
-to preserve Adamantine's replay protection guarantees across restarts.
+**License:** MIT — **Author:** DarekDGB  
+**Scope:** Normative integration contract for replay protection evidence used by Adamantine Wallet OS.
 
 ---
 
-## Why this exists
+## 1. Purpose
 
-`InMemoryNonceStore` is correct for CI and deterministic tests, but it is NOT safe for production.
-Mobile apps restart, get background-killed, and resume frequently. Without persistence, a nonce replay
-can become possible after restart.
+Adamantine Wallet OS is **pure and deterministic**. It does **not** store mutable state.
 
-This repo defines the durable contract:
+Replay protection is enforced via a **Durable Nonce Store** owned by the untrusted runtime/host.
+Adamantine **verifies** replay evidence deterministically and **fails closed** when required evidence is missing or invalid.
 
-- `DurableNonceStore.check_and_mark(wallet_id, nonce, expires_at) -> bool`
-
----
-
-## Security requirements (normative)
-
-A platform `DurableNonceStore` implementation MUST satisfy:
-
-1. **Atomic check-and-mark**
-   - Exactly one concurrent call for the same `(wallet_id, nonce)` may succeed.
-
-2. **Crash safety**
-   - Once a nonce is marked used, it MUST remain used after process restart.
-
-3. **Fail-closed**
-   - If storage is unavailable, corrupt, or cannot confirm correctness,
-     the store must refuse acceptance (behave as replay / deny).
-
-4. **No global state**
-   - Store must be dependency-injected into the execution pipeline.
-   - No module-level singletons.
+This document is **clock-free** by contract:
+- **No wall-clock timestamps**
+- **No expiry semantics**
+- **No time-based acceptance logic**
 
 ---
 
-## Integration boundary (injection rule)
+## 2. Definitions
 
-The runtime MUST inject a nonce store into:
-
-- `enforce_tva(..., nonce_store=...)`
-- `run_with_tva(..., nonce_store=...)`
-
-Production mobile builds MUST use a durable implementation that conforms to `DurableNonceStore`.
-
-Test builds MAY use `InMemoryNonceStore`.
+- **wallet_id**: Stable identifier for the wallet instance.
+- **session_nonce**: The nonce used in the execution envelope for the protected call.
+- **binding_hash**: Deterministic hash that binds Q-ID identity proof to the envelope inputs (see `qid_linkage_v1.md`).
+- **registry_commitment**: A deterministic commitment to the nonce registry state (implementation-defined, but stable bytes/encoding).
+- **fresh**: Boolean statement that `session_nonce` has not been used previously for the given scope.
 
 ---
 
-## Suggested platform storage (non-normative)
+## 3. Scope of Replay Protection
 
-iOS:
-- Keychain + monotonic record of used nonces (or SQLite in protected storage)
-- Ensure atomicity with a transactional write
+v1.4.0 defines **per-wallet replay scope**:
 
-Android:
-- EncryptedSharedPreferences or SQLCipher/Room in encrypted mode
-- Ensure atomicity with transactions
+> A `session_nonce` MUST NOT be accepted more than once for the same `wallet_id`.
+
+A stricter scope (e.g., per-wallet + per-binding_hash) may be introduced only via a **major contract version bump**.
 
 ---
 
-## Minimal schema suggestion (non-normative)
+## 4. Runtime Interface (Non-Normative Implementation)
 
-Key: `(wallet_id, nonce)`  
-Value: `expires_at` (int)
+Adamantine does not mandate a specific storage backend. A runtime may implement the nonce store using:
+- key/value database
+- append-only log
+- Merkle accumulator
+- secure enclave storage
 
-Garbage collection:
-- Expired entries MAY be cleaned up lazily
-- Cleanup must never invalidate "used" nonces before `expires_at`
+The minimal behavior required is equivalent to **check-and-mark**, but without time:
+
+### 4.1 Minimal behavior (conceptual)
+
+- Input: `(wallet_id, session_nonce)`
+- Output: `fresh` (true if not seen before, false if already seen)
+- Side-effect: if fresh, mark as used (durably)
+
+**Note:** This is a *conceptual* description. Adamantine never calls this directly.
+Instead, the runtime produces **replay evidence** derived from this behavior.
 
 ---
 
-## Test policy
+## 5. Replay Evidence Required by Adamantine
 
-This repo includes tests to ensure:
-- the durable interface exists and is abstract
-- production selection logic must not silently use in-memory store
+When replay protection is required by policy, the runtime MUST supply a replay evidence object as part of Q-ID evidence.
+
+### 5.1 Required fields
+
+The following fields MUST be present and canonicalized:
+
+- `proof_version` (string)
+- `wallet_id` (string)
+- `session_nonce` (string/bytes encoding per Q-ID schema)
+- `binding_hash` (bytes, base64url)
+- `registry_commitment` (bytes, base64url)
+- `fresh` (boolean)
+
+### 5.2 Fail-closed rules
+
+If replay protection is required by policy, Adamantine MUST deterministically deny when:
+
+- replay evidence is missing
+- replay evidence fails schema validation
+- replay evidence is not bound to the current `wallet_id`
+- replay evidence `session_nonce` does not match the envelope nonce
+- replay evidence `binding_hash` does not match recomputed `binding_hash`
+- `fresh` is false (nonce replay)
+
+---
+
+## 6. Reason IDs (Normative)
+
+When denying due to replay enforcement, Adamantine MUST use stable reason IDs:
+
+- `QID_REPLAY_PROOF_MISSING`
+- `QID_REPLAY_PROOF_INVALID`
+- `QID_REPLAY_WALLET_MISMATCH`
+- `QID_REPLAY_NONCE_MISMATCH`
+- `QID_REPLAY_BINDING_HASH_MISMATCH`
+- `QID_NONCE_REPLAY`
+
+---
+
+## 7. Policy Latch (Normative)
+
+Replay proof enforcement is controlled by a deterministic policy latch:
+
+- When `require_qid_replay_proof = false`: replay evidence MAY be absent without forcing denial.
+- When `require_qid_replay_proof = true`: replay evidence MUST be present and valid, or the call is denied.
+
+This design preserves backward compatibility with older proof packs while enabling strict security profiles.
+
+---
+
+## 8. Security Notes (Normative)
+
+- Adamantine treats the runtime as **untrusted**.
+- Therefore, the runtime cannot be allowed to omit required replay evidence without causing denial.
+- Replay protection MUST NOT rely on timestamps, system clocks, or time synchronization.
+
+---
+
+## 9. Compatibility
+
+This document is normative for **v1.4.0** and later, until replaced by a major contract version bump.
