@@ -9,7 +9,7 @@
     "session_id": "s1",
     "action": "send",
     "fields": {
-      "asset": "ASSET",
+      "asset": "DGB",
       "amount": "1"
     }
   },
