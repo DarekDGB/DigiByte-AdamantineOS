@@ -140,6 +140,10 @@ def verify_manifest_strict_v1_3_0() -> None:
     verify_manifest_strict_for("v1_3_0")
 
 
+def verify_manifest_strict_v1_4_0() -> None:
+    verify_manifest_strict_for("v1_4_0")
+
+
 def run_fixture(pack_dirname: str, fixture_name: str, *, now: int) -> Dict[str, Any]:
     verify_manifest_strict_for(pack_dirname)
 
