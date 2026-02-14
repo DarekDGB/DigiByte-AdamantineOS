@@ -51,6 +51,10 @@ class RiskPolicy:
     require_protected_call: bool = False
     require_full_mode: bool = False
 
+    # v1.4.0 Q-ID linkage latch
+    # If enabled, protected executions MUST supply a valid Q-ID replay proof.
+    require_qid_replay_proof: bool = False
+
     def validate(self) -> None:
         if self.policy_pack is not None:
             if not isinstance(self.policy_pack, PolicyPack):
@@ -78,6 +82,9 @@ class RiskPolicy:
 
         if not isinstance(self.require_full_mode, bool):
             raise ValueError("require_full_mode must be bool")
+
+        if not isinstance(self.require_qid_replay_proof, bool):
+            raise ValueError("require_qid_replay_proof must be bool")
 
     def effective_allowed_external_reason_ids(self) -> tuple[str, ...]:
         """
