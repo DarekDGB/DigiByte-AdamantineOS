@@ -1,0 +1,6 @@
+{
+  "full_allow.json": "e6a257d36a9c8b761d1c1aa92bc8d95daadec64865a6f1f57dc5cd27dca55e50",
+  "replay_missing_deny.json": "d90931391a509e20c649ae7b8e563fc5e34a3b2d661bdcc9e8f9fbf61eb890fe",
+  "replay_nonce_replay_deny.json": "36b948f443a6cf63bba7a3fcd051ab33519eb32087a47ca0282fa3be4880e0c8",
+  "replay_wallet_mismatch_deny.json": "6271b46504c758faeeb1dd57058f12735fe45a332bef9fa21c8f77191ea37758"
+}
