@@ -1,0 +1,206 @@
+{
+  "$id": "adamantine:contracts:mobile_request_v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "audit": {
+      "additionalProperties": false,
+      "properties": {
+        "client_version": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "authority": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "proofs": {
+          "additionalProperties": true,
+          "description": "Opaque; validated in authority adapter.",
+          "type": "object"
+        },
+        "scope": {
+          "additionalProperties": true,
+          "description": "Opaque; validated in authority adapter.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "class",
+        "scope"
+      ],
+      "type": "object"
+    },
+    "context": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "app_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "device_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": false,
+          "description": "Map of string -> string only (dynamic keys allowed).",
+          "patternProperties": {
+            "^.+$": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "session_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "wallet_id": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "wallet_id",
+        "device_id",
+        "app_id",
+        "session_id",
+        "action",
+        "fields"
+      ],
+      "type": "object"
+    },
+    "intent": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "nonce": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "single_use",
+          "type": "string"
+        },
+        "store": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "value": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "store",
+        "mode"
+      ],
+      "type": "object"
+    },
+    "payload": {
+      "additionalProperties": false,
+      "properties": {
+        "body": {
+          "additionalProperties": true,
+          "description": "Intent-specific payload body; validated elsewhere.",
+          "type": "object"
+        },
+        "evidence": {
+          "additionalProperties": false,
+          "properties": {
+            "oracle": {
+              "additionalProperties": true,
+              "description": "Opaque Oracle/Adaptive Core evidence block.",
+              "minProperties": 1,
+              "type": "object"
+            },
+            "qid": {
+              "additionalProperties": true,
+              "description": "Opaque Q-ID evidence block.",
+              "minProperties": 1,
+              "type": "object"
+            },
+            "shield": {
+              "additionalProperties": true,
+              "description": "Opaque Shield bundle evidence block.",
+              "minProperties": 1,
+              "type": "object"
+            }
+          },
+          "required": [
+            "qid",
+            "oracle",
+            "shield"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "evidence",
+        "body"
+      ],
+      "type": "object"
+    },
+    "request_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "timebox": {
+      "additionalProperties": false,
+      "properties": {
+        "expires_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "issued_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "max_skew_seconds": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "issued_at",
+        "expires_at"
+      ],
+      "type": "object"
+    },
+    "v": {
+      "const": "execution_request_v2",
+      "type": "string"
+    }
+  },
+  "required": [
+    "v",
+    "request_id",
+    "intent",
+    "context",
+    "authority",
+    "timebox",
+    "nonce",
+    "payload"
+  ],
+  "title": "Adamantine Mobile Request v2 (execution_request_v2)",
+  "type": "object"
+}
