@@ -1,0 +1,302 @@
+{
+  "$id": "adamantine:contracts:mobile_response_v2.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifacts": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "context_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "decision": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "allowed": {
+          "type": "boolean"
+        },
+        "evidence": {
+          "additionalProperties": false,
+          "properties": {
+            "oracle": {
+              "additionalProperties": false,
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "reason_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "present",
+                "valid",
+                "reason_id"
+              ],
+              "type": "object"
+            },
+            "qid": {
+              "additionalProperties": false,
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "reason_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "present",
+                "valid",
+                "reason_id"
+              ],
+              "type": "object"
+            },
+            "shield": {
+              "additionalProperties": false,
+              "properties": {
+                "present": {
+                  "type": "boolean"
+                },
+                "reason_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "valid": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "present",
+                "valid",
+                "reason_id"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "qid",
+            "shield",
+            "oracle"
+          ],
+          "type": "object"
+        },
+        "gates": {
+          "additionalProperties": false,
+          "properties": {
+            "eqc": {
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "type": "boolean"
+                },
+                "reason_id": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "allowed",
+                "reason_id"
+              ],
+              "type": "object"
+            },
+            "tva": {
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "type": "boolean"
+                },
+                "reason_id": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "allowed",
+                "reason_id"
+              ],
+              "type": "object"
+            },
+            "wsqk": {
+              "additionalProperties": false,
+              "properties": {
+                "allowed": {
+                  "type": "boolean"
+                },
+                "reason_id": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "allowed",
+                "reason_id"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "tva",
+            "eqc",
+            "wsqk"
+          ],
+          "type": "object"
+        },
+        "intent": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "nonce": {
+          "additionalProperties": false,
+          "properties": {
+            "consumed": {
+              "type": "boolean"
+            },
+            "reason_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "store": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "value": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "consumed",
+            "store",
+            "value",
+            "reason_id"
+          ],
+          "type": "object"
+        },
+        "policy": {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "override_allowed": {
+              "type": "boolean"
+            },
+            "reason_id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode",
+            "override_allowed",
+            "reason_id"
+          ],
+          "type": "object"
+        },
+        "protection_mode": {
+          "enum": [
+            "legacy",
+            "minimal",
+            "full"
+          ],
+          "type": "string"
+        },
+        "timebox": {
+          "additionalProperties": false,
+          "properties": {
+            "expires_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "issued_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "max_skew_seconds": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "reason_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "valid": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "valid",
+            "issued_at",
+            "expires_at",
+            "max_skew_seconds",
+            "reason_id"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "intent",
+        "action",
+        "allowed",
+        "protection_mode",
+        "gates",
+        "timebox",
+        "nonce",
+        "evidence",
+        "policy"
+      ],
+      "type": "object"
+    },
+    "metrics": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "reason_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "request_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "allow",
+        "deny",
+        "error"
+      ],
+      "type": "string"
+    },
+    "v": {
+      "const": "execution_response_v2",
+      "type": "string"
+    }
+  },
+  "required": [
+    "v",
+    "request_id",
+    "status",
+    "reason_id",
+    "context_hash",
+    "decision"
+  ],
+  "title": "Adamantine Mobile Response v2 (execution_response_v2)",
+  "type": "object"
+}
