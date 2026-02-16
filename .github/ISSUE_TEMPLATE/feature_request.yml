@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a contract-aligned improvement
+title: "[feature]: "
+labels: ["enhancement"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is contract-first.
+        Many features belong in downstream wallets or companion repos.
+        Explain clearly why this belongs in Adamantine Wallet OS.
+
+  - type: input
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the change at a contract/interface level (schemas, reason_ids, determinism).
+    validations:
+      required: true
+
+  - type: textarea
+    id: security
+    attributes:
+      label: Security considerations
+      description: How could this be abused? How does it fail-closed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Why not implement this downstream?
+    validations:
+      required: false
