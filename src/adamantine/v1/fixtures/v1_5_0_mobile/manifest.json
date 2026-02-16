@@ -1,0 +1,10 @@
+{
+  "request_full_allow.json": "5577c2ffd975215f6f4c839903870cef27268150e15b976fbd208533735238ed",
+  "request_full_deny.json": "274e99da8dd9c2e4134fc6e566343aa56b752a05a005b3b03de46e0281356227",
+  "request_legacy.json": "05c04cfe6366a961ec07ed962c1fbea657bf8010cf232934f58f4d306b00b815",
+  "request_minimal.json": "a4d8a6e43dbaeea22e3c76facaf94ec3503f80b6e70d480b1d0df12c117622c7",
+  "response_full_allow.json": "fcc600eb66cb04acb5299ff85e04f4d6fc5339ab1fc74160da71fc13d249314d",
+  "response_full_deny.json": "5dce3bd340367b55ec8cd0910813d94949e078b820d90b849951172e7743fd66",
+  "response_legacy.json": "8bce605ea35a31a1276f8da6da15299c6e8f92e33b549f7ca8d868fcad7c1f73",
+  "response_minimal.json": "543eb4a7198e201e8be6cd517e1234a3c1b9f408fb1cc1bf2d10b21b9346eca4"
+}
