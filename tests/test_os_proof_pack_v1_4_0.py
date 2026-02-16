@@ -51,17 +51,17 @@ def test_v1_4_0_full_allow_fixture_shape_is_locked() -> None:
     verify_manifest_strict_v1_4_0()
     resp = _run("full_allow.json")
 
-    assert resp["v"] == "execution_response_v1"
+    assert resp["v"] == "execution_response_v2"
     assert resp["status"] == "allow"
     assert resp["reason_id"] == "OK_ALLOW"
+    assert resp["context_hash"] == CTX_HASH
 
     dec = resp["decision"]
     assert dec["allowed"] is True
     assert dec["protection_mode"] == "full"
-    assert dec["context_hash"] == CTX_HASH
-    assert dec["eqc"]["allowed"] is True
-    assert dec["wsqk"]["allowed"] is True
-    assert dec["tva"]["allowed"] is True
+    assert dec["gates"]["eqc"]["allowed"] is True
+    assert dec["gates"]["wsqk"]["allowed"] is True
+    assert dec["gates"]["tva"]["allowed"] is True
     assert dec["nonce"]["consumed"] is True
     assert dec["timebox"]["valid"] is True
 
