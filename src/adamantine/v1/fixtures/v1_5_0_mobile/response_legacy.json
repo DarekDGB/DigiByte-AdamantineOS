@@ -1,0 +1,65 @@
+{
+  "artifacts": {
+    "error": "proof_hash must be non-empty str"
+  },
+  "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+  "decision": {
+    "action": "send",
+    "allowed": false,
+    "evidence": {
+      "oracle": {
+        "present": true,
+        "reason_id": "EQC_INVALID_QID_PROOF",
+        "valid": false
+      },
+      "qid": {
+        "present": true,
+        "reason_id": "EQC_INVALID_QID_PROOF",
+        "valid": false
+      },
+      "shield": {
+        "present": true,
+        "reason_id": "EQC_INVALID_QID_PROOF",
+        "valid": false
+      }
+    },
+    "gates": {
+      "eqc": {
+        "allowed": false,
+        "reason_id": "EQC_INVALID_QID_PROOF"
+      },
+      "tva": {
+        "allowed": false,
+        "reason_id": "EQC_INVALID_QID_PROOF"
+      },
+      "wsqk": {
+        "allowed": false,
+        "reason_id": "EQC_INVALID_QID_PROOF"
+      }
+    },
+    "intent": "authorize",
+    "nonce": {
+      "consumed": false,
+      "reason_id": "EQC_INVALID_QID_PROOF",
+      "store": "tva",
+      "value": "n1"
+    },
+    "policy": {
+      "mode": "STRICT_FAIL_CLOSED",
+      "override_allowed": false,
+      "reason_id": "EQC_INVALID_QID_PROOF"
+    },
+    "protection_mode": "legacy",
+    "timebox": {
+      "expires_at": "2024-02-03T20:01:00Z",
+      "issued_at": "2024-02-03T20:00:00Z",
+      "max_skew_seconds": 0,
+      "reason_id": "OK_ALLOW",
+      "valid": true
+    }
+  },
+  "reason_id": "EQC_INVALID_QID_PROOF",
+  "request_id": "req-v1_5_0-legacy",
+  "status": "deny",
+  "v": "execution_response_v2"
+}
