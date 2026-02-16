@@ -3,8 +3,8 @@
   "request_full_deny.json": "5dce3bd340367b55ec8cd0910813d94949e078b820d90b849951172e7743fd66",
   "request_legacy.json": "05c04cfe6366a961ec07ed962c1fbea657bf8010cf232934f58f4d306b00b815",
   "request_minimal.json": "a4d8a6e43dbaeea22e3c76facaf94ec3503f80b6e70d480b1d0df12c117622c7",
-  "response_full_allow.json": "fcc600eb66cb04acb5299ff85e04f4d6fc5339ab1fc74160da71fc13d249314d",
-  "response_full_deny.json": "5dce3bd340367b55ec8cd0910813d94949e078b820d90b849951172e7743fd66",
-  "response_legacy.json": "8bce605ea35a31a1276f8da6da15299c6e8f92e33b549f7ca8d868fcad7c1f73",
-  "response_minimal.json": "543eb4a7198e201e8be6cd517e1234a3c1b9f408fb1cc1bf2d10b21b9346eca4"
+  "response_full_allow.json": "509f2d166fcb0091ec802a6118410af630a32157efb93b2e38f6db324e250665",
+  "response_full_deny.json": "c3a5c3c0071a11d99e73e70b48f536edb0b57763cce2e6290cf23622690e6208",
+  "response_legacy.json": "4ec71c0c2a9f1172b2bf446f8f0b20b4e351b183a9c7f6f0f460b6b824c17c1e",
+  "response_minimal.json": "37e515c417c57607d0a9cba1a0c68f945d6ee59471d25a542cf18567f122cdfe"
 }
