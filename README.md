@@ -5,7 +5,7 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v1.4.0--qid--linkage--hardened-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v1.5.0--mobile--sdk--contract--pack-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)
@@ -18,7 +18,7 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ------------------------------------------------------------------------
 
-## 🛡 Q-ID Linkage Hardened + Shield Frozen (v1.4.0)
+## 📱 Mobile SDK Contract Pack (v1.5.0)
 
 Adamantine Wallet OS is a deterministic security execution boundary for wallets.
 Originally developed for DigiByte wallets. Designed to be chain-agnostic.
@@ -28,7 +28,7 @@ It does **not** sign transactions.
 It decides --- deterministically and fail‑closed --- whether an action
 is allowed.
 
-v1.4.0 permanently locks:
+v1.5.0 permanently locks:
 
 -   Shield v3 strict schema + canonical ordering
 -   Deterministic size caps + toxic input denial
@@ -39,6 +39,8 @@ v1.4.0 permanently locks:
 -   Q-ID replay‑proof policy latch (opt‑in strict mode)
 -   Deterministic nonce replay denial (when enforced)
 -   Proof pack fixtures + manifest freeze
+-   Mobile SDK contract pack (frozen request/response shapes)
+-   Mobile conformance fixtures + tests (no payload guessing)
 
 From this point forward, identity binding and replay boundaries are
 hardened.
@@ -132,6 +134,7 @@ Included:
 -   Execution envelope contracts
 -   Orchestrator v2
 -   EQC evaluator
+-   WSQK authority proof
 -   Shield v3 adapter
 -   Adaptive Core v3 adapter
 -   Q-ID adapter
@@ -165,12 +168,10 @@ Silent drift is impossible.
 
 # 🧭 Roadmap
 
-v1.4.0 completes Q-ID linkage hardening and replay-proof enforcement
+v1.5.0 completes the Mobile SDK contract pack (docs + fixtures + conformance tests).
 framework.
 
 Next phase:
-
--   Mobile SDK contract pack (v1.5.0)
 -   Runtime separation boundary (v2.0.0)
 -   Production envelope validation
 
