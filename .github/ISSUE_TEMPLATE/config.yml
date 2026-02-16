@@ -1,0 +1,6 @@
+blank_issues_enabled: true
+
+contact_links:
+  - name: Security vulnerabilities (private)
+    url: https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/security/policy
+    about: Please report security issues privately via the Security Policy.
