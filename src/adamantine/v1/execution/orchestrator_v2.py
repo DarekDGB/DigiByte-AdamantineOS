@@ -18,7 +18,7 @@ from adamantine.v1.execution.boundary import run_with_tva
 from adamantine.v1.execution.envelope_v2 import parse_execution_request_envelope_v2
 from adamantine.v1.execution.errors import EnvelopeError
 from adamantine.v1.execution.executor import Executor
-from adamantine.v1.execution.response_v1 import build_execution_response_v1, ProtectionMode
+from adamantine.v1.execution.response_v2 import build_execution_response_v2, ProtectionMode
 from adamantine.v1.integrations.adaptive_core_oracle_v3_adapter import parse_adaptive_core_oracle_v3
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_replay_proof, parse_qid_session
@@ -238,7 +238,7 @@ def orchestrate_execution_v2(
         # - require_protected_call: caller MUST request protected execution (wsqk present)
         # - require_full_mode: caller MUST request protected execution; otherwise full mode is impossible
         if getattr(pol, "require_protected_call", False) and not protected_requested:
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -254,13 +254,27 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=False,
+                shield_present=True,
+                shield_valid=False,
+                oracle_present=True,
+                oracle_valid=False,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=ReasonId.DENY_POLICY,
                 artifacts={"error": "policy requires protected execution"},
             )
 
         if getattr(pol, "require_full_mode", False) and not protected_requested:
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -276,8 +290,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=False,
+                shield_present=True,
+                shield_valid=False,
+                oracle_present=True,
+                oracle_valid=False,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=ReasonId.DENY_POLICY,
                 artifacts={"error": "policy requires full protection mode"},
             )
 
@@ -285,7 +313,7 @@ def orchestrate_execution_v2(
         try:
             reason_registry = _build_mandatory_reason_registry(pol)
         except Exception as e:
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -301,8 +329,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=False,
+                shield_present=True,
+                shield_valid=False,
+                oracle_present=True,
+                oracle_valid=False,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=ReasonId.DENY_POLICY,
                 artifacts={"error": f"reason registry build failed: {e}"},
             )
 
@@ -310,7 +352,7 @@ def orchestrate_execution_v2(
         try:
             session = parse_qid_session(payload=req.evidence_qid, now=now)
         except AdapterError as e:
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -326,8 +368,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=False,
+                shield_present=True,
+                shield_valid=False,
+                oracle_present=True,
+                oracle_valid=False,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=e.reason_id,
                 artifacts={"error": e.message},
             )
 
@@ -346,7 +402,7 @@ def orchestrate_execution_v2(
                     require_fresh=True,
                 )
             except AdapterError as e:
-                return build_execution_response_v1(
+                return build_execution_response_v2(
                     request_id=req.request_id,
                     intent=req.intent,
                     action=req.context.action,
@@ -362,8 +418,22 @@ def orchestrate_execution_v2(
                     tva_allowed=False,
                     eqc_allowed=False,
                     wsqk_allowed=False,
-                    nonce_consumed=False,
+                    issued_at=req.issued_at,
+                    expires_at=req.expires_at,
+                    max_skew_seconds=req.max_skew_seconds,
                     timebox_valid=True,
+                    nonce_store=req.nonce_store,
+                    nonce_value=req.nonce_value,
+                    nonce_consumed=False,
+                    qid_present=True,
+                    qid_valid=False,
+                    shield_present=True,
+                    shield_valid=False,
+                    oracle_present=True,
+                    oracle_valid=False,
+                    policy_mode=pol.resilience_mode.value,
+                    override_allowed=False,
+                    policy_reason_id=e.reason_id,
                     artifacts={"error": e.message},
                 )
 
@@ -378,7 +448,7 @@ def orchestrate_execution_v2(
                 policy=pol,
             )
         except AdapterError as e:
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -394,8 +464,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=True,
+                shield_present=True,
+                shield_valid=False,
+                oracle_present=True,
+                oracle_valid=False,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=e.reason_id,
                 artifacts={"error": e.message},
             )
 
@@ -411,7 +495,7 @@ def orchestrate_execution_v2(
             )
         except AdapterError as e:
             mapped = _map_shield_adapter_reason(e.reason_id)
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -427,8 +511,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=True,
+                shield_present=True,
+                shield_valid=False,
+                oracle_present=True,
+                oracle_valid=True,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=mapped,
                 artifacts={
                     "shield_adapter_reason": e.reason_id.value,
                     "shield_adapter_message": e.message,
@@ -440,7 +538,7 @@ def orchestrate_execution_v2(
             got = list(shield.required_layers)
             missing = [x for x in expected if x not in got]
             extra = [x for x in got if x not in expected]
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -456,8 +554,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=True,
+                shield_present=True,
+                shield_valid=False,
+                oracle_present=True,
+                oracle_valid=True,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
                 artifacts={
                     "shield_required_layers_expected": expected,
                     "shield_required_layers_got": got,
@@ -479,7 +591,7 @@ def orchestrate_execution_v2(
 
         if eqc.verdict is not Verdict.ALLOW:
             rid = _coerce_reason_id(eqc.reason_ids[0] if eqc.reason_ids else ReasonId.DENY_SCHEMA_INVALID.value)
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -495,8 +607,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=False,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=True,
+                shield_present=True,
+                shield_valid=True,
+                oracle_present=True,
+                oracle_valid=True,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=rid,
                 artifacts={"evidence": {"qid": True, "oracle": True, "shield": True}},
             )
 
@@ -510,7 +636,7 @@ def orchestrate_execution_v2(
             authority_proofs=req.authority_proofs,
         )
         if wsqk is None:
-            return build_execution_response_v1(
+            return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
@@ -526,8 +652,22 @@ def orchestrate_execution_v2(
                 tva_allowed=False,
                 eqc_allowed=True,
                 wsqk_allowed=False,
-                nonce_consumed=False,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
                 timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=False,
+                qid_present=True,
+                qid_valid=True,
+                shield_present=True,
+                shield_valid=True,
+                oracle_present=True,
+                oracle_valid=True,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=ReasonId.DENY_AUTHORITY_INVALID,
             )
 
         exec_req = ExecutionRequest(
@@ -546,7 +686,7 @@ def orchestrate_execution_v2(
             nonce_store=nonce_store,
         )
 
-        return build_execution_response_v1(
+        return build_execution_response_v2(
             request_id=req.request_id,
             intent=req.intent,
             action=req.context.action,
@@ -562,8 +702,22 @@ def orchestrate_execution_v2(
             tva_allowed=True,
             eqc_allowed=True,
             wsqk_allowed=True,
-            nonce_consumed=True,
+            issued_at=req.issued_at,
+            expires_at=req.expires_at,
+            max_skew_seconds=req.max_skew_seconds,
             timebox_valid=True,
+            nonce_store=req.nonce_store,
+            nonce_value=req.nonce_value,
+            nonce_consumed=True,
+            qid_present=True,
+            qid_valid=True,
+            shield_present=True,
+            shield_valid=True,
+            oracle_present=True,
+            oracle_valid=True,
+            policy_mode=pol.resilience_mode.value,
+            override_allowed=False,
+            policy_reason_id=ReasonId.OK_ALLOW,
             artifacts={"executor_result": out},
         )
 
@@ -571,7 +725,7 @@ def orchestrate_execution_v2(
         request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
         ctx = _require_mapping(p.get("context")) or {}
         action = _safe_str(ctx.get("action"), fallback="invalid-action")
-        return build_execution_response_v1(
+        return build_execution_response_v2(
             request_id=request_id,
             intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
@@ -582,8 +736,22 @@ def orchestrate_execution_v2(
             tva_allowed=False,
             eqc_allowed=False,
             wsqk_allowed=False,
-            nonce_consumed=False,
+            issued_at=0,
+            expires_at=0,
+            max_skew_seconds=0,
             timebox_valid=True,
+            nonce_store="unknown",
+            nonce_value="unknown",
+            nonce_consumed=False,
+            qid_present=False,
+            qid_valid=False,
+            shield_present=False,
+            shield_valid=False,
+            oracle_present=False,
+            oracle_valid=False,
+            policy_mode=RiskPolicy().resilience_mode.value,
+            override_allowed=False,
+            policy_reason_id=e.reason_id,
             artifacts={"error": e.message},
         )
 
@@ -591,7 +759,7 @@ def orchestrate_execution_v2(
         request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
         action = _safe_str((_require_mapping(p.get("context")) or {}).get("action"), fallback="invalid-action")
         rid = _reason_from_message(str(e))
-        return build_execution_response_v1(
+        return build_execution_response_v2(
             request_id=request_id,
             intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
@@ -602,8 +770,22 @@ def orchestrate_execution_v2(
             tva_allowed=False,
             eqc_allowed=True,
             wsqk_allowed=True,
-            nonce_consumed=False,
+            issued_at=0,
+            expires_at=0,
+            max_skew_seconds=0,
             timebox_valid=True,
+            nonce_store="unknown",
+            nonce_value="unknown",
+            nonce_consumed=False,
+            qid_present=False,
+            qid_valid=False,
+            shield_present=False,
+            shield_valid=False,
+            oracle_present=False,
+            oracle_valid=False,
+            policy_mode=RiskPolicy().resilience_mode.value,
+            override_allowed=False,
+            policy_reason_id=rid,
             artifacts={"error": str(e)},
         )
 
@@ -611,7 +793,7 @@ def orchestrate_execution_v2(
         request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
         ctx = _require_mapping(p.get("context")) or {}
         action = _safe_str(ctx.get("action"), fallback="invalid-action")
-        return build_execution_response_v1(
+        return build_execution_response_v2(
             request_id=request_id,
             intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
@@ -622,8 +804,22 @@ def orchestrate_execution_v2(
             tva_allowed=False,
             eqc_allowed=False,
             wsqk_allowed=False,
-            nonce_consumed=False,
+            issued_at=0,
+            expires_at=0,
+            max_skew_seconds=0,
             timebox_valid=False,
+            nonce_store="unknown",
+            nonce_value="unknown",
+            nonce_consumed=False,
+            qid_present=False,
+            qid_valid=False,
+            shield_present=False,
+            shield_valid=False,
+            oracle_present=False,
+            oracle_valid=False,
+            policy_mode=RiskPolicy().resilience_mode.value,
+            override_allowed=False,
+            policy_reason_id=e.reason_id,
             artifacts={"error": e.message},
         )
 
@@ -631,7 +827,7 @@ def orchestrate_execution_v2(
         request_id = _safe_str(p.get("request_id"), fallback="invalid-request")
         ctx = _require_mapping(p.get("context")) or {}
         action = _safe_str(ctx.get("action"), fallback="invalid-action")
-        return build_execution_response_v1(
+        return build_execution_response_v2(
             request_id=request_id,
             intent=_safe_str(p.get("intent"), fallback="unknown"),
             action=action,
@@ -642,7 +838,21 @@ def orchestrate_execution_v2(
             tva_allowed=False,
             eqc_allowed=False,
             wsqk_allowed=False,
-            nonce_consumed=False,
+            issued_at=0,
+            expires_at=0,
+            max_skew_seconds=0,
             timebox_valid=False,
+            nonce_store="unknown",
+            nonce_value="unknown",
+            nonce_consumed=False,
+            qid_present=False,
+            qid_valid=False,
+            shield_present=False,
+            shield_valid=False,
+            oracle_present=False,
+            oracle_valid=False,
+            policy_mode=RiskPolicy().resilience_mode.value,
+            override_allowed=False,
+            policy_reason_id=ReasonId.DENY_SCHEMA_INVALID,
             artifacts={"error": str(e)},
         )
