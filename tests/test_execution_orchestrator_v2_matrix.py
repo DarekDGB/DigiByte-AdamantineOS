@@ -188,9 +188,9 @@ def test_allow_path_multi_evidence() -> None:
     assert resp["status"] == "allow"
     assert resp["reason_id"] == ReasonId.OK_ALLOW.value
     assert _d(resp, "decision", "allowed") is True
-    assert _d(resp, "decision", "eqc", "allowed") is True
-    assert _d(resp, "decision", "wsqk", "allowed") is True
-    assert _d(resp, "decision", "tva", "allowed") is True
+    assert _d(resp, "decision", "gates", "eqc", "allowed") is True
+    assert _d(resp, "decision", "gates", "wsqk", "allowed") is True
+    assert _d(resp, "decision", "gates", "tva", "allowed") is True
     assert _d(resp, "decision", "nonce", "consumed") is True
     assert executor.called is True
 
@@ -217,7 +217,7 @@ def test_deny_if_missing_any_required_shield_layer() -> None:
     assert resp["status"] == "deny"
     assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
     assert _d(resp, "decision", "allowed") is False
-    assert _d(resp, "decision", "eqc", "allowed") is False
+    assert _d(resp, "decision", "gates", "eqc", "allowed") is False
     assert executor.called is False
 
 
