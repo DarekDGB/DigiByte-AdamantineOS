@@ -42,30 +42,27 @@ def test_v1_2_0_allow_fixture_shape_is_locked() -> None:
     verify_manifest_strict_v1_2_0()
     resp = _run("allow.json")
 
-    assert sorted(resp.keys()) == ["artifacts", "decision", "reason_id", "request_id", "status", "v"]
-    assert resp["v"] == "execution_response_v1"
+    assert sorted(resp.keys()) == [
+        "artifacts",
+        "context_hash",
+        "decision",
+        "reason_id",
+        "request_id",
+        "status",
+        "v",
+    ]
+    assert resp["v"] == "execution_response_v2"
     assert resp["status"] == "allow"
     assert resp["reason_id"] == "OK_ALLOW"
+    assert resp["context_hash"] == CTX_HASH
 
     dec = resp["decision"]
-    assert sorted(dec.keys()) == [
-        "action",
-        "allowed",
-        "context_hash",
-        "eqc",
-        "intent",
-        "nonce",
-        "protection_mode",
-        "timebox",
-        "tva",
-        "wsqk",
-    ]
+    assert sorted(dec.keys()) == ["action", "allowed", "evidence", "gates", "intent", "nonce", "policy", "protection_mode", "timebox"]
     assert dec["allowed"] is True
     assert dec["protection_mode"] == "full"
-    assert dec["context_hash"] == CTX_HASH
-    assert dec["eqc"]["allowed"] is True
-    assert dec["wsqk"]["allowed"] is True
-    assert dec["tva"]["allowed"] is True
+    assert dec["gates"]["eqc"]["allowed"] is True
+    assert dec["gates"]["wsqk"]["allowed"] is True
+    assert dec["gates"]["tva"]["allowed"] is True
     assert dec["nonce"]["consumed"] is True
     assert dec["timebox"]["valid"] is True
 
@@ -76,18 +73,26 @@ def test_v1_2_0_deny_fixture_shape_is_locked() -> None:
     verify_manifest_strict_v1_2_0()
     resp = _run("deny.json")
 
-    assert sorted(resp.keys()) == ["artifacts", "decision", "reason_id", "request_id", "status", "v"]
-    assert resp["v"] == "execution_response_v1"
+    assert sorted(resp.keys()) == [
+        "artifacts",
+        "context_hash",
+        "decision",
+        "reason_id",
+        "request_id",
+        "status",
+        "v",
+    ]
+    assert resp["v"] == "execution_response_v2"
     assert resp["status"] == "deny"
     assert resp["reason_id"] == "EQC_RISK_SCORE_BELOW_THRESHOLD"
+    assert resp["context_hash"] == CTX_HASH
 
     dec = resp["decision"]
     assert dec["allowed"] is False
     assert dec["protection_mode"] == "full"
-    assert dec["context_hash"] == CTX_HASH
-    assert dec["eqc"]["allowed"] is False
-    assert dec["wsqk"]["allowed"] is False
-    assert dec["tva"]["allowed"] is False
+    assert dec["gates"]["eqc"]["allowed"] is False
+    assert dec["gates"]["wsqk"]["allowed"] is False
+    assert dec["gates"]["tva"]["allowed"] is False
     assert dec["nonce"]["consumed"] is False
     assert dec["timebox"]["valid"] is True
 
