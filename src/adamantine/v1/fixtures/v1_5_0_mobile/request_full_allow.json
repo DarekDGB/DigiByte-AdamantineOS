@@ -1,0 +1,65 @@
+{
+  "artifacts": {
+    "executor_result": "EXECUTED"
+  },
+  "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+  "decision": {
+    "action": "send",
+    "allowed": true,
+    "evidence": {
+      "oracle": {
+        "present": true,
+        "reason_id": "OK_ALLOW",
+        "valid": true
+      },
+      "qid": {
+        "present": true,
+        "reason_id": "OK_ALLOW",
+        "valid": true
+      },
+      "shield": {
+        "present": true,
+        "reason_id": "OK_ALLOW",
+        "valid": true
+      }
+    },
+    "gates": {
+      "eqc": {
+        "allowed": true,
+        "reason_id": "OK_ALLOW"
+      },
+      "tva": {
+        "allowed": true,
+        "reason_id": "OK_ALLOW"
+      },
+      "wsqk": {
+        "allowed": true,
+        "reason_id": "OK_ALLOW"
+      }
+    },
+    "intent": "authorize",
+    "nonce": {
+      "consumed": true,
+      "reason_id": "OK_ALLOW",
+      "store": "tva",
+      "value": "n1"
+    },
+    "policy": {
+      "mode": "STRICT_FAIL_CLOSED",
+      "override_allowed": false,
+      "reason_id": "OK_ALLOW"
+    },
+    "protection_mode": "full",
+    "timebox": {
+      "expires_at": "2024-02-03T20:01:00Z",
+      "issued_at": "2024-02-03T20:00:00Z",
+      "max_skew_seconds": 0,
+      "reason_id": "OK_ALLOW",
+      "valid": true
+    }
+  },
+  "reason_id": "OK_ALLOW",
+  "request_id": "req-v1_5_0-full-allow",
+  "status": "allow",
+  "v": "execution_response_v2"
+}
