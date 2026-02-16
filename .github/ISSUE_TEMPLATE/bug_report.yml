@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a deterministic bug or contract mismatch
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Adamantine is contract-first and deterministic. Please provide the smallest reproducible input.
+  - type: input
+    id: version
+    attributes:
+      label: Version / tag
+      description: Which tag/commit are you on? (e.g., v1.5.0)
+      placeholder: v1.5.0
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen (include expected reason_id/context_hash if relevant)?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead (include reason_id/context_hash/output shape)?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps / minimal fixture
+      description: Provide minimal JSON input or steps to reproduce (redact secrets).
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / CI link
+      description: Paste relevant logs or link to failing GitHub Actions run.
+    validations:
+      required: false
