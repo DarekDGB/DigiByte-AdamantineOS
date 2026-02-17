@@ -100,13 +100,16 @@ def _shield_bundle(*, now: int, context_hash: str, required_layers: list[str]) -
             }
         )
 
+    # CRITICAL: shield_v3_adapter requires signals sorted by (layer, signal_id)
+    signals = sorted(signals, key=lambda s: (s["layer"], s["signal_id"]))
+
     return {
         "v": "shield_bundle_v3",
         "bundle_id": "b1",
         "context_hash": context_hash,
         "issued_at": now,
         "expires_at": now + 60,
-        "required_layers": required_layers,
+        "required_layers": required_layers,  # keep canonical required_layers order
         "signals": signals,
         "meta": {},
         "shield_bundle_version": "1.0.0",
