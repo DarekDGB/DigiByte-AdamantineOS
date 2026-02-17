@@ -1,0 +1,62 @@
+{
+  "artifacts": {
+    "shield_adapter_message": "signal.context_hash must be 64-char hex",
+    "shield_adapter_reason": "DENY_ADAPTER_INVALID"
+  },
+  "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+  "decision": {
+    "action": "send",
+    "allowed": false,
+    "evidence": {
+      "adaptive_core": {
+        "allowed": true,
+        "external_reason_id": "AC_OK",
+        "overall_score": 99
+      },
+      "qid": {
+        "allowed": true,
+        "proof_hash": "proofhash123"
+      },
+      "shield": {
+        "allowed": false,
+        "layers_present": [],
+        "required_layers": [
+          "sentinel_ai",
+          "adn",
+          "dqsn",
+          "qwg",
+          "guardian_wallet"
+        ]
+      }
+    },
+    "gates": {
+      "eqc": {
+        "allowed": false
+      },
+      "tva": {
+        "allowed": false
+      },
+      "wsqk": {
+        "allowed": false
+      }
+    },
+    "intent": "authorize",
+    "nonce": {
+      "consumed": false,
+      "value": "n1"
+    },
+    "policy": {
+      "min_overall_score": 85
+    },
+    "protection_mode": "minimal",
+    "timebox": {
+      "expires_at": "2024-02-03T20:01:00Z",
+      "issued_at": "2024-02-03T20:00:00Z",
+      "valid": true
+    }
+  },
+  "reason_id": "EQC_INVALID_SHIELD_BUNDLE",
+  "request_id": "req-1",
+  "status": "deny",
+  "v": "execution_response_v2"
+}
