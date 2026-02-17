@@ -1,30 +1,54 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
+from adamantine.v1.contracts.policy_pack import PolicyPack
+from adamantine.v1.contracts.reason_ids import ReasonId
+from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
+from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
+from adamantine.v1.execution.executor import RecordingExecutor
 from adamantine.v1.execution.fixture_harness import (
     canonical_json_dumps,
     load_canonical_json,
     verify_manifest_strict_v2_0_0_runtime,
-    _default_policy,
 )
-from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
-from adamantine.v1.execution.executor import RecordingExecutor
+from adamantine.v1.policy.risk_policy import RiskPolicy
 from adamantine.v2.runtime_host.host import run_mobile_execution_call_v2
-
 
 NOW = 1706990400
 
 
 def _fixture_dir() -> Path:
-    # Keep this aligned with fixture_harness location:
     # src/adamantine/v1/fixtures/v2_0_0_runtime/
-    return (Path(__file__).resolve().parent.parent / "src" / "adamantine" / "v1" / "fixtures" / "v2_0_0_runtime").resolve()
+    return (
+        Path(__file__).resolve().parent.parent / "src" / "adamantine" / "v1" / "fixtures" / "v2_0_0_runtime"
+    ).resolve()
 
 
-def _run_request(name: str) -> Dict[str, Any]:
+def _default_policy() -> RiskPolicy:
+    """
+    Local policy builder to avoid importing a private helper from fixture_harness.
+    Must remain semantically aligned with the fixture harness policy.
+    """
+    allowed = ("ok", "AC_OK", "OK", "BLOCK")
+    reason_map = ExternalReasonMap(
+        entries=(
+            ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),
+            ExternalReasonMapEntry(external_id="AC_OK", internal_reason_id=ReasonId.EVIDENCE_OK.value),
+            ExternalReasonMapEntry(external_id="OK", internal_reason_id=ReasonId.EVIDENCE_OK.value),
+            ExternalReasonMapEntry(external_id="BLOCK", internal_reason_id=ReasonId.DENY_POLICY.value),
+        )
+    )
+    pack = PolicyPack(
+        min_overall_score=85,
+        allowed_external_reason_ids=allowed,
+        external_reason_map=reason_map,
+    )
+    return RiskPolicy(min_overall_score=85, policy_pack=pack)
+
+
+def _run_request(name: str) -> dict[str, Any]:
     payload = load_canonical_json(_fixture_dir() / name)
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
@@ -32,11 +56,7 @@ def _run_request(name: str) -> Dict[str, Any]:
     return run_mobile_execution_call_v2(payload=payload, now=NOW, executor=executor, nonce_store=store, policy=policy)
 
 
-def _expected(name: str) -> Dict[str, Any]:
-    return load_canonical_json(_fixture_dir() / name)
-
-
-def _assert_locked(*, got: Dict[str, Any], expected_path: Path) -> None:
+def _assert_locked(*, got: dict[str, Any], expected_path: Path) -> None:
     exp = load_canonical_json(expected_path)
 
     if got != exp:
