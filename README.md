@@ -1,10 +1,7 @@
-```{=html}
 <p align="center">
-```
-`<img src="assets/branding/adamantineos-logo-primary.PNG" width="420"/>`{=html}
-```{=html}
+<img src="assets/branding/ adamantineos-logo-primary.PNG" width="420"/>
 </p>
-```
+
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
