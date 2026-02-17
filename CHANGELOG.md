@@ -5,6 +5,56 @@ Author: DarekDGB\
 Repository: DigiByte Adamantine Wallet OS\
 Scope: Foundation Releases and Contract History
 
+------------------------------------------------------------------------
+
+v2.0.0 --- Runtime Host v2 + Execution Boundary Seal
+
+Status: Locked\
+Type: Major release (runtime host + execution_response_v2 seal)\
+Compatibility: Breaking --- execution response upgraded to v2 contract
+
+This release seals the mobile runtime host (v2) and locks deterministic
+execution behavior end-to-end.
+
+What's locked:
+
+1.  Runtime Host v2
+    -   `run_mobile_execution_call_v2` as authoritative execution
+        entrypoint
+    -   Deterministic policy injection
+    -   Strict nonce store enforcement
+    -   Stable executor interaction boundary
+2.  Execution Response v2 (Contract Freeze)
+    -   `v: execution_response_v2`
+    -   Stable `decision` object structure
+    -   Stable `reason_id`
+    -   Stable `context_hash`
+    -   Locked `artifacts` shape
+    -   Deterministic `protection_mode`
+    -   Deterministic nonce semantics
+3.  Proof Pack v2_0\_0_runtime
+    -   request_allow.json
+    -   request_deny.json
+    -   request_hostile_context_mismatch.json
+    -   response_allow.json
+    -   response_deny.json
+    -   response_hostile_context_mismatch.json
+    -   Canonical SHA256 manifest lock
+    -   Strict fixture-set exact-match enforcement
+4.  Determinism Enforcement
+    -   50-run replay determinism tests (allow + hostile)
+    -   Stable canonical JSON dumps
+    -   CI-fail on any payload drift
+5.  Fail-Closed Guarantees Reinforced
+    -   Adapter structural violations â deterministic deny
+    -   Manifest drift â CI failure
+    -   Canonical hash mismatch â CI failure
+
+Rule: Any change to execution_response_v2 shape requires a new major
+version.
+
+------------------------------------------------------------------------
+
 v1.5.0 --- Mobile Contract v2 + Conformance Freeze
 
 Status: Locked\
@@ -29,15 +79,7 @@ What's locked:
     -   `protection_mode` semantics locked (legacy \| minimal \| full)
     -   Strict response schema (no unknown fields allowed)
 3.  OS Proof Pack v1_5\_0 (Mobile)
-    -   Golden roundtrip fixtures:
-        -   request_legacy.json
-        -   request_minimal.json
-        -   request_full_allow.json
-        -   request_full_deny.json
-        -   response_legacy.json
-        -   response_minimal.json
-        -   response_full_allow.json
-        -   response_full_deny.json
+    -   Golden roundtrip fixtures (legacy/minimal/full)
     -   Canonical SHA256 manifest lock
     -   Fixture set exact-match enforcement
     -   Canonical JSON duplicate-key rejection
@@ -56,6 +98,8 @@ What's locked:
 Rule: Any change to mobile request/response shape requires a major
 version bump.
 
+------------------------------------------------------------------------
+
 v1.4.0 --- Q-ID Linkage Hardened (Replay Proof Gate)
 
 Status: Locked\
@@ -63,14 +107,18 @@ Type: Contract hardening (Q-ID binding + replay-proof validation)\
 Compatibility: Additive --- legacy/v1.3 proof packs remain valid unless
 policy enables the latch
 
-What's locked: - New Q-ID replay proof contract (`QIDReplayProof`) and
-deterministic adapter validation\
-- Distinct reason IDs for missing/invalid replay proof and binding
-mismatches\
-- New policy latch `require_qid_replay_proof` (deny-by-default; opt-in
-hardening)\
-- New OS Proof Pack v1_4\_0 fixtures + manifest lock (allow +
-fail-closed deny cases)
+What's locked:
+
+-   Q-ID replay proof contract (`QIDReplayProof`) and deterministic
+    adapter validation
+-   Distinct reason IDs for missing/invalid replay proof and binding
+    mismatches
+-   Policy latch `require_qid_replay_proof` (deny-by-default; opt-in
+    hardening)
+-   OS Proof Pack v1_4\_0 fixtures + manifest lock (allow + fail-closed
+    deny cases)
+
+------------------------------------------------------------------------
 
 v1.3.0 --- Shield Interfaces Frozen + Posture Locked
 
@@ -83,26 +131,9 @@ This release freezes the Shield v3 external evidence interface and locks
 deterministic, auditable posture outputs.
 
 1.  Shield v3 Strict Interface Freeze
-    -   Global `shield_bundle_version` (strict only)
-    -   Per-signal `layer_version` (strict only)
-    -   Deterministic ordering rules:
-        -   signals sorted by (layer, signal_id)
-        -   required_layers canonical order (strict only)
-    -   Unknown fields rejected (bundle + signal)
-    -   Duplicates denied (layers/signals)
 2.  Protection Mode Output (auditable)
-    -   Execution response includes
-        `protection_mode: legacy | minimal | full`
-    -   Deterministic semantics locked by tests
 3.  No Silent Downgrade (policy posture latches)
-    -   `require_protected_call` and `require_full_mode` policy latches
-        added
-    -   Hard-deny when requested posture cannot be satisfied
 4.  Regression Locks
-    -   Shield can only strengthen deny (never-weaken invariant)
-    -   Protection mode matrix regression lock
-
-See: docs/OS_PROOF_PACK_v1_3\_0.md
 
 ------------------------------------------------------------------------
 
@@ -115,43 +146,10 @@ Compatibility: Additive only --- contracts unchanged
 This release seals the deterministic integration harness for Adamantine
 Wallet OS.
 
-1.  Canonical Fixture System
-    -   Canonical JSON parsing (duplicate-key rejection enforced)
-    -   Whitespace-independent SHA256 hashing
-    -   Strict fixture manifest enforcement
-    -   Manifest must exactly match fixture set (no silent drift)
-    -   Hash mismatch prints canonical value for deterministic updates
-
-Rule: Formatting changes cannot alter semantic fixture identity.
-
-2.  Golden End-to-End Execution Fixtures
-    -   allow.json golden execution request
-    -   deny.json golden execution request
-    -   Stable execution_response_v1 shape
-    -   Stable reason_id and context_hash
-    -   Deterministic artifacts structure
-3.  Determinism Enforcement
-    -   50-run replay determinism tests (allow + deny)
-    -   Stable response ordering guarantees
-    -   CI-locked proof pack validation
-    -   Reproducible execution across environments
-4.  Verified Deny Path
-    -   EQC threshold-driven deny confirmed
-    -   Stable EQC_RISK_SCORE_BELOW_THRESHOLD semantics
-    -   Adapter behavior locked against drift
-5.  Security Guarantees Reinforced
-    -   No silent fixture modification possible
-    -   No hidden behavioral drift in execution layer
-    -   Contract surfaces unchanged from v1.0.0
-    -   Test coverage â¥90% maintained on security-critical paths
-
 Seal Statement:
 
 As of v1.2.0, the execution integration layer is cryptographically
 reproducible and CI-enforced.
-
-Future changes must: - update canonical hashes intentionally - preserve
-deterministic semantics - maintain contract compatibility
 
 ------------------------------------------------------------------------
 
@@ -163,9 +161,5 @@ boundaries)\
 Compatibility: Additive changes only beyond this point
 
 This release seals the Adamantine Wallet OS foundation.
-
-It freezes: - contract surfaces - fail-closed adapters - deterministic
-decision semantics - authority enforcement boundaries - mobile
-consumption outputs
 
 Breaking changes require a new major version.
