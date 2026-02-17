@@ -1,0 +1,67 @@
+{
+  "artifacts": {
+    "executor_result": "EXECUTED"
+  },
+  "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+  "decision": {
+    "action": "send",
+    "allowed": true,
+    "evidence": {
+      "adaptive_core": {
+        "allowed": true,
+        "external_reason_id": "AC_OK",
+        "overall_score": 99
+      },
+      "qid": {
+        "allowed": true,
+        "proof_hash": "proofhash123"
+      },
+      "shield": {
+        "allowed": true,
+        "layers_present": [
+          "adn",
+          "dqsn",
+          "guardian_wallet",
+          "qwg",
+          "sentinel_ai"
+        ],
+        "required_layers": [
+          "sentinel_ai",
+          "adn",
+          "dqsn",
+          "qwg",
+          "guardian_wallet"
+        ]
+      }
+    },
+    "gates": {
+      "eqc": {
+        "allowed": true
+      },
+      "tva": {
+        "allowed": true
+      },
+      "wsqk": {
+        "allowed": true
+      }
+    },
+    "intent": "authorize",
+    "nonce": {
+      "consumed": true,
+      "value": "n1"
+    },
+    "policy": {
+      "min_overall_score": 85
+    },
+    "protection_mode": "full",
+    "timebox": {
+      "expires_at": "2024-02-03T20:01:00Z",
+      "issued_at": "2024-02-03T20:00:00Z",
+      "valid": true
+    }
+  },
+  "reason_id": "OK_ALLOW",
+  "request_id": "req-1",
+  "status": "allow",
+  "v": "execution_response_v2"
+}
