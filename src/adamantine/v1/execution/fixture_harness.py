@@ -5,7 +5,7 @@ This module enforces semantic fixture locking via a manifest:
 - Canonicalize JSON (sort_keys + stable separators)
 - Hash canonical JSON with SHA-256
 
-Supports multiple proof packs (v1_2_0, v1_3_0) without mixing them.
+Supports multiple proof packs (v1_2_0, v1_3_0, v1_4_0, v2_0_0_runtime) without mixing them.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Dict, Mapping
+from typing import Any, Dict
 
 from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -95,7 +95,11 @@ def _fixture_dir(pack_dirname: str) -> Path:
 
 
 def verify_manifest_strict_for(pack_dirname: str) -> None:
-    """Verify a proof pack manifest strictly (semantic)."""
+    """Verify a proof pack manifest strictly (semantic).
+
+    On hash mismatch, raises CanonicalJSONError that includes a fully computed,
+    canonical suggested manifest.json mapping (filename -> sha256(canonical_json)).
+    """
     base = _fixture_dir(pack_dirname)
     manifest_path = base / _MANIFEST
 
@@ -117,14 +121,27 @@ def verify_manifest_strict_for(pack_dirname: str) -> None:
             f"manifest fixture set mismatch: fixtures={fixture_files} manifest={manifest_files}"
         )
 
+    # Compute actual hashes for all fixtures first (for a deterministic suggestion).
+    actual_manifest: Dict[str, str] = {}
+    mismatches: list[str] = []
+
     for filename in fixture_files:
         fixture_path = base / filename
         expected = manifest[filename]
         actual = sha256_hex_of_canonical_json_file(fixture_path)
+        actual_manifest[filename] = actual
         if actual != expected:
-            raise CanonicalJSONError(
-                f"fixture canonical hash mismatch: {filename} expected={expected} actual={actual}"
-            )
+            mismatches.append(f"{filename} expected={expected} actual={actual}")
+
+    if mismatches:
+        # Provide a single authoritative suggested manifest payload.
+        suggested = canonical_json_dumps(actual_manifest)
+        raise CanonicalJSONError(
+            "fixture canonical hash mismatch:\n"
+            + "\n".join(mismatches)
+            + "\n\nSUGGESTED manifest.json contents:\n"
+            + suggested
+        )
 
 
 def verify_manifest_strict() -> None:
