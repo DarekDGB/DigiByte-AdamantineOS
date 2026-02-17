@@ -7,56 +7,54 @@
     "action": "send",
     "allowed": true,
     "evidence": {
-      "adaptive_core": {
-        "allowed": true,
-        "external_reason_id": "AC_OK",
-        "overall_score": 99
+      "oracle": {
+        "present": true,
+        "reason_id": "OK_ALLOW",
+        "valid": true
       },
       "qid": {
-        "allowed": true,
-        "proof_hash": "proofhash123"
+        "present": true,
+        "reason_id": "OK_ALLOW",
+        "valid": true
       },
       "shield": {
-        "allowed": true,
-        "layers_present": [
-          "adn",
-          "dqsn",
-          "guardian_wallet",
-          "qwg",
-          "sentinel_ai"
-        ],
-        "required_layers": [
-          "sentinel_ai",
-          "adn",
-          "dqsn",
-          "qwg",
-          "guardian_wallet"
-        ]
+        "present": true,
+        "reason_id": "OK_ALLOW",
+        "valid": true
       }
     },
     "gates": {
       "eqc": {
-        "allowed": true
+        "allowed": true,
+        "reason_id": "OK_ALLOW"
       },
       "tva": {
-        "allowed": true
+        "allowed": true,
+        "reason_id": "OK_ALLOW"
       },
       "wsqk": {
-        "allowed": true
+        "allowed": true,
+        "reason_id": "OK_ALLOW"
       }
     },
     "intent": "authorize",
     "nonce": {
       "consumed": true,
+      "reason_id": "OK_ALLOW",
+      "store": "tva",
       "value": "n1"
     },
     "policy": {
-      "min_overall_score": 85
+      "mode": "STRICT_FAIL_CLOSED",
+      "override_allowed": false,
+      "reason_id": "OK_ALLOW"
     },
     "protection_mode": "full",
     "timebox": {
       "expires_at": "2024-02-03T20:01:00Z",
       "issued_at": "2024-02-03T20:00:00Z",
+      "max_skew_seconds": 0,
+      "reason_id": "OK_ALLOW",
       "valid": true
     }
   },
