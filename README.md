@@ -1,14 +1,17 @@
+```{=html}
 <p align="center">
-  <img src="assets/branding/adamantineos-logo-primary.PNG" width="420"/>
+```
+`<img src="assets/branding/adamantineos-logo-primary.PNG" width="420"/>`{=html}
+```{=html}
 </p>
-
+```
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v1.5.0--mobile--sdk--contract--pack-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v2.0.0--runtime--boundary--sealed-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-%3E90%25-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)
 
 ![Q-ID](https://img.shields.io/badge/Q--ID-session--validated-0A66C2.svg)
 ![Adaptive Core
@@ -18,33 +21,33 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ------------------------------------------------------------------------
 
-## 📱 Mobile SDK Contract Pack (v1.5.0)
+## 🚀 Runtime Boundary Seal (v2.0.0)
 
-Adamantine Wallet OS is a deterministic security execution boundary for wallets.
-Originally developed for DigiByte wallets. Designed to be chain-agnostic.
+Adamantine Wallet OS is a deterministic security execution boundary for
+wallets.\
+Originally developed for DigiByte wallets. Designed to be
+chain-agnostic.
 
-It does **not** hold keys.
-It does **not** sign transactions.
+It does **not** hold keys.\
+It does **not** sign transactions.\
 It decides --- deterministically and fail‑closed --- whether an action
 is allowed.
 
-v1.5.0 permanently locks:
+v2.0.0 permanently locks:
 
--   Shield v3 strict schema + canonical ordering
--   Deterministic size caps + toxic input denial
--   No‑silent‑downgrade enforcement\
--   Protection mode posture output (`legacy` \| `minimal` \| `full`)\
--   Shield "never weaken deny" invariant\
--   Protection mode matrix regression lock\
--   Q-ID replay‑proof policy latch (opt‑in strict mode)
--   Deterministic nonce replay denial (when enforced)
--   Proof pack fixtures + manifest freeze
--   Mobile SDK contract pack (frozen request/response shapes)
--   Mobile conformance fixtures + tests (no payload guessing)
+-   Runtime Host v2 as authoritative execution entrypoint
+-   `execution_response_v2` contract freeze
+-   Deterministic nonce consumption semantics
+-   Stable `decision`, `reason_id`, and `context_hash`
+-   Locked `artifacts` shape
+-   Fail‑closed adapter enforcement
+-   Canonical JSON enforcement
+-   Proof Pack v2_0\_0_runtime (request + response fixtures)
+-   SHA‑256 manifest freeze with strict CI validation
+-   50‑run determinism replay verification
 
-From this point forward, identity binding and replay boundaries are
-hardened.
-Contracts remain sealed. Only status evolves.
+Any structural change to `execution_response_v2` requires a new **major
+version**.
 
 ------------------------------------------------------------------------
 
@@ -88,25 +91,24 @@ Every execution response includes a deterministic security posture.
 
 ### 🟢 `legacy`
 
--   Q-ID missing or invalid
--   Protected execution not requested
--   Security posture falls back to baseline evaluation
+-   Q-ID missing or invalid\
+-   Protected execution not requested\
+-   Baseline evaluation only
 
 ### 🟡 `minimal`
 
--   Q-ID valid
--   Shield or Oracle incomplete or invalid
--   Execution evaluated with reduced security guarantees
+-   Q-ID valid\
+-   Shield or Oracle incomplete\
+-   Reduced security guarantees
 
 ### 🔵 `full`
 
--   Q-ID valid
--   Shield v3 valid
--   Adaptive Core v3 Oracle valid
--   All security layers active and enforced
+-   Q-ID valid\
+-   Shield v3 valid\
+-   Adaptive Core v3 Oracle valid\
+-   All layers enforced
 
-Protection mode is regression locked.
-Any change in semantics breaks CI.
+Protection mode semantics are regression locked in CI.
 
 ------------------------------------------------------------------------
 
@@ -121,7 +123,9 @@ Adamantine enforces:
 -   No silent downgrade under policy
 -   Shield evidence can only strengthen deny
 -   Deterministic outputs for identical inputs
--   Replay attempts deterministically denied when policy enabled
+-   Replay attempts deterministically denied when enforced
+-   Manifest drift fails CI
+-   Hash drift fails CI
 
 If any invariant weakens, tests fail.
 
@@ -129,9 +133,9 @@ If any invariant weakens, tests fail.
 
 # 📦 Scope
 
-Included:
+### Included
 
--   Execution envelope contracts
+-   Execution envelope contracts (v1 + v2)
 -   Orchestrator v2
 -   EQC evaluator
 -   WSQK authority proof
@@ -139,10 +143,9 @@ Included:
 -   Adaptive Core v3 adapter
 -   Q-ID adapter
 -   TVA boundary enforcement
--   Deterministic proof packs
--   Q-ID replay-proof gate (policy controlled)
+-   Deterministic proof packs (v1.2.0 → v2.0.0)
 
-Excluded:
+### Excluded
 
 -   Wallet UI
 -   Key custody
@@ -155,30 +158,30 @@ Adamantine is a **decision engine**, not a wallet.
 
 # 🧪 Determinism & Testing
 
--   90% coverage enforced
+-   ≥ 90% coverage enforced (currently \~91%)
 -   Fixture hashes locked
--   Proof packs frozen
--   Regression locks for posture + shield invariants
--   Replay-proof enforcement tested under strict policy
+-   Canonical JSON duplicate-key rejection
+-   Strict manifest enforcement
+-   Deterministic replay validation (50-run runtime tests)
+-   CI rejects silent behavioral drift
 
 Security changes require test changes.
-Silent drift is impossible.
 
 ------------------------------------------------------------------------
 
-# 🧭 Roadmap
+# 🧭 Version History
 
-v1.5.0 completes the Mobile SDK contract pack (docs + fixtures + conformance tests).
-framework.
-
-Next phase:
--   Runtime separation boundary (v2.0.0)
--   Production envelope validation
+-   v2.0.0 --- Runtime Host v2 + Execution Boundary Seal
+-   v1.5.0 --- Mobile Contract v2 + Conformance Freeze
+-   v1.4.0 --- Q-ID Replay Proof Gate
+-   v1.3.0 --- Shield Interfaces Frozen
+-   v1.2.0 --- Integration Harness Sealed
+-   v1.0.0 --- Foundation Sealed
 
 ------------------------------------------------------------------------
 
-**Adamantine Wallet OS**
-Deterministic. Fail‑Closed. Future‑Ready.
+**Adamantine Wallet OS**\
+Deterministic. Fail‑Closed. Production‑Sealed.
 
 ------------------------------------------------------------------------
 
