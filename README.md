@@ -8,7 +8,7 @@
 ![Status](https://img.shields.io/badge/status-v2.0.0--runtime--boundary--sealed-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-91%25-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)
 
 ![Q-ID](https://img.shields.io/badge/Q--ID-session--validated-0A66C2.svg)
 ![Adaptive Core
@@ -155,7 +155,7 @@ Adamantine is a **decision engine**, not a wallet.
 
 # 🧪 Determinism & Testing
 
--   ≥ 90% coverage enforced (currently \~91%)
+-   ≥ 95% coverage enforced (currently \~99%)
 -   Fixture hashes locked
 -   Canonical JSON duplicate-key rejection
 -   Strict manifest enforcement
