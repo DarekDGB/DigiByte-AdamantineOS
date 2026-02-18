@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from adamantine.v1.contracts import qid as qid_contracts
 from adamantine.v1.contracts.external_reason_registry import (
     ExternalReasonLayerAllowlist,
     ExternalReasonRegistryV1,
@@ -16,7 +17,6 @@ from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
 def _reason_map() -> ExternalReasonMap:
-    # Keep consistent with existing shield adapter tests.
     return ExternalReasonMap(
         entries=(
             ExternalReasonMapEntry(external_id="QWG_DEVICE_COMPROMISED", internal_reason_id=ReasonId.DENY_POLICY.value),
@@ -108,10 +108,16 @@ def test_parse_qid_replay_proof_fresh_must_be_bool() -> None:
     assert e.value.reason_id == ReasonId.QID_REPLAY_PROOF_INVALID
 
 
-def test_parse_qid_replay_proof_hits_contract_validation_except_path() -> None:
-    # proof_version="v0" passes type checks but should fail contract validate() => AdapterError
+def test_parse_qid_replay_proof_hits_contract_validation_except_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The adapter and contract share the same validations, so to cover the
+    # "except ValueError" branch we force validate() to raise.
+    def _boom(self) -> None:  # noqa: ANN001
+        raise ValueError("boom")
+
+    monkeypatch.setattr(qid_contracts.QIDReplayProof, "validate", _boom)
+
     rp = {
-        "proof_version": "v0",  # triggers QIDReplayProof.validate() failure
+        "proof_version": "v1",
         "wallet_id": "w1",
         "subject": "s",
         "proof_hash": "h",
@@ -120,6 +126,7 @@ def test_parse_qid_replay_proof_hits_contract_validation_except_path() -> None:
         "fresh": True,
         "device_binding": None,
     }
+
     with pytest.raises(AdapterError) as e:
         parse_qid_replay_proof(
             evidence_qid={"replay_proof": rp},
@@ -129,6 +136,7 @@ def test_parse_qid_replay_proof_hits_contract_validation_except_path() -> None:
             expected_device_binding=None,
             expected_session_nonce="n",
         )
+
     assert e.value.reason_id == ReasonId.QID_REPLAY_PROOF_INVALID
 
 
@@ -234,7 +242,6 @@ def test_shield_v3_rejects_facts_key_too_long() -> None:
 
 
 def test_parse_risk_report_hits_allowlist_and_mapping_mismatch_branch() -> None:
-    # policy allowlists OK by default, but reason_map missing mapping for OK -> UNKNOWN_EXTERNAL_REASON
     bad_map = ExternalReasonMap(
         entries=(ExternalReasonMapEntry(external_id="SOMETHING_ELSE", internal_reason_id=ReasonId.EVIDENCE_OK.value),)
     )
