@@ -22,9 +22,15 @@ def test_orchestrator_v2_reason_parsing_and_coercion_paths() -> None:
 
 
 def test_orchestrator_extract_fields_filters_non_strings_and_empty() -> None:
+    # Fail-closed behavior: any invalid entry (empty/non-string) causes None.
     payload = {"fields": {"ok": "v", "empty": "", "nonstr": 123}}
-    assert o2._extract_fields(payload) == {"ok": "v"}
+    assert o2._extract_fields(payload) is None
 
+    # Valid case: all values are non-empty strings.
+    payload2 = {"fields": {"ok": "v", "k2": "v2"}}
+    assert o2._extract_fields(payload2) == {"ok": "v", "k2": "v2"}
+
+    # Non-mapping / missing fields -> None.
     assert o2._extract_fields({"fields": "nope"}) is None
     assert o2._extract_fields({}) is None
 
