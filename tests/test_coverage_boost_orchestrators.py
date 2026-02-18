@@ -21,17 +21,17 @@ def test_orchestrator_v2_reason_parsing_and_coercion_paths() -> None:
     assert o2._coerce_reason_id(123) == ReasonId.DENY_SCHEMA_INVALID
 
 
-def test_orchestrator_extract_fields_filters_non_strings_and_empty() -> None:
-    # Fail-closed behavior: any invalid entry (empty/non-string) causes None.
-    payload = {"fields": {"ok": "v", "empty": "", "nonstr": 123}}
-    assert o2._extract_fields(payload) is None
+def test_orchestrator_extract_fields_filters_non_strings_and_requires_context() -> None:
+    # _extract_fields reads payload["context"]["fields"] (not payload["fields"])
+    payload = {"context": {"fields": {"ok": "v", "empty": "", "nonstr": 123}}}
 
-    # Valid case: all values are non-empty strings.
-    payload2 = {"fields": {"ok": "v", "k2": "v2"}}
-    assert o2._extract_fields(payload2) == {"ok": "v", "k2": "v2"}
+    # Non-string values are dropped; empty string is still a string so it remains.
+    assert o2._extract_fields(payload) == {"ok": "v", "empty": ""}
 
-    # Non-mapping / missing fields -> None.
-    assert o2._extract_fields({"fields": "nope"}) is None
+    # Missing / wrong-shaped context fails closed.
+    assert o2._extract_fields({"fields": {"ok": "v"}}) is None
+    assert o2._extract_fields({"context": "nope"}) is None
+    assert o2._extract_fields({"context": {"fields": "nope"}}) is None
     assert o2._extract_fields({}) is None
 
 
