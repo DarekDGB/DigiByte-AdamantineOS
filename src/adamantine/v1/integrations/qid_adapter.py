@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 from typing import Any, Mapping, NoReturn
 
 from adamantine.v1.contracts.qid import QIDReplayProof, QIDSessionProof
@@ -14,9 +17,24 @@ def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> NoReturn:
     raise AdapterError(rid, msg)
 
 
+def _canon_json_bytes(obj: object) -> bytes:
+    s = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return s.encode("utf-8")
+
+
+def _sha256_hex(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
 def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics | None = None) -> QIDSessionProof:
     """
     External Q-ID session payload -> QIDSessionProof (contract)
+
+    Accepted shapes:
+      A) Adamantine session proof interface:
+         - qid_iface_version, subject, issued_at, expires_at, proof_hash, ...
+      B) Q-ID Adamantine evidence v2:
+         - v="2", kind="qid_login_v2", response_payload{address, issued_at, expires_at, ...}, proof_hash
 
     Observability:
       - If metrics is provided, increments on AdapterError ReasonId only.
@@ -27,6 +45,7 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
       - invalid types
       - invalid time window (not yet valid / expired)
       - empty subject / empty proof_hash
+      - proof_hash mismatch (v2)
     """
     if not isinstance(now, int):
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
@@ -34,6 +53,58 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
     if not isinstance(payload, Mapping):
         _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "payload must be mapping")
 
+    # ------------------------------------------------------------------
+    # Shape B: Q-ID Adamantine evidence v2
+    # ------------------------------------------------------------------
+    v = payload.get("v")
+    kind = payload.get("kind")
+    if v == "2" and kind == "qid_login_v2":
+        response_payload = payload.get("response_payload")
+        if not isinstance(response_payload, Mapping):
+            _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "response_payload must be object")
+
+        subject = response_payload.get("address")
+        issued_at = response_payload.get("issued_at")
+        expires_at = response_payload.get("expires_at")
+
+        if not isinstance(subject, str) or not subject:
+            _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "response_payload.address must be non-empty str")
+
+        if not isinstance(issued_at, int) or not isinstance(expires_at, int):
+            _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "response_payload.issued_at/expires_at must be int")
+
+        if now < issued_at:
+            _fail(metrics, ReasonId.EQC_QID_SESSION_NOT_YET_VALID, "session not yet valid")
+        if now >= expires_at:
+            _fail(metrics, ReasonId.EQC_QID_SESSION_EXPIRED, "session expired")
+
+        proof_hash = payload.get("proof_hash")
+        if not isinstance(proof_hash, str) or not proof_hash:
+            _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "proof_hash must be non-empty str")
+
+        expected_hash = _sha256_hex(_canon_json_bytes(dict(response_payload)))
+        if proof_hash != expected_hash:
+            _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "proof_hash mismatch")
+
+        proof = QIDSessionProof(
+            subject=subject,
+            issued_at=issued_at,
+            expires_at=expires_at,
+            proof_hash=proof_hash,
+            device_binding=None,
+            issuer_version=None,
+        )
+
+        try:
+            proof.validate(now=now)
+        except ValueError as e:
+            _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, f"contract validation failed: {e}")
+
+        return proof
+
+    # ------------------------------------------------------------------
+    # Shape A: existing Adamantine session proof interface
+    # ------------------------------------------------------------------
     iface = payload.get("qid_iface_version")
     if not isinstance(iface, str) or not iface:
         _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "qid_iface_version must be non-empty str")
