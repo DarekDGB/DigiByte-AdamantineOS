@@ -235,3 +235,58 @@ def test_orchestrator_v2_tva_error_path(monkeypatch: pytest.MonkeyPatch) -> None
     )
     assert resp["status"] == "deny"
     assert resp["reason_id"] in (ReasonId.DENY_NONCE_REPLAY.value, ReasonId.DENY_SCHEMA_INVALID.value)
+
+def test_orchestrator_v2_calls_qid_verifier_and_denies_on_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    called = {"verifier": False, "parse": False}
+
+    def _verifier(evidence_qid: Any) -> None:
+        called["verifier"] = True
+        raise orch_mod.AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "sig invalid")
+
+    def _parse_qid_session(*, payload: Any, now: int, metrics=None):  # type: ignore[no-untyped-def]
+        called["parse"] = True
+        raise orch_mod.AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "should not be reached")
+
+    monkeypatch.setattr(orch_mod, "parse_qid_session", _parse_qid_session)
+
+    p = _base_payload()
+    resp = orch_mod.orchestrate_execution_v2(
+        payload=p,
+        now=NOW,
+        executor=_NoopExecutor(),
+        nonce_store=InMemoryNonceStore(),
+        qid_verifier=_verifier,
+        policy=_policy(),
+    )
+    assert called["verifier"] is True
+    assert called["parse"] is False
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_QID_PROOF.value
+
+
+def test_orchestrator_v2_calls_qid_verifier_before_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
+    called = {"verifier": False, "parse": False}
+
+    def _verifier(evidence_qid: Any) -> None:
+        called["verifier"] = True
+        return None
+
+    def _parse_qid_session(*, payload: Any, now: int, metrics=None):  # type: ignore[no-untyped-def]
+        called["parse"] = True
+        raise orch_mod.AdapterError(ReasonId.EQC_INVALID_QID_PROOF, "stop here")
+
+    monkeypatch.setattr(orch_mod, "parse_qid_session", _parse_qid_session)
+
+    p = _base_payload()
+    resp = orch_mod.orchestrate_execution_v2(
+        payload=p,
+        now=NOW,
+        executor=_NoopExecutor(),
+        nonce_store=InMemoryNonceStore(),
+        qid_verifier=_verifier,
+        policy=_policy(),
+    )
+    assert called["verifier"] is True
+    assert called["parse"] is True
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_QID_PROOF.value
