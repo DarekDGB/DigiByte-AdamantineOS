@@ -7,6 +7,35 @@ Scope: Foundation Releases and Contract History
 
 ------------------------------------------------------------------------
 
+## v2.0.1 — Sealed Foundation (100% CI Enforcement)
+
+**Status:** Locked  
+**Type:** Integrity lock (coverage enforcement hardening)  
+**Compatibility:** No functional or protocol changes
+
+This release seals the AdamantineOS v2.0.x foundation by enforcing a strict 100% coverage regression gate in CI.
+
+### What's locked:
+
+1. Coverage Policy Hardened
+   - `--cov-fail-under` raised from 95% to 100%
+   - CI fails on any uncovered execution path
+   - No tolerance margin
+
+2. Runtime Surface Included
+   - All runtime layers included in coverage scope
+   - No coverage omit rules
+   - No hidden escape paths
+
+3. Regression Integrity Reinforced
+   - 493 tests passing
+   - Deterministic execution fully exercised
+   - Fail-closed paths fully covered
+
+Rule: Any uncovered execution path will fail CI.
+
+------------------------------------------------------------------------
+
 ## v2.0.0 — Runtime Host v2 + Execution Boundary Seal
 
 **Status:** Locked  
@@ -124,10 +153,10 @@ Rule: Any change to mobile request/response shape requires a major version bump.
 
 This release freezes the Shield v3 external evidence interface and locks deterministic, auditable posture outputs.
 
-1. Shield v3 Strict Interface Freeze
-2. Protection Mode Output (auditable)
-3. No Silent Downgrade (policy posture latches)
-4. Regression Locks
+1. Shield v3 Strict Interface Freeze  
+2. Protection Mode Output (auditable)  
+3. No Silent Downgrade (policy posture latches)  
+4. Regression Locks  
 
 ------------------------------------------------------------------------
 
