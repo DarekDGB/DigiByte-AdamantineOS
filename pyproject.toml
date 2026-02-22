@@ -23,9 +23,4 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --cov=adamantine --cov-report=term-missing --cov-fail-under=95"
-
-[tool.coverage.run]
-omit = [
-  "src/adamantine/v1/runtime/*"
-]
+addopts = "-q --cov=adamantine --cov-report=term-missing --cov-fail-under=100"
