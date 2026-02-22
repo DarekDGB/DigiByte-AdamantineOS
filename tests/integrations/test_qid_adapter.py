@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 import pytest
 
 from adamantine.v1.integrations.errors import AdapterError
@@ -46,3 +49,69 @@ def test_parse_qid_session_denies_expired() -> None:
     with pytest.raises(AdapterError) as e:
         parse_qid_session(payload=payload, now=now)
     assert e.value.reason_id is ReasonId.EQC_QID_SESSION_EXPIRED
+
+
+def _canon_json_bytes(obj: object) -> bytes:
+    s = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return s.encode("utf-8")
+
+
+def test_parse_qid_session_accepts_qid_evidence_v2() -> None:
+    now = 150
+    response_payload = {
+        "type": "login_response",
+        "service_id": "svc",
+        "nonce": "n",
+        "address": "DGB1-ADDRESS",
+        "pubkey": "PUB",
+        "require": "legacy",
+        "version": "1",
+        "issued_at": 100,
+        "expires_at": 200,
+    }
+    proof_hash = hashlib.sha256(_canon_json_bytes(response_payload)).hexdigest()
+
+    evidence = {
+        "v": "2",
+        "kind": "qid_login_v2",
+        "login_uri": "qid://login?x=1",
+        "response_payload": response_payload,
+        "signature": "sig",
+        "subject": "DGB1-ADDRESS",
+        "proof_hash": proof_hash,
+    }
+
+    proof = parse_qid_session(payload=evidence, now=now)
+    assert proof.subject == "DGB1-ADDRESS"
+    assert proof.issued_at == 100
+    assert proof.expires_at == 200
+    assert proof.proof_hash == proof_hash
+
+
+def test_parse_qid_session_denies_qid_evidence_v2_hash_mismatch() -> None:
+    now = 150
+    response_payload = {
+        "type": "login_response",
+        "service_id": "svc",
+        "nonce": "n",
+        "address": "DGB1-ADDRESS",
+        "pubkey": "PUB",
+        "require": "legacy",
+        "version": "1",
+        "issued_at": 100,
+        "expires_at": 200,
+    }
+
+    evidence = {
+        "v": "2",
+        "kind": "qid_login_v2",
+        "login_uri": "qid://login?x=1",
+        "response_payload": response_payload,
+        "signature": "sig",
+        "subject": "DGB1-ADDRESS",
+        "proof_hash": "00" * 32,  # wrong
+    }
+
+    with pytest.raises(AdapterError) as e:
+        parse_qid_session(payload=evidence, now=now)
+    assert e.value.reason_id is ReasonId.EQC_INVALID_QID_PROOF
