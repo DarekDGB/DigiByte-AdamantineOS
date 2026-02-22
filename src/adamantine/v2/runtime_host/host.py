@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable, Mapping
 
 from adamantine.v1.enforcement.nonce_store import NonceStore
 from adamantine.v1.execution.executor import Executor
@@ -15,6 +15,7 @@ def run_mobile_execution_call_v2(
     now: int,
     executor: Executor,
     nonce_store: NonceStore,
+    qid_verifier: Callable[[Mapping[str, Any]], None] | None = None,
     policy: RiskPolicy | None = None,
 ) -> dict[str, Any]:
     """
@@ -22,7 +23,7 @@ def run_mobile_execution_call_v2(
 
     This is intentionally a THIN wrapper:
     - runtime provides payload + now (explicit injection)
-    - host injects executor + nonce_store (+ optional policy)
+    - host injects executor + nonce_store (+ optional policy + optional qid_verifier)
     - orchestrator_v2 is the single decision authority
     - host MUST NOT mutate decision, reason_id, context_hash, or protection_mode
     """
@@ -34,6 +35,7 @@ def run_mobile_execution_call_v2(
         now=now,
         executor=executor,
         nonce_store=nonce_store,
+        qid_verifier=qid_verifier,
         policy=policy,
     )
 
@@ -48,6 +50,7 @@ class RuntimeHostV2:
     executor: Executor
     nonce_store: NonceStore
     policy: RiskPolicy | None = None
+    qid_verifier: Callable[[Mapping[str, Any]], None] | None = None
 
     def handle(self, *, payload: Any, now: int) -> dict[str, Any]:
         return run_mobile_execution_call_v2(
@@ -55,5 +58,6 @@ class RuntimeHostV2:
             now=now,
             executor=self.executor,
             nonce_store=self.nonce_store,
+            qid_verifier=self.qid_verifier,
             policy=self.policy,
         )
