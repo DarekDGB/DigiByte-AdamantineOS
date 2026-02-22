@@ -109,6 +109,41 @@ Protection mode semantics are regression locked in CI.
 
 ------------------------------------------------------------------------
 
+# 🔐 Q-ID Cryptographic Enforcement (Runtime-Verified)
+
+AdamantineOS v2 integrates DigiByte Q-ID with explicit runtime
+enforcement.
+
+-   Runtime may inject a `qid_verifier` cryptographic hook\
+-   If provided, it is invoked **before Q-ID session parsing**\
+-   Any verifier failure deterministically denies execution\
+-   No silent downgrade path\
+-   No implicit trust of unsigned evidence
+
+When protected execution and replay enforcement are required by policy:
+
+-   `wallet_id` must match\
+-   `subject` must match\
+-   `proof_hash` must match\
+-   `device_binding` must match\
+-   `session_nonce` must match\
+-   Freshness is enforced
+
+Runtime wiring is regression-locked in CI:
+
+-   Verifier invocation is tested\
+-   Invocation order is tested\
+-   Failure path is tested\
+-   RuntimeHost → Orchestrator threading is tested
+
+Coverage remains \~99%.
+
+If a runtime supplies cryptographic verification (e.g. Q-ID signature
+validation), forged or unsigned session payloads cannot reach EQC
+evaluation.
+
+------------------------------------------------------------------------
+
 # 🔒 Core Invariants
 
 Adamantine enforces:
