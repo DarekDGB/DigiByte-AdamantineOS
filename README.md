@@ -10,7 +10,7 @@
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)
 
-![Q-ID](https://img.shields.io/badge/Q--ID-session--validated-0A66C2.svg)
+![Q-ID](https://img.shields.io/badge/Q--ID-runtime--verified-0A66C2.svg)
 ![Adaptive Core
 v3](https://img.shields.io/badge/Adaptive%20Core-v3%20oracle-0052CC.svg)
 ![Shield
