@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, cast, Literal
+from typing import Any, Mapping, cast, Literal, Callable
 
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.authority import WSQKAuthority
@@ -220,6 +220,7 @@ def orchestrate_execution_v2(
     now: int,
     executor: Executor,
     nonce_store: NonceStore,
+    qid_verifier: Callable[[Mapping[str, Any]], None] | None = None,
     policy: RiskPolicy | None = None,
 ) -> dict[str, Any]:
     p: Mapping[str, Any] = payload if isinstance(payload, Mapping) else {}
@@ -349,7 +350,17 @@ def orchestrate_execution_v2(
             )
 
         # Q-ID must validate first (legacy if invalid).
+        # If runtime provides qid_verifier (crypto verification hook), it MUST succeed
+        # before we accept/parse any Q-ID session representation.
         try:
+            if qid_verifier is not None:
+                try:
+                    qid_verifier(req.evidence_qid)
+                except AdapterError:
+                    raise
+                except Exception as ex:
+                    raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, f"qid_verifier error: {ex}")
+
             session = parse_qid_session(payload=req.evidence_qid, now=now)
         except AdapterError as e:
             return build_execution_response_v2(
@@ -387,7 +398,6 @@ def orchestrate_execution_v2(
                 artifacts={"error": e.message},
             )
 
-        
         # v1.4.0: Q-ID linkage hardening (clock-free replay gate).
         # If caller requested protected execution, a replay proof is mandatory.
         if protected_requested and getattr(pol, "require_qid_replay_proof", False):
@@ -437,7 +447,7 @@ def orchestrate_execution_v2(
                     artifacts={"error": e.message},
                 )
 
-# Oracle (minimal if invalid).
+        # Oracle (minimal if invalid).
         try:
             oracle = parse_adaptive_core_oracle_v3(
                 payload=req.evidence_oracle,
