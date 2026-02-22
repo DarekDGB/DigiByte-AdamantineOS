@@ -8,7 +8,7 @@
 ![Status](https://img.shields.io/badge/status-v2.0.0--runtime--boundary--sealed-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 ![Q-ID](https://img.shields.io/badge/Q--ID-runtime--verified-0A66C2.svg)
 ![Adaptive Core
@@ -136,7 +136,7 @@ Runtime wiring is regression-locked in CI:
 -   Failure path is tested\
 -   RuntimeHost → Orchestrator threading is tested
 
-Coverage remains \~99%.
+Coverage remains \100%.
 
 If a runtime supplies cryptographic verification (e.g. Q-ID signature
 validation), forged or unsigned session payloads cannot reach EQC
@@ -190,7 +190,7 @@ Adamantine is a **decision engine**, not a wallet.
 
 # 🧪 Determinism & Testing
 
--   ≥ 95% coverage enforced (currently \~99%)
+-   ≥ 95% coverage enforced (currently \100%)
 -   Fixture hashes locked
 -   Canonical JSON duplicate-key rejection
 -   Strict manifest enforcement
