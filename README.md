@@ -18,15 +18,15 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ------------------------------------------------------------------------
 
-## 🚀 Runtime Boundary Seal (v2.0.0)
+## 🚀 Runtime Boundary Seal (v2.0.1)
 
 Adamantine Wallet OS is a deterministic security execution boundary for
-wallets.\
+wallets.
 Originally developed for DigiByte wallets. Designed to be
 chain-agnostic.
 
-It does **not** hold keys.\
-It does **not** sign transactions.\
+It does **not** hold keys.
+It does **not** sign transactions.
 It decides --- deterministically and fail‑closed --- whether an action
 is allowed.
 
@@ -88,21 +88,21 @@ Every execution response includes a deterministic security posture.
 
 ### 🟢 `legacy`
 
--   Q-ID missing or invalid\
--   Protected execution not requested\
+-   Q-ID missing or invalid
+-   Protected execution not requested
 -   Baseline evaluation only
 
 ### 🟡 `minimal`
 
--   Q-ID valid\
--   Shield or Oracle incomplete\
+-   Q-ID valid
+-   Shield or Oracle incomplete
 -   Reduced security guarantees
 
 ### 🔵 `full`
 
--   Q-ID valid\
--   Shield v3 valid\
--   Adaptive Core v3 Oracle valid\
+-   Q-ID valid
+-   Shield v3 valid
+-   Adaptive Core v3 Oracle valid
 -   All layers enforced
 
 Protection mode semantics are regression locked in CI.
@@ -114,29 +114,29 @@ Protection mode semantics are regression locked in CI.
 AdamantineOS v2 integrates DigiByte Q-ID with explicit runtime
 enforcement.
 
--   Runtime may inject a `qid_verifier` cryptographic hook\
--   If provided, it is invoked **before Q-ID session parsing**\
--   Any verifier failure deterministically denies execution\
--   No silent downgrade path\
+-   Runtime may inject a `qid_verifier` cryptographic hook
+-   If provided, it is invoked **before Q-ID session parsing**
+-   Any verifier failure deterministically denies execution
+-   No silent downgrade path
 -   No implicit trust of unsigned evidence
 
 When protected execution and replay enforcement are required by policy:
 
--   `wallet_id` must match\
--   `subject` must match\
--   `proof_hash` must match\
--   `device_binding` must match\
--   `session_nonce` must match\
+-   `wallet_id` must match
+-   `subject` must match
+-   `proof_hash` must match
+-   `device_binding` must match
+-   `session_nonce` must match
 -   Freshness is enforced
 
 Runtime wiring is regression-locked in CI:
 
--   Verifier invocation is tested\
--   Invocation order is tested\
--   Failure path is tested\
+-   Verifier invocation is tested
+-   Invocation order is tested
+-   Failure path is tested
 -   RuntimeHost → Orchestrator threading is tested
 
-Coverage remains \100%.
+Coverage remains 100%.
 
 If a runtime supplies cryptographic verification (e.g. Q-ID signature
 validation), forged or unsigned session payloads cannot reach EQC
@@ -190,7 +190,7 @@ Adamantine is a **decision engine**, not a wallet.
 
 # 🧪 Determinism & Testing
 
--   ≥ 95% coverage enforced (currently \100%)
+-   100% coverage enforced 
 -   Fixture hashes locked
 -   Canonical JSON duplicate-key rejection
 -   Strict manifest enforcement
@@ -202,7 +202,7 @@ Security changes require test changes.
 ------------------------------------------------------------------------
 
 # 🧭 Version History
-
+-   v2.0.1 --- 100% Coverage Gate + Integrity Lock
 -   v2.0.0 --- Runtime Host v2 + Execution Boundary Seal
 -   v1.5.0 --- Mobile Contract v2 + Conformance Freeze
 -   v1.4.0 --- Q-ID Replay Proof Gate
@@ -212,7 +212,7 @@ Security changes require test changes.
 
 ------------------------------------------------------------------------
 
-**Adamantine Wallet OS**\
+**Adamantine Wallet OS**
 Deterministic. Fail‑Closed. Production‑Sealed.
 
 ------------------------------------------------------------------------
