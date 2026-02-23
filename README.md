@@ -5,7 +5,7 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v2.0.0--runtime--boundary--sealed-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v2.0.1-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
@@ -18,33 +18,33 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ------------------------------------------------------------------------
 
-## 🚀 Runtime Boundary Seal (v2.0.1)
+## v2.0.1 — Sealed Foundation (100% CI Enforcement)
 
-Adamantine Wallet OS is a deterministic security execution boundary for
-wallets.
-Originally developed for DigiByte wallets. Designed to be
-chain-agnostic.
+**Status:** Locked  
+**Type:** Integrity lock (coverage enforcement hardening)  
+**Compatibility:** No functional or protocol changes
 
-It does **not** hold keys.
-It does **not** sign transactions.
-It decides --- deterministically and fail‑closed --- whether an action
-is allowed.
+This release seals the AdamantineOS v2.0.x foundation by enforcing a strict 100% coverage regression gate in CI.
 
-v2.0.0 permanently locks:
+### What's locked:
 
--   Runtime Host v2 as authoritative execution entrypoint
--   `execution_response_v2` contract freeze
--   Deterministic nonce consumption semantics
--   Stable `decision`, `reason_id`, and `context_hash`
--   Locked `artifacts` shape
--   Fail‑closed adapter enforcement
--   Canonical JSON enforcement
--   Proof Pack v2_0\_0_runtime (request + response fixtures)
--   SHA‑256 manifest freeze with strict CI validation
--   50‑run determinism replay verification
+1. Coverage Policy Hardened
+   - `--cov-fail-under` raised from 95% to 100%
+   - CI fails on any uncovered execution path
+   - No tolerance margin
 
-Any structural change to `execution_response_v2` requires a new **major
-version**.
+2. Runtime Surface Included
+   - All runtime layers included in coverage scope
+   - No coverage omit rules
+   - No hidden escape paths
+
+3. Regression Integrity Reinforced
+   - 493 tests passing
+   - Deterministic execution fully exercised
+   - Fail-closed paths fully covered
+
+Rule: Any uncovered execution path will fail CI.
+
 
 ------------------------------------------------------------------------
 
