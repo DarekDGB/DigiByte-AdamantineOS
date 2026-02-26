@@ -164,12 +164,16 @@ def _canon_guardrails(guardrails: Any, guardrails_ref: Any) -> Tuple[List[str], 
                 raise ValueError("guardrail ids must be non-empty str")
             gids.append(g.strip())
 
+    # AC v3 canonical form: guardrails_ref is always a string and defaults to "".
+    # Therefore an explicitly provided "" is VALID and must not fail-closed.
     if guardrails_ref is None:
         ref = ""
     else:
-        if not isinstance(guardrails_ref, str) or not guardrails_ref.strip():
-            raise ValueError("'guardrails_ref' must be non-empty str if present")
+        if not isinstance(guardrails_ref, str):
+            raise ValueError("'guardrails_ref' must be str")
         ref = guardrails_ref.strip()
+        if ref == "":
+            ref = ""
 
     gids = sorted(set(gids))
     return gids, ref
