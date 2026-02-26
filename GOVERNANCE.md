@@ -144,3 +144,30 @@ A change is accepted only if:
 - It does not break determinism
 
 **No merge without proof.**
+
+---
+
+## 9. External Governance Artifacts (Adaptive Core v3)
+
+AdamantineOS may **consume** externally produced governance artifacts such as
+`upgrade_proposal_v3` (Adaptive Core v3).
+
+Non-negotiable rules:
+
+1. **Consume-only**
+   - AdamantineOS validates and evaluates proposals.
+   - AdamantineOS does **not** apply upgrades, modify code, or change configuration.
+
+2. **Human-only apply**
+   - Any real upgrade is applied via **human Pull Request** with deterministic tests.
+   - Review receipts are human-produced governance signals; they are not automatic upgrades.
+
+3. **Fail-closed**
+   - Invalid schema, hash mismatch, missing receipt (when required), or unknown fields MUST deny.
+
+4. **Compatibility locks**
+   - Compatibility vectors in `tests/compat_vectors/` and tests under `tests/compat/`
+     freeze cross-repo behavior. Any drift MUST break CI.
+
+This preserves correct authority direction:
+Adaptive Core proposes → Humans review/apply → Adamantine enforces boundary decisions.
