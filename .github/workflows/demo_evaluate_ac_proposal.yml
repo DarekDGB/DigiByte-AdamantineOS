@@ -1,0 +1,56 @@
+name: Demo - Evaluate AC Upgrade Proposal (Receipt Required)
+
+on:
+  workflow_dispatch:
+    inputs:
+      proposal_json:
+        description: "Paste the full upgrade_proposal_v3 JSON here"
+        required: true
+        type: string
+      receipt_decision:
+        description: "APPROVE or DENY"
+        required: true
+        default: "APPROVE"
+        type: string
+      require_receipt:
+        description: "Require receipt (true recommended)"
+        required: true
+        default: "true"
+        type: string
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Evaluate proposal (generate receipt + decision)
+        env:
+          PROPOSAL_JSON: ${{ inputs.proposal_json }}
+          RECEIPT_DECISION: ${{ inputs.receipt_decision }}
+          REQUIRE_RECEIPT: ${{ inputs.require_receipt }}
+        run: |
+          python scripts/demo_evaluate_ac_proposal.py
+          echo "--- FILES ---"
+          ls -la _demo_eval
+          echo "--- receipt.json ---"
+          cat _demo_eval/receipt.json
+          echo "--- decision.json ---"
+          cat _demo_eval/decision.json
+
+      - name: Upload demo evaluation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-eval
+          path: _demo_eval/*.json
