@@ -1,0 +1,46 @@
+{
+  "$id": "adamantine:contracts:proposal_review_receipt_v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Adaptive Core Proposal Review Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "v",
+    "proposal_id",
+    "proposal_hash",
+    "decision",
+    "reviewer_id",
+    "reviewed_utc",
+    "receipt_hash"
+  ],
+  "properties": {
+    "v": { "type": "string", "const": "proposal_review_receipt_v1" },
+    "proposal_id": { "type": "string", "minLength": 1 },
+    "proposal_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "decision": { "type": "string", "enum": ["APPROVE", "DENY"] },
+    "reviewer_id": { "type": "string", "minLength": 1 },
+    "reviewed_utc": { "type": "string", "minLength": 1 },
+    "consequence_simulation": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "transactions_analyzed",
+        "newly_denied",
+        "newly_allowed",
+        "false_positive_increase",
+        "false_negative_decrease",
+        "safe_to_deploy"
+      ],
+      "properties": {
+        "transactions_analyzed": { "type": "integer", "minimum": 0 },
+        "newly_denied": { "type": "integer", "minimum": 0 },
+        "newly_allowed": { "type": "integer", "minimum": 0 },
+        "false_positive_increase": { "type": "integer", "minimum": 0 },
+        "false_negative_decrease": { "type": "integer", "minimum": 0 },
+        "safe_to_deploy": { "type": "boolean" }
+      }
+    },
+    "notes": { "type": ["string", "null"] },
+    "receipt_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}
