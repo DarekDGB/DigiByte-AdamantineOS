@@ -1,0 +1,25 @@
+{
+  "v": "upgrade_proposal_v3",
+  "proposal_id": "AC-20260226-001",
+  "domain": "SECURITY_THRESHOLDS",
+  "action": "INCREASE_THRESHOLD",
+  "target": {
+    "component": "eqc_engine",
+    "version": "3.0.0"
+  },
+  "created_utc": "2026-02-26T00:00:00Z",
+  "summary": "Increase EQC threshold due to rising conflicting evidence pattern.",
+  "changes": [
+    {
+      "change_id": "CHG-001",
+      "type": "modify",
+      "detail": "Increase EQC threshold from 0.70 to 0.80 to reduce false negatives."
+    }
+  ],
+  "evidence": {},
+  "guardrails": [
+    "AMG-001"
+  ],
+  "guardrails_ref": "docs/ADAPTIVE_CORE_GUARDRAILS.md",
+  "proposal_hash": ""
+}
