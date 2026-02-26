@@ -49,6 +49,20 @@ class ReviewReceiptValidationResult:
     computed_hash: str
 
 
+@dataclass(frozen=True, slots=True)
+class UpgradeGatewayDecision:
+    """Fail-closed decision output for the v1 upgrade gateway.
+
+    This stays intentionally tiny: the caller can log/audit `reason_id`,
+    and pin the decision to deterministic hashes.
+    """
+
+    allow: bool
+    reason_id: str
+    proposal_hash: str
+    receipt_hash: str
+
+
 def _sha256_hex(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
@@ -68,10 +82,6 @@ def compute_review_receipt_hash(canonical_without_hash: Mapping[str, Any]) -> st
 
 # -----------------------------------------------------------------------------
 # Compatibility helpers
-#
-# The Adamantine test-suite expects a few generic helper names. These wrappers
-# keep a stable import surface while the internal names remain explicit about
-# contract versions.
 # -----------------------------------------------------------------------------
 
 
@@ -101,9 +111,7 @@ def build_review_receipt(
     """Build a v1 review receipt from a (possibly non-canonical) proposal."""
     pv = validate_and_canonicalize_upgrade_proposal_v3(proposal)
     canonical = pv.canonical
-    # Deterministic review timestamp: reuse proposal created_utc.
     reviewed_utc = str(canonical["created_utc"])
-    # Parse decision string into enum.
     dec = ReceiptDecision(decision)
     return build_review_receipt_v1(
         proposal_id=str(canonical["proposal_id"]),
@@ -164,16 +172,13 @@ def _canon_guardrails(guardrails: Any, guardrails_ref: Any) -> Tuple[List[str], 
                 raise ValueError("guardrail ids must be non-empty str")
             gids.append(g.strip())
 
-    # AC v3 canonical form: guardrails_ref is always a string and defaults to "".
-    # Therefore an explicitly provided "" is VALID and must not fail-closed.
+    # IMPORTANT: empty-string is allowed (canonical default)
     if guardrails_ref is None:
         ref = ""
     else:
         if not isinstance(guardrails_ref, str):
-            raise ValueError("'guardrails_ref' must be str")
+            raise ValueError("'guardrails_ref' must be str if present")
         ref = guardrails_ref.strip()
-        if ref == "":
-            ref = ""
 
     gids = sorted(set(gids))
     return gids, ref
@@ -194,7 +199,6 @@ def validate_and_canonicalize_upgrade_proposal_v3(raw: Mapping[str, Any]) -> Upg
         raise ValueError("proposal_id must not contain spaces")
 
     created_utc = _require_timestamp_z(_require_str(raw, "created_utc"), key="created_utc")
-
     summary = _require_str(raw, "summary")
 
     domain = _require_str(raw, "domain")
@@ -369,3 +373,104 @@ def validate_and_canonicalize_review_receipt_v1(raw: Mapping[str, Any]) -> Revie
         raise ValueError(f"receipt_hash mismatch: expected {computed} got {receipt_hash}")
 
     return ReviewReceiptValidationResult(canonical=canonical, computed_hash=computed)
+
+
+# -----------------------------------------------------------------------------
+# Policy gate (wiring completion point)
+# -----------------------------------------------------------------------------
+
+
+def evaluate_upgrade_request_v1(
+    *,
+    proposal: Mapping[str, Any],
+    review_receipt: Optional[Mapping[str, Any]] = None,
+    require_receipt: bool = True,
+) -> UpgradeGatewayDecision:
+    """Evaluate an Adaptive Core v3 upgrade request through the gateway.
+
+    Invariants:
+    - Fail-closed by default (receipt required).
+    - Deterministic: no wall-clock reads.
+    - Binding: receipt must match proposal_id and proposal_hash.
+    """
+    try:
+        pv = validate_and_canonicalize_upgrade_proposal_v3(proposal)
+    except ValueError:
+        return UpgradeGatewayDecision(
+            allow=False,
+            reason_id="UPGRADE_PROPOSAL_INVALID",
+            proposal_hash="",
+            receipt_hash="",
+        )
+
+    proposal_id = str(pv.canonical["proposal_id"])
+    proposal_hash = str(pv.computed_hash)
+
+    if require_receipt and review_receipt is None:
+        return UpgradeGatewayDecision(
+            allow=False,
+            reason_id="REVIEW_RECEIPT_MISSING",
+            proposal_hash=proposal_hash,
+            receipt_hash="",
+        )
+
+    if review_receipt is None:
+        return UpgradeGatewayDecision(
+            allow=True,
+            reason_id="UPGRADE_APPROVED_NO_RECEIPT",
+            proposal_hash=proposal_hash,
+            receipt_hash="",
+        )
+
+    try:
+        rv = validate_and_canonicalize_review_receipt_v1(review_receipt)
+    except ValueError:
+        return UpgradeGatewayDecision(
+            allow=False,
+            reason_id="REVIEW_RECEIPT_INVALID",
+            proposal_hash=proposal_hash,
+            receipt_hash="",
+        )
+
+    receipt = rv.canonical
+    receipt_hash = str(rv.computed_hash)
+
+    if str(receipt.get("proposal_id", "")) != proposal_id:
+        return UpgradeGatewayDecision(
+            allow=False,
+            reason_id="REVIEW_RECEIPT_MISMATCH",
+            proposal_hash=proposal_hash,
+            receipt_hash=receipt_hash,
+        )
+
+    if str(receipt.get("proposal_hash", "")) != proposal_hash:
+        return UpgradeGatewayDecision(
+            allow=False,
+            reason_id="REVIEW_RECEIPT_MISMATCH",
+            proposal_hash=proposal_hash,
+            receipt_hash=receipt_hash,
+        )
+
+    decision = str(receipt.get("decision", ""))
+    if decision == ReceiptDecision.DENY.value:
+        return UpgradeGatewayDecision(
+            allow=False,
+            reason_id="REVIEW_DENIED",
+            proposal_hash=proposal_hash,
+            receipt_hash=receipt_hash,
+        )
+
+    if decision != ReceiptDecision.APPROVE.value:
+        return UpgradeGatewayDecision(
+            allow=False,
+            reason_id="REVIEW_DECISION_INVALID",
+            proposal_hash=proposal_hash,
+            receipt_hash=receipt_hash,
+        )
+
+    return UpgradeGatewayDecision(
+        allow=True,
+        reason_id="UPGRADE_APPROVED",
+        proposal_hash=proposal_hash,
+        receipt_hash=receipt_hash,
+    )
