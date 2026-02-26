@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Mapping
+from typing import Any, Dict
 
 import pytest
 
@@ -65,7 +65,13 @@ def _valid_proposal() -> Dict[str, Any]:
 
 
 def _valid_receipt(*, consequence_simulation: Any = None) -> Dict[str, Any]:
-    # Build a valid receipt with correct receipt_hash
+    """
+    Build a valid receipt with correct receipt_hash.
+
+    Important: validator currently requires the key 'consequence_simulation'
+    to exist (it's in the allowed key-set). To hit the cs is None branch, we
+    must include the key with value None (not omit it).
+    """
     base: Dict[str, Any] = {
         "v": "ac_review_receipt_v1",
         "proposal_id": "AC-UPG-001",
@@ -74,12 +80,8 @@ def _valid_receipt(*, consequence_simulation: Any = None) -> Dict[str, Any]:
         "reviewer_id": "maintainer@local",
         "reviewed_utc": "2026-02-24T00:00:00Z",
         "notes": "ok",
+        "consequence_simulation": consequence_simulation,  # may be None / dict / invalid
     }
-    if consequence_simulation is not None:
-        base["consequence_simulation"] = consequence_simulation
-    else:
-        # Intentionally omit key to hit cs=None branch in validator
-        pass
 
     without_hash = dict(base)
     without_hash.pop("receipt_hash", None)
@@ -89,7 +91,7 @@ def _valid_receipt(*, consequence_simulation: Any = None) -> Dict[str, Any]:
 
 
 # -----------------------------------------------------------------------------
-# Cover load_json_file success path (line 127)
+# Cover load_json_file success path
 # -----------------------------------------------------------------------------
 def test_load_json_file_valid_object_roundtrip(tmp_path: Path) -> None:
     p = tmp_path / "ok.json"
@@ -99,7 +101,7 @@ def test_load_json_file_valid_object_roundtrip(tmp_path: Path) -> None:
 
 
 # -----------------------------------------------------------------------------
-# Cover _require_str branches: missing + empty (lines 132, 135)
+# Cover _require_str branches: missing + empty
 # -----------------------------------------------------------------------------
 def test_upgrade_proposal_missing_summary_hits_missing_field_branch() -> None:
     raw = _canonical_valid_proposal_base()
@@ -118,7 +120,7 @@ def test_upgrade_proposal_empty_summary_hits_non_empty_str_branch() -> None:
 
 
 # -----------------------------------------------------------------------------
-# Cover _canon_guardrails guardrails_ref None default (line 170)
+# Cover _canon_guardrails guardrails_ref None default
 # -----------------------------------------------------------------------------
 def test_upgrade_proposal_guardrails_ref_missing_defaults_to_empty_string() -> None:
     raw = _canonical_valid_proposal_base()
@@ -130,7 +132,7 @@ def test_upgrade_proposal_guardrails_ref_missing_defaults_to_empty_string() -> N
 
 
 # -----------------------------------------------------------------------------
-# Cover proposal validator early rejects (lines 184, 190, 194, 202, 206, 245)
+# Cover proposal validator early rejects
 # -----------------------------------------------------------------------------
 def test_upgrade_proposal_rejects_non_mapping_root() -> None:
     with pytest.raises(ValueError) as e:
@@ -181,7 +183,7 @@ def test_upgrade_proposal_rejects_bad_proposal_hash_format() -> None:
 
 
 # -----------------------------------------------------------------------------
-# Cover receipt builder branch: consequence_simulation wrong type (line 283)
+# Cover receipt builder branch: consequence_simulation wrong type
 # -----------------------------------------------------------------------------
 def test_build_review_receipt_v1_rejects_bad_consequence_simulation_type() -> None:
     with pytest.raises(ValueError) as e:
@@ -198,7 +200,7 @@ def test_build_review_receipt_v1_rejects_bad_consequence_simulation_type() -> No
 
 
 # -----------------------------------------------------------------------------
-# Cover receipt validator branches (lines 306, 323, 328, 342, 345, 350)
+# Cover receipt validator branches
 # -----------------------------------------------------------------------------
 def test_review_receipt_rejects_non_mapping_root() -> None:
     with pytest.raises(ValueError) as e:
@@ -224,7 +226,8 @@ def test_review_receipt_rejects_bad_proposal_hash_format() -> None:
 
 
 def test_review_receipt_consequence_simulation_none_branch_defaults_to_empty() -> None:
-    r = _valid_receipt(consequence_simulation=None)  # omit key -> cs is None -> {}
+    # Key must exist to pass exact-keys check; set it explicitly to None to hit cs is None branch.
+    r = _valid_receipt(consequence_simulation=None)
     res = validate_and_canonicalize_review_receipt_v1(r)
     assert res.canonical["consequence_simulation"] == {}
 
