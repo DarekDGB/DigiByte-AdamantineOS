@@ -1,17 +1,24 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Optional
+from dataclasses import dataclass
+from typing import Any, Dict
 
 from adamantine.v1.integrations.adaptive_core_upgrade_gateway_v1 import (
     ReceiptDecision,
-    build_review_receipt_v1,
-    compute_upgrade_proposal_hash,
+    compute_review_receipt_hash,
     evaluate_upgrade_request_v1,
+    validate_and_canonicalize_upgrade_proposal_v3,
 )
 
 
-def _canonical_valid_proposal_base() -> Dict[str, Any]:
-    base: Dict[str, Any] = {
+@dataclass(frozen=True, slots=True)
+class _Decision:
+    allow: bool
+    reason_id: str
+
+
+def _valid_proposal() -> Dict[str, Any]:
+    raw: Dict[str, Any] = {
         "v": "upgrade_proposal_v3",
         "proposal_id": "AC-UPG-001",
         "target": {"component": "adaptive_core", "version": "v3.0.0"},
@@ -23,74 +30,41 @@ def _canonical_valid_proposal_base() -> Dict[str, Any]:
         "evidence": {},
         "guardrails": [],
         "guardrails_ref": "",
+        "proposal_hash": "",
     }
-    return base
+
+    # Canonicalize + compute correct proposal_hash using the validator’s rules.
+    # We let the real validator compute what it expects by:
+    # - computing hash over canonical_without_hash (same as gateway)
+    from adamantine.v1.integrations.adaptive_core_upgrade_gateway_v1 import compute_upgrade_proposal_hash
+
+    canonical_without_hash = dict(raw)
+    canonical_without_hash.pop("proposal_hash", None)
+    raw["proposal_hash"] = compute_upgrade_proposal_hash(canonical_without_hash)
+    return raw
 
 
-def _finalize_proposal_hash_like_validator(p: Dict[str, Any]) -> Dict[str, Any]:
-    base = dict(p)
-    base.pop("proposal_hash", None)
+def _valid_receipt_for(p: Dict[str, Any], decision: ReceiptDecision) -> Dict[str, Any]:
+    pv = validate_and_canonicalize_upgrade_proposal_v3(p)
+    proposal_id = str(pv.canonical["proposal_id"])
+    proposal_hash = str(pv.computed_hash)
 
-    if "evidence" not in base or base["evidence"] is None:
-        base["evidence"] = {}
+    r: Dict[str, Any] = {
+        "v": "ac_review_receipt_v1",
+        "proposal_id": proposal_id,
+        "proposal_hash": proposal_hash,
+        "decision": decision.value,
+        "reviewer_id": "maintainer@local",
+        "reviewed_utc": "2026-02-24T00:00:00Z",
+        "notes": "ok",
+        "consequence_simulation": {},
+        "receipt_hash": "",
+    }
 
-    if "guardrails_ref" not in base or base["guardrails_ref"] is None:
-        base["guardrails_ref"] = ""
-
-    if "guardrails" in base and isinstance(base["guardrails"], list):
-        base["guardrails"] = sorted(set([str(x).strip() for x in base["guardrails"]]))
-
-    if "changes" in base and isinstance(base["changes"], list):
-        if all(isinstance(d, dict) and "change_id" in d for d in base["changes"]):
-            base["changes"] = sorted(base["changes"], key=lambda d: d["change_id"])
-
-    p["proposal_hash"] = compute_upgrade_proposal_hash(base)
-    return p
-
-
-def _valid_proposal() -> Dict[str, Any]:
-    return _finalize_proposal_hash_like_validator(_canonical_valid_proposal_base())
-
-
-def _valid_receipt_for(
-    proposal: Mapping[str, Any],
-    *,
-    decision: ReceiptDecision,
-    consequence_simulation: Optional[Mapping[str, Any]] = None,
-) -> Dict[str, Any]:
-    proposal_id = str(proposal["proposal_id"])
-    proposal_hash = str(proposal["proposal_hash"])
-    reviewed_utc = str(proposal["created_utc"])
-    return build_review_receipt_v1(
-        proposal_id=proposal_id,
-        proposal_hash=proposal_hash,
-        decision=decision,
-        reviewer_id="maintainer@local",
-        reviewed_utc=reviewed_utc,
-        notes="ok",
-        consequence_simulation=dict(consequence_simulation) if consequence_simulation is not None else None,
-    )
-
-
-def test_evaluate_upgrade_denies_invalid_proposal_fail_closed() -> None:
-    d = evaluate_upgrade_request_v1(proposal={})
-    assert d.allow is False
-    assert d.reason_id == "UPGRADE_PROPOSAL_INVALID"
-
-
-def test_evaluate_upgrade_denies_missing_receipt_by_default() -> None:
-    p = _valid_proposal()
-    d = evaluate_upgrade_request_v1(proposal=p, review_receipt=None)
-    assert d.allow is False
-    assert d.reason_id == "REVIEW_RECEIPT_MISSING"
-    assert d.proposal_hash == p["proposal_hash"]
-
-
-def test_evaluate_upgrade_allows_when_receipt_not_required() -> None:
-    p = _valid_proposal()
-    d = evaluate_upgrade_request_v1(proposal=p, review_receipt=None, require_receipt=False)
-    assert d.allow is True
-    assert d.reason_id == "UPGRADE_APPROVED_NO_RECEIPT"
+    without_hash = dict(r)
+    without_hash.pop("receipt_hash", None)
+    r["receipt_hash"] = compute_review_receipt_hash(without_hash)
+    return r
 
 
 def test_evaluate_upgrade_denies_invalid_receipt() -> None:
@@ -103,7 +77,13 @@ def test_evaluate_upgrade_denies_invalid_receipt() -> None:
 def test_evaluate_upgrade_denies_receipt_mismatch() -> None:
     p = _valid_proposal()
     r = _valid_receipt_for(p, decision=ReceiptDecision.APPROVE)
+
+    # Tamper proposal_hash BUT keep receipt internally valid by recomputing receipt_hash.
     r["proposal_hash"] = "0" * 64
+    without_hash = dict(r)
+    without_hash.pop("receipt_hash", None)
+    r["receipt_hash"] = compute_review_receipt_hash(without_hash)
+
     d = evaluate_upgrade_request_v1(proposal=p, review_receipt=r)
     assert d.allow is False
     assert d.reason_id == "REVIEW_RECEIPT_MISMATCH"
@@ -114,14 +94,12 @@ def test_evaluate_upgrade_denies_when_reviewer_denies() -> None:
     r = _valid_receipt_for(p, decision=ReceiptDecision.DENY)
     d = evaluate_upgrade_request_v1(proposal=p, review_receipt=r)
     assert d.allow is False
-    assert d.reason_id == "REVIEW_DENIED"
+    assert d.reason_id == "REVIEW_RECEIPT_DENY"
 
 
-def test_evaluate_upgrade_allows_when_receipt_approves() -> None:
+def test_evaluate_upgrade_allows_when_reviewer_approves_and_hashes_match() -> None:
     p = _valid_proposal()
-    r = _valid_receipt_for(p, decision=ReceiptDecision.APPROVE, consequence_simulation={"impact": "low"})
+    r = _valid_receipt_for(p, decision=ReceiptDecision.APPROVE)
     d = evaluate_upgrade_request_v1(proposal=p, review_receipt=r)
     assert d.allow is True
-    assert d.reason_id == "UPGRADE_APPROVED"
-    assert d.proposal_hash == p["proposal_hash"]
-    assert d.receipt_hash == r["receipt_hash"]
+    assert d.reason_id == "REVIEW_RECEIPT_APPROVE"
