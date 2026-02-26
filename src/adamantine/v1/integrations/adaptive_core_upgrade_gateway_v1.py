@@ -455,7 +455,7 @@ def evaluate_upgrade_request_v1(
     if decision == ReceiptDecision.DENY.value:
         return UpgradeGatewayDecision(
             allow=False,
-            reason_id="REVIEW_DENIED",
+            reason_id="REVIEW_RECEIPT_DENY",
             proposal_hash=proposal_hash,
             receipt_hash=receipt_hash,
         )
@@ -463,7 +463,7 @@ def evaluate_upgrade_request_v1(
     if decision == ReceiptDecision.APPROVE.value:
         return UpgradeGatewayDecision(
             allow=True,
-            reason_id="UPGRADE_APPROVED",
+            reason_id="REVIEW_RECEIPT_APPROVE",
             proposal_hash=proposal_hash,
             receipt_hash=receipt_hash,
         )
