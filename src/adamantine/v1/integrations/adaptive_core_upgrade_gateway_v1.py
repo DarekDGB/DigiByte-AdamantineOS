@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Tuple, List
+from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 
 class ReceiptDecision(str, Enum):
@@ -460,17 +460,18 @@ def evaluate_upgrade_request_v1(
             receipt_hash=receipt_hash,
         )
 
-    if decision != ReceiptDecision.APPROVE.value:
+    if decision == ReceiptDecision.APPROVE.value:
         return UpgradeGatewayDecision(
-            allow=False,
-            reason_id="REVIEW_DECISION_INVALID",
+            allow=True,
+            reason_id="UPGRADE_APPROVED",
             proposal_hash=proposal_hash,
             receipt_hash=receipt_hash,
         )
 
+    # Defensive: validator already restricts to APPROVE/DENY.
     return UpgradeGatewayDecision(
-        allow=True,
-        reason_id="UPGRADE_APPROVED",
+        allow=False,
+        reason_id="REVIEW_DECISION_INVALID",
         proposal_hash=proposal_hash,
         receipt_hash=receipt_hash,
-    )
+    )  # pragma: no cover
