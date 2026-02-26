@@ -68,9 +68,12 @@ def _valid_receipt(*, consequence_simulation: Any = None) -> Dict[str, Any]:
     """
     Build a valid receipt with correct receipt_hash.
 
-    Important: validator currently requires the key 'consequence_simulation'
-    to exist (it's in the allowed key-set). To hit the cs is None branch, we
-    must include the key with value None (not omit it).
+    Critical detail:
+    - The validator canonicalizes consequence_simulation:
+        missing/None -> {}
+    - The receipt_hash is computed over that canonical form (i.e., with {}).
+    So when consequence_simulation is missing/None in the raw receipt, we must
+    still compute the hash as if consequence_simulation == {}.
     """
     base: Dict[str, Any] = {
         "v": "ac_review_receipt_v1",
@@ -80,12 +83,28 @@ def _valid_receipt(*, consequence_simulation: Any = None) -> Dict[str, Any]:
         "reviewer_id": "maintainer@local",
         "reviewed_utc": "2026-02-24T00:00:00Z",
         "notes": "ok",
-        "consequence_simulation": consequence_simulation,  # may be None / dict / invalid
     }
 
-    without_hash = dict(base)
+    # Allow caller to control the raw shape:
+    # - None -> set explicit None (hits cs is None branch in validator)
+    # - dict -> include dict
+    # - other -> include as-is (so tests can assert failure)
+    if consequence_simulation is not ...:
+        # We want cs=None branch coverage by explicitly setting None when passed None.
+        if consequence_simulation is None:
+            base["consequence_simulation"] = None
+        else:
+            base["consequence_simulation"] = consequence_simulation
+
+    # Compute receipt_hash over canonical form:
+    hash_base = dict(base)
+    if hash_base.get("consequence_simulation") is None:
+        hash_base["consequence_simulation"] = {}
+
+    without_hash = dict(hash_base)
     without_hash.pop("receipt_hash", None)
     h = compute_review_receipt_hash(without_hash)
+
     base["receipt_hash"] = h
     return base
 
@@ -226,7 +245,7 @@ def test_review_receipt_rejects_bad_proposal_hash_format() -> None:
 
 
 def test_review_receipt_consequence_simulation_none_branch_defaults_to_empty() -> None:
-    # Key must exist to pass exact-keys check; set it explicitly to None to hit cs is None branch.
+    # Explicit None in raw; hash computed over canonical {} so it matches.
     r = _valid_receipt(consequence_simulation=None)
     res = validate_and_canonicalize_review_receipt_v1(r)
     assert res.canonical["consequence_simulation"] == {}
