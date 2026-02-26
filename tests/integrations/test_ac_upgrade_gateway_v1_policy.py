@@ -103,3 +103,37 @@ def test_evaluate_upgrade_allows_when_reviewer_approves_and_hashes_match() -> No
     d = evaluate_upgrade_request_v1(proposal=p, review_receipt=r)
     assert d.allow is True
     assert d.reason_id == "REVIEW_RECEIPT_APPROVE"
+
+def test_evaluate_upgrade_denies_invalid_proposal() -> None:
+    d = evaluate_upgrade_request_v1(proposal={"v": "upgrade_proposal_v3"})  # missing required keys
+    assert d.allow is False
+    assert d.reason_id == "UPGRADE_PROPOSAL_INVALID"
+
+
+def test_evaluate_upgrade_denies_missing_receipt_when_required() -> None:
+    p = _valid_proposal()
+    d = evaluate_upgrade_request_v1(proposal=p, review_receipt=None)
+    assert d.allow is False
+    assert d.reason_id == "REVIEW_RECEIPT_MISSING"
+
+
+def test_evaluate_upgrade_allows_without_receipt_when_not_required() -> None:
+    p = _valid_proposal()
+    d = evaluate_upgrade_request_v1(proposal=p, review_receipt=None, require_receipt=False)
+    assert d.allow is True
+    assert d.reason_id == "UPGRADE_APPROVED_NO_RECEIPT"
+
+
+def test_evaluate_upgrade_denies_receipt_mismatch_on_proposal_id() -> None:
+    p = _valid_proposal()
+    r = _valid_receipt_for(p, decision=ReceiptDecision.APPROVE)
+    r["proposal_id"] = "AC-UPG-OTHER"
+
+    # Keep receipt internally valid by recomputing receipt_hash
+    without_hash = dict(r)
+    without_hash.pop("receipt_hash", None)
+    r["receipt_hash"] = compute_review_receipt_hash(without_hash)
+
+    d = evaluate_upgrade_request_v1(proposal=p, review_receipt=r)
+    assert d.allow is False
+    assert d.reason_id == "REVIEW_RECEIPT_MISMATCH"
