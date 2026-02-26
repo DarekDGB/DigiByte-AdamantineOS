@@ -168,3 +168,16 @@ If Shield evidence results in DENY, then:
 - reordering signals must never flip to ALLOW
 
 This is regression-locked permanently.
+
+---
+
+## 9. Cross-Repo Compatibility Invariants (Adaptive Core v3)
+
+- Compatibility vectors under `tests/compat_vectors/` are **frozen truth** for external governance artifacts.
+- Tests under `tests/compat/` MUST enforce:
+  - canonicalization rules
+  - proposal_hash invariants
+  - receipt/decision reason IDs
+
+If any refactor changes behavior such that vectors no longer pass, that is a **breaking change**
+and MUST be treated as a contract violation (or require an explicit major version bump).
