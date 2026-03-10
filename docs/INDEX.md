@@ -1,83 +1,55 @@
-# Adamantine Wallet OS — Documentation Index
+# Adamantine Wallet OS Documentation Index
 
-**License:** MIT License  
-**Author:** DarekDGB  
-**Repository:** DigiByte Adamantine Wallet OS  
-**Scope:** Foundation Documentation Index
+## Current Version
 
----
+**v2.1.0 --- AC v3 Governance Compatibility Lock**
 
-## 1. Purpose
+------------------------------------------------------------------------
 
-This document is the **authoritative index** of all documentation that defines the Adamantine Wallet OS foundation.
+# Core Documentation
 
-The foundation is **contract-first**, **invariant-driven**, and **deterministic**.  
-Runtime wallet execution, UI, clients, and integrations are intentionally excluded from this repository.
+Architecture and system design documents.
 
-If a document is not listed here, it is **not part of the foundation contract**.
+-   Adaptive Core Governance Flow
+-   Contracts and artifact definitions
+-   Invariant definitions
 
----
+------------------------------------------------------------------------
 
-## 2. Foundation Status
+# Governance
 
-**Current status:** v1.4.0 — Q-ID linkage hardened (clock-free replay framework)
+Documents describing governance interactions.
 
-Included:
-- Contracts
-- Deterministic reasoning
-- Fail-closed gates
-- Authority model
-- Execution boundaries
-- Proof packs / fixture manifests
+-   Adaptive Core → Adamantine Governance Flow
+-   Governance Review Contract
 
-Explicitly not included:
-- Wallet runtime
-- Transaction construction
-- Signing or broadcasting
-- Client SDKs
-- Shield or Adaptive Core implementations (evidence only)
+------------------------------------------------------------------------
 
----
+# Contracts
 
-## 3. Normative Sources (Highest Authority)
+Artifact schemas and interface definitions.
 
-The following documents define **non-negotiable truth**.  
-If anything conflicts with these, **these win**.
+-   upgrade_proposal_v3
+-   proposal_review_receipt_v1
 
-### 3.1 Execution Boundary and Envelope Contracts
-- `docs/CONTRACTS/execution_request_v2.md`
-- `docs/CONTRACTS/mobile_execution_call_v1.md` (if present)
-- Any additional `docs/CONTRACTS/*` referenced by the orchestrator
+------------------------------------------------------------------------
 
-### 3.2 Q-ID Linkage and Replay Protection
-- `docs/CONTRACTS/qid_linkage_v1.md` (NEW in v1.4.0)
-- `docs/DURABLE_NONCE_STORE_INTEGRATION.md` (UPDATED in v1.4.0, clock-free)
+# Security Principles
 
-### 3.3 Proof Packs
-- `docs/OS_PROOF_PACK_v1_2_0.md` (if present)
-- `docs/OS_PROOF_PACK_v1_3_0.md` (if present)
-- `docs/OS_PROOF_PACK_v1_4_0.md` (NEW)
+AdamantineOS follows strict architectural guardrails:
 
----
+-   deterministic behavior
+-   fail‑closed validation
+-   canonical serialization
+-   explicit invariants
+-   no silent fallback
 
-## 4. Non-Normative / Supporting Documents
+------------------------------------------------------------------------
 
-The following may explain intent, but do not override contracts or tests.
+# Proof Philosophy
 
-- Architecture overviews
-- Diagrams
-- Roadmaps
-- Release notes
+Every major feature is supported by:
 
----
-
-## 5. Index Discipline
-
-- Contract changes MUST be reflected here.
-- Adding a new contract doc without updating this index is a process failure.
-- Tests + fixtures are the ultimate enforcement of these documents.
-
----
-
-**Adamantine Wallet OS**  
-Deterministic. Fail-Closed. Future-Ready.
+-   deterministic tests
+-   contract schemas
+-   documentation alignment
