@@ -5,46 +5,48 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v2.0.1-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v2.1.0-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 ![Q-ID](https://img.shields.io/badge/Q--ID-runtime--verified-0A66C2.svg)
-![Adaptive Core
-v3](https://img.shields.io/badge/Adaptive%20Core-v3%20oracle-0052CC.svg)
-![Shield
-v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
+![Adaptive Core v3](https://img.shields.io/badge/Adaptive%20Core-v3%20governance--compatible-0052CC.svg)
+![Shield v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ------------------------------------------------------------------------
 
-## v2.0.1 — Sealed Foundation (100% CI Enforcement)
+## v2.1.0 — AC v3 Governance Compatibility Lock
 
 **Status:** Locked  
-**Type:** Integrity lock (coverage enforcement hardening)  
-**Compatibility:** No functional or protocol changes
+**Type:** Compatibility lock (Adaptive Core v3 governance path sealed)  
+**Compatibility:** Additive — no production behavior changes
 
-This release seals the AdamantineOS v2.0.x foundation by enforcing a strict 100% coverage regression gate in CI.
+This release locks AdamantineOS compatibility with Adaptive Core v3 `upgrade_proposal_v3` artifacts and seals the first cross-repository governance evaluation path.
 
 ### What's locked:
 
-1. Coverage Policy Hardened
-   - `--cov-fail-under` raised from 95% to 100%
-   - CI fails on any uncovered execution path
-   - No tolerance margin
+1. Adaptive Core v3 Governance Compatibility
+   - Proven compatibility with Adaptive Core v3 `upgrade_proposal_v3` artifacts
+   - Stable proposal ingestion and validation path
+   - Deterministic evaluation of governance proposals
 
-2. Runtime Surface Included
-   - All runtime layers included in coverage scope
-   - No coverage omit rules
-   - No hidden escape paths
+2. Cross-Repository Hash Invariant
+   - Deterministic `proposal_hash` invariant enforced across repositories
+   - Hash drift fails CI
+   - Canonical compatibility vector frozen
 
-3. Regression Integrity Reinforced
-   - 493 tests passing
-   - Deterministic execution fully exercised
-   - Fail-closed paths fully covered
+3. Governance Receipt Path Frozen
+   - Compatibility vectors frozen in CI (`approve` + receipt path)
+   - First upgrade proposal review path sealed end-to-end
+   - Stable review receipt artifact boundary
 
-Rule: Any uncovered execution path will fail CI.
+4. Boundary Guarantees Reinforced
+   - No production behavior changes
+   - Governance compatibility locked without expanding runtime trust
+   - Strengthened boundary between proposal artifacts and execution behavior
 
+Rule: Any semantic change to Adaptive Core v3 governance artifact handling requires a new versioned compatibility lock.
 
 ------------------------------------------------------------------------
 
@@ -70,6 +72,10 @@ flowchart LR
     C --> E
     B --> E
 
+    C --> G1[Governance Proposal Review]
+    G1 --> G2[Proposal Hash Lock]
+    G2 --> G3[Receipt Artifact]
+
     E -->|ALLOW| F[WSQK Authority Check]
     F -->|VALID| G[TVA Gate]
     G -->|EXECUTE| H[Executor]
@@ -77,8 +83,7 @@ flowchart LR
     E -->|DENY| X[Deterministic Denial]
 ```
 
-Adamantine enforces layered validation before any execution is
-permitted.
+Adamantine enforces layered validation before any execution is permitted, and now also seals deterministic compatibility with Adaptive Core v3 governance proposal artifacts.
 
 ------------------------------------------------------------------------
 
@@ -111,8 +116,7 @@ Protection mode semantics are regression locked in CI.
 
 # 🔐 Q-ID Cryptographic Enforcement (Runtime-Verified)
 
-AdamantineOS v2 integrates DigiByte Q-ID with explicit runtime
-enforcement.
+AdamantineOS v2 integrates DigiByte Q-ID with explicit runtime enforcement.
 
 -   Runtime may inject a `qid_verifier` cryptographic hook
 -   If provided, it is invoked **before Q-ID session parsing**
@@ -138,9 +142,7 @@ Runtime wiring is regression-locked in CI:
 
 Coverage remains 100%.
 
-If a runtime supplies cryptographic verification (e.g. Q-ID signature
-validation), forged or unsigned session payloads cannot reach EQC
-evaluation.
+If a runtime supplies cryptographic verification (e.g. Q-ID signature validation), forged or unsigned session payloads cannot reach EQC evaluation.
 
 ------------------------------------------------------------------------
 
@@ -158,6 +160,8 @@ Adamantine enforces:
 -   Replay attempts deterministically denied when enforced
 -   Manifest drift fails CI
 -   Hash drift fails CI
+-   Proposal hash drift fails CI across Adaptive Core v3 compatibility vectors
+-   Governance receipt path remains deterministic once sealed
 
 If any invariant weakens, tests fail.
 
@@ -173,9 +177,12 @@ If any invariant weakens, tests fail.
 -   WSQK authority proof
 -   Shield v3 adapter
 -   Adaptive Core v3 adapter
+-   Adaptive Core v3 governance compatibility path
+-   Proposal review receipt boundary
 -   Q-ID adapter
 -   TVA boundary enforcement
 -   Deterministic proof packs (v1.2.0 → v2.0.0)
+-   Compatibility vectors for AC v3 proposal review
 
 ### Excluded
 
@@ -190,11 +197,12 @@ Adamantine is a **decision engine**, not a wallet.
 
 # 🧪 Determinism & Testing
 
--   100% coverage enforced 
+-   100% coverage enforced
 -   Fixture hashes locked
 -   Canonical JSON duplicate-key rejection
 -   Strict manifest enforcement
 -   Deterministic replay validation (50-run runtime tests)
+-   Adaptive Core v3 compatibility vectors frozen in CI
 -   CI rejects silent behavioral drift
 
 Security changes require test changes.
@@ -202,6 +210,7 @@ Security changes require test changes.
 ------------------------------------------------------------------------
 
 # 🧭 Version History
+-   v2.1.0 --- AC v3 Governance Compatibility Lock
 -   v2.0.1 --- 100% Coverage Gate + Integrity Lock
 -   v2.0.0 --- Runtime Host v2 + Execution Boundary Seal
 -   v1.5.0 --- Mobile Contract v2 + Conformance Freeze
@@ -212,8 +221,8 @@ Security changes require test changes.
 
 ------------------------------------------------------------------------
 
-**Adamantine Wallet OS**
-Deterministic. Fail‑Closed. Production‑Sealed.
+**Adamantine Wallet OS**  
+Deterministic. Fail‑Closed. Governance‑Compatible.
 
 ------------------------------------------------------------------------
 
