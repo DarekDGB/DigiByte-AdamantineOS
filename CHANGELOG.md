@@ -7,6 +7,40 @@ Scope: Foundation Releases and Contract History
 
 ------------------------------------------------------------------------
 
+## v2.1.0 — AC v3 Governance Compatibility Lock
+
+**Status:** Locked  
+**Type:** Compatibility lock (Adaptive Core v3 governance path sealed)  
+**Compatibility:** Additive — no production behavior changes
+
+This release locks AdamantineOS compatibility with Adaptive Core v3 `upgrade_proposal_v3` artifacts and seals the first cross-repository governance evaluation path.
+
+### What's locked:
+
+1. Adaptive Core v3 Governance Compatibility
+   - Proven compatibility with Adaptive Core v3 `upgrade_proposal_v3` artifacts
+   - Stable proposal ingestion and validation path
+   - Deterministic evaluation of governance proposals
+
+2. Cross-Repository Hash Invariant
+   - Deterministic `proposal_hash` invariant enforced across repositories
+   - Hash drift fails CI
+   - Canonical compatibility vector frozen
+
+3. Governance Receipt Path Frozen
+   - Compatibility vectors frozen in CI (`approve` + receipt path)
+   - First upgrade proposal review path sealed end-to-end
+   - Stable review receipt artifact boundary
+
+4. Boundary Guarantees Reinforced
+   - No production behavior changes
+   - Governance compatibility locked without expanding runtime trust
+   - Strengthened boundary between proposal artifacts and execution behavior
+
+Rule: Any semantic change to Adaptive Core v3 governance artifact handling requires a new versioned compatibility lock.
+
+------------------------------------------------------------------------
+
 ## v2.0.1 — Sealed Foundation (100% CI Enforcement)
 
 **Status:** Locked  
@@ -136,7 +170,7 @@ Rule: Any change to mobile request/response shape requires a major version bump.
 **Type:** Contract hardening (Q-ID binding + replay-proof validation)  
 **Compatibility:** Additive — legacy/v1.3 proof packs remain valid unless policy enables the latch
 
-### What's locked:
+This release locks:
 
 - Q-ID replay proof contract (`QIDReplayProof`) and deterministic adapter validation
 - Distinct reason IDs for missing/invalid replay proof and binding mismatches
@@ -156,7 +190,7 @@ This release freezes the Shield v3 external evidence interface and locks determi
 1. Shield v3 Strict Interface Freeze  
 2. Protection Mode Output (auditable)  
 3. No Silent Downgrade (policy posture latches)  
-4. Regression Locks  
+4. Regression Locks
 
 ------------------------------------------------------------------------
 
