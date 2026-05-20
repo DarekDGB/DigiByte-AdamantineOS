@@ -31,6 +31,7 @@ Artifact schemas and interface definitions.
 
 -   upgrade_proposal_v3
 -   proposal_review_receipt_v1
+-   wsqk_authority_v2
 
 ------------------------------------------------------------------------
 
