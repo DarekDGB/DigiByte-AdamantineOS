@@ -11,8 +11,6 @@ from adamantine.v1.contracts.reason_ids import ReasonId
 
 WSQK_AUTHORITY_V2 = "WSQK_AUTHORITY_V2"
 
-# Phase 2 keeps this list deliberately small and explicit.
-# Phase 3 may replace generic failures with WSQK-v2-specific reason IDs.
 ALLOWED_EVIDENCE_FAMILIES: tuple[str, ...] = (
     "classical_signature",
     "pqc_signature",
@@ -50,24 +48,26 @@ def _canonical_json_bytes(value: object) -> bytes:
 def canonical_required_evidence_families(families: Iterable[str]) -> tuple[str, ...]:
     """Return the Phase 1 locked sorted canonical unique set."""
     if isinstance(families, (str, bytes)):
-        raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+        raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value)
 
     try:
         raw = tuple(families)
     except TypeError:
-        raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+        raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value)
 
     if not raw:
-        raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+        raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value)
 
     normalized: set[str] = set()
     allowed = set(ALLOWED_EVIDENCE_FAMILIES)
     for family in raw:
         if not isinstance(family, str):
-            raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+            raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value)
         item = family.strip()
-        if not item or item not in allowed:
-            raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+        if not item:
+            raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value)
+        if item not in allowed:
+            raise TVAError(ReasonId.WSQK_V2_UNKNOWN_EVIDENCE_FAMILY.value)
         normalized.add(item)
 
     return tuple(sorted(normalized))
@@ -132,7 +132,7 @@ def issue_wsqk_authority_v2(req: WSQKIssueRequestV2) -> WSQKAuthorityV2:
 
     quantum_posture = str(req.quantum_posture or "").strip()
     if quantum_posture not in ALLOWED_QUANTUM_POSTURES:
-        raise TVAError(ReasonId.DENY_AUTHORITY_INSUFFICIENT.value)
+        raise TVAError(ReasonId.WSQK_V2_INVALID_QUANTUM_POSTURE.value)
 
     canonical_families = canonical_required_evidence_families(req.required_evidence_families)
     expires_at = issued_at + ttl
