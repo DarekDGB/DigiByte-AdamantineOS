@@ -206,3 +206,9 @@ WSQK v2 authority remains valid only when wallet, action, context, timebox, nonc
 WSQK v2 deny semantics MUST use stable `ReasonId` enum values instead of freeform strings.
 Evidence-family shape failures, unknown evidence families, and invalid quantum posture MUST map to dedicated WSQK-v2-specific reason IDs.
 These values are regression-locked and become inputs for Phase 4 TVA enforcement.
+
+### 11.5 TVA Enforces WSQK v2 Quantum Requirements Explicitly
+
+When TVA receives explicit WSQK v2 requirements, it MUST deny WSQK v1 authority instead of silently treating it as quantum-aware.
+TVA MUST compare required evidence families using the sorted canonical set rule and MUST compare declared quantum posture exactly.
+TVA MUST recompute `proof_bindings_hash` from canonical WSQK v2 fields and deny any mismatch before nonce acceptance.
