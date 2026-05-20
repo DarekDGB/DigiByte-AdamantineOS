@@ -217,7 +217,23 @@ The following are forbidden:
 
 ---
 
-## 11. Phase Mapping
+## 11. Phase 3 Reason IDs
+
+WSQK v2 deny semantics MUST use stable reason IDs rather than freeform strings.
+Phase 3 locks the first WSQK-v2-specific reason IDs as contract values:
+
+| Reason ID | Meaning |
+| --- | --- |
+| `WSQK_V2_INVALID_EVIDENCE_FAMILIES` | evidence-family input is missing, empty, non-iterable, non-string, or contains an empty family |
+| `WSQK_V2_UNKNOWN_EVIDENCE_FAMILY` | evidence-family input contains a syntactically valid but unsupported family name |
+| `WSQK_V2_INVALID_QUANTUM_POSTURE` | declared quantum posture is missing, unknown, revoked, expired, or unsupported by the v2 issuer |
+
+These reason IDs are a single source of truth for Phase 4 TVA enforcement and later Q-ID binding work.
+They MUST NOT be renamed or remapped without a major contract version bump.
+
+---
+
+## 12. Phase Mapping
 
 This contract anchors the full WSQK v2 upgrade path:
 
@@ -234,7 +250,7 @@ This contract anchors the full WSQK v2 upgrade path:
 
 ---
 
-## 12. Phase 7 Regression Requirement
+## 13. Phase 7 Regression Requirement
 
 Phase 7 MUST include a regression test proving:
 
@@ -251,7 +267,7 @@ The named regression lock for the primary canonical set invariant SHOULD be:
 
 ---
 
-## 13. Non-Goals
+## 14. Non-Goals
 
 This Phase 1 contract does not implement:
 
@@ -267,7 +283,7 @@ Those belong to later phases and must build on this contract without weakening i
 
 ---
 
-## 14. Summary
+## 15. Summary
 
 WSQK v2 upgrades authority from simple time-bound wallet permission into deterministic quantum-aware authority proof.
 
