@@ -181,3 +181,23 @@ This is regression-locked permanently.
 
 If any refactor changes behavior such that vectors no longer pass, that is a **breaking change**
 and MUST be treated as a contract violation (or require an explicit major version bump).
+---
+
+## 11. WSQK v2 Quantum-Aware Authority Invariants
+
+### 11.1 Required Evidence Families Are a Sorted Canonical Set
+
+`required_evidence_families` MUST be stored and compared as a sorted canonical set.
+Order of input is normalized on issuance.
+Two authorities requiring the same families MUST produce identical `proof_bindings_hash` values regardless of input order.
+
+### 11.2 No Implicit Quantum Posture
+
+WSQK v2 MUST NOT infer, assume, or silently downgrade quantum/security posture.
+Missing, ambiguous, unknown, unsupported, revoked, or insufficient posture MUST deny deterministically.
+
+### 11.3 Valid Signature Is Not Valid Authority
+
+A cryptographically valid signature is insufficient by itself.
+WSQK v2 authority remains valid only when wallet, action, context, timebox, nonce, required evidence families, and declared quantum posture all satisfy explicit policy.
+
