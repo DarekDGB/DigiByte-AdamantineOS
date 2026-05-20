@@ -105,7 +105,7 @@ def test_wsqk_v2_compute_hash_uses_canonical_family_order() -> None:
         ("ttl_seconds", object(), ReasonId.WSQK_INVALID_TTL),
         ("ttl_seconds", 0, ReasonId.WSQK_INVALID_TTL),
         ("nonce", "", ReasonId.WSQK_INVALID_NONCE),
-        ("quantum_posture", "revoked", ReasonId.DENY_AUTHORITY_INSUFFICIENT),
+        ("quantum_posture", "revoked", ReasonId.WSQK_V2_INVALID_QUANTUM_POSTURE),
     ],
 )
 def test_wsqk_v2_issuer_rejects_invalid_core_fields(field: str, value: object, reason: ReasonId) -> None:
@@ -123,14 +123,20 @@ def test_wsqk_v2_issuer_rejects_invalid_core_fields(field: str, value: object, r
         [],
         ["qid_hybrid", 123],
         ["qid_hybrid", ""],
-        ["qid_hybrid", "unknown_family"],
     ],
 )
-def test_wsqk_v2_canonical_families_reject_invalid_inputs(families: object) -> None:
+def test_wsqk_v2_canonical_families_reject_invalid_shape_inputs(families: object) -> None:
     with pytest.raises(TVAError) as exc:
         canonical_required_evidence_families(families)  # type: ignore[arg-type]
 
-    assert str(exc.value) == ReasonId.DENY_AUTHORITY_INVALID.value
+    assert str(exc.value) == ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value
+
+
+def test_wsqk_v2_canonical_families_reject_unknown_family_with_specific_reason() -> None:
+    with pytest.raises(TVAError) as exc:
+        canonical_required_evidence_families(["qid_hybrid", "unknown_family"])
+
+    assert str(exc.value) == ReasonId.WSQK_V2_UNKNOWN_EVIDENCE_FAMILY.value
 
 
 def test_wsqk_v2_canonical_families_accept_tuple_and_trim_values() -> None:
