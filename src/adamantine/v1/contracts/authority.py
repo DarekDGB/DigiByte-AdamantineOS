@@ -24,3 +24,24 @@ class WSQKAuthority:
     issued_at: int
     expires_at: int
     nonce: str
+
+
+@dataclass(frozen=True, slots=True)
+class WSQKAuthorityV2:
+    """
+    WSQK Authority v2 — quantum-aware authority proof.
+
+    This contract model is intentionally data-only. Issuance,
+    canonicalization, hashing, and validation live in the WSQK v2 issuer.
+    """
+
+    contract_version: str
+    wallet_id: str
+    action: str
+    context_hash: str
+    issued_at: int
+    expires_at: int
+    nonce: str
+    required_evidence_families: tuple[str, ...]
+    quantum_posture: str
+    proof_bindings_hash: str
