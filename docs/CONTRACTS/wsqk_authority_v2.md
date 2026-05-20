@@ -231,9 +231,24 @@ Phase 3 locks the first WSQK-v2-specific reason IDs as contract values:
 These reason IDs are a single source of truth for Phase 4 TVA enforcement and later Q-ID binding work.
 They MUST NOT be renamed or remapped without a major contract version bump.
 
+## 12. Phase 4 TVA Enforcement
+
+TVA enforcement remains opt-in for WSQK v2 so existing WSQK v1 callers remain contract-compatible.
+When a caller provides explicit WSQK v2 quantum requirements, TVA MUST:
+
+- deny WSQK v1 authority with `TVA_WSQK_V2_REQUIRED`;
+- compare required evidence families as a sorted canonical set;
+- deny evidence-family mismatch with `TVA_WSQK_V2_EVIDENCE_FAMILY_MISMATCH`;
+- compare quantum posture exactly;
+- deny posture mismatch with `TVA_WSQK_V2_QUANTUM_POSTURE_MISMATCH`;
+- recompute `proof_bindings_hash` from canonical authority fields;
+- deny hash tampering with `TVA_WSQK_V2_PROOF_BINDINGS_HASH_MISMATCH`.
+
+TVA MUST run these checks before nonce acceptance so tampered v2 authority does not consume a nonce.
+
 ---
 
-## 12. Phase Mapping
+## 13. Phase Mapping
 
 This contract anchors the full WSQK v2 upgrade path:
 
@@ -250,7 +265,7 @@ This contract anchors the full WSQK v2 upgrade path:
 
 ---
 
-## 13. Phase 7 Regression Requirement
+## 14. Phase 7 Regression Requirement
 
 Phase 7 MUST include a regression test proving:
 
@@ -267,7 +282,7 @@ The named regression lock for the primary canonical set invariant SHOULD be:
 
 ---
 
-## 14. Non-Goals
+## 15. Non-Goals
 
 This Phase 1 contract does not implement:
 
