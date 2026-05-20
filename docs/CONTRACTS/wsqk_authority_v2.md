@@ -23,7 +23,7 @@ WSQK v2 proves that a declared wallet authority is bound to:
 - quantum/security posture requirements
 - deterministic proof bindings
 
-AdamantineOS consumes WSQK v2 as explicit authority evidence. Final execution decisions remain governed by the Adamantine execution boundary and TVA enforcement.
+AdamantineOS consumes WSQK v2 as explicit authority evidence. Final execution decisions remain governed by the Adamantine execution boundary and Truth Vector Authority (TVA) enforcement.
 
 ---
 
@@ -193,7 +193,7 @@ WSQK v2 MUST NOT:
 - infer identity evidence
 - infer quantum posture
 - bypass Q-ID validation
-- bypass TVA enforcement
+- bypass Truth Vector Authority (TVA) enforcement
 - emit final ALLOW by itself
 
 WSQK v2 may authorize only the exact wallet/action/context/posture binding declared in the authority proof.
@@ -231,7 +231,7 @@ Phase 3 locks the first WSQK-v2-specific reason IDs as contract values:
 These reason IDs are a single source of truth for Phase 4 TVA enforcement and later Q-ID binding work.
 They MUST NOT be renamed or remapped without a major contract version bump.
 
-## 12. Phase 4 TVA Enforcement
+## 12. Phase 4 Truth Vector Authority (TVA) Enforcement
 
 TVA enforcement remains opt-in for WSQK v2 so existing WSQK v1 callers remain contract-compatible.
 When a caller provides explicit WSQK v2 quantum requirements, TVA MUST:
@@ -298,7 +298,7 @@ Those belong to later phases and must build on this contract without weakening i
 
 ---
 
-## 15. Summary
+## 16. Summary
 
 WSQK v2 upgrades authority from simple time-bound wallet permission into deterministic quantum-aware authority proof.
 
