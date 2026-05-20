@@ -76,6 +76,11 @@ class ReasonId(str, Enum):
     WSQK_INVALID_TTL = "WSQK_INVALID_TTL"
     WSQK_INVALID_NONCE = "WSQK_INVALID_NONCE"
 
+    # --- WSQK v2 quantum-aware authority validation ---
+    WSQK_V2_INVALID_EVIDENCE_FAMILIES = "WSQK_V2_INVALID_EVIDENCE_FAMILIES"
+    WSQK_V2_UNKNOWN_EVIDENCE_FAMILY = "WSQK_V2_UNKNOWN_EVIDENCE_FAMILY"
+    WSQK_V2_INVALID_QUANTUM_POSTURE = "WSQK_V2_INVALID_QUANTUM_POSTURE"
+
     # --- Execution Envelope v1 (request/response contracts) ---
     OK_ALLOW = "OK_ALLOW"
 
