@@ -201,3 +201,8 @@ Missing, ambiguous, unknown, unsupported, revoked, or insufficient posture MUST 
 A cryptographically valid signature is insufficient by itself.
 WSQK v2 authority remains valid only when wallet, action, context, timebox, nonce, required evidence families, and declared quantum posture all satisfy explicit policy.
 
+### 11.4 WSQK v2 Reason IDs Are Stable Contract Values
+
+WSQK v2 deny semantics MUST use stable `ReasonId` enum values instead of freeform strings.
+Evidence-family shape failures, unknown evidence families, and invalid quantum posture MUST map to dedicated WSQK-v2-specific reason IDs.
+These values are regression-locked and become inputs for Phase 4 TVA enforcement.
