@@ -1,7 +1,7 @@
 # WSQK Authority v2 Contract — Quantum-Aware Authority
 
 **License:** MIT — **Author:** DarekDGB  
-**Status:** Phase 1 contract lock  
+**Status:** v2.2.0 release contract lock  
 **Scope:** Normative contract for WSQK v2 quantum-aware authority proofs inside AdamantineOS.
 
 ---
@@ -66,7 +66,7 @@ Any missing, malformed, ambiguous, or unsupported field MUST deny deterministica
 
 `required_evidence_families` MUST be stored and compared as a sorted canonical set. Order of input is normalized on issuance. Two authorities requiring the same families MUST produce identical `proof_bindings_hash` values regardless of input order.
 
-This is a named Phase 1 invariant and MUST NOT drift in later phases.
+This is a named v2.2.0 release invariant and MUST NOT drift in later versions.
 
 ### 4.1 Canonical Set Rules
 
