@@ -48,6 +48,14 @@ AdamantineOS follows strict architectural guardrails:
 
 ------------------------------------------------------------------------
 
+# Proof Packs
+
+Audit maps connecting contracts, invariants, implementation, tests, and CI proof.
+
+-   WSQK v2 Quantum-Aware Proof Pack
+
+------------------------------------------------------------------------
+
 # Proof Philosophy
 
 Every major feature is supported by:
