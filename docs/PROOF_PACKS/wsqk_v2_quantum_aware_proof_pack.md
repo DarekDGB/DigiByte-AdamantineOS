@@ -1,7 +1,7 @@
 # WSQK v2 Quantum-Aware Proof Pack
 
 **License:** MIT — **Author:** DarekDGB  
-**Status:** Phase 8 proof-pack lock  
+**Status:** v2.2.0 release proof-pack lock  
 **Scope:** Audit map for the WSQK v2 quantum-aware upgrade inside AdamantineOS.
 
 ---
@@ -135,7 +135,7 @@ Required proof:
 - no WSQK v2 test is skipped
 - no runtime fallback is introduced to satisfy failing tests
 
-At Phase 8 closure, WSQK v2 is auditable as a quantum-aware authority layer rather than only a functional runtime feature.
+At v2.2.0 release closure, WSQK v2 is auditable as a quantum-aware authority layer rather than only a functional runtime feature.
 
 ---
 
