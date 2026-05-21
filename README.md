@@ -5,7 +5,7 @@
 # 🔷 DigiByte Adamantine Wallet OS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v2.1.0-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v2.2.0-brightgreen.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%2B%20Android-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
@@ -16,6 +16,7 @@ v3](https://img.shields.io/badge/Adaptive%20Core-v3%20governance--compatible-005
 ![Shield
 v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 ![Governance](https://img.shields.io/badge/Governance-AC%20v3%20verified-6f42c1.svg)
+![WSQK v2](https://img.shields.io/badge/WSQK-v2%20quantum--aware-8A2BE2.svg)
 
 ------------------------------------------------------------------------
 
@@ -29,7 +30,8 @@ It verifies execution requests using:
 • **Q-ID identity proofs**\
 • **Adaptive Core oracle intelligence**\
 • **Shield v3 security layers**\
-• **Deterministic governance review**
+• **Deterministic governance review**\
+• **WSQK v2 quantum-aware authority proofs**
 
 Only after all layers pass verification can execution occur.
 
@@ -48,7 +50,8 @@ external signals:
 • oracle intelligence\
 • AI security analysis\
 • governance proposals\
-• runtime policies
+• runtime policies\
+• quantum-aware authority proofs
 
 Most systems **trust these signals blindly**.
 
@@ -61,7 +64,8 @@ Instead of trusting external inputs, AdamantineOS:
 • evaluates security evidence from **Shield v3 layers**\
 • enforces deterministic **fail-closed decision rules**\
 • verifies governance proposals through **artifact hashing and receipt
-validation**
+validation**\
+• enforces **WSQK v2 quantum-aware authority** through TVA and Q-ID posture binding
 
 Execution is allowed **only when every layer passes verification**.
 
@@ -69,6 +73,42 @@ If any layer fails → execution is deterministically denied.
 
 AdamantineOS therefore acts as a **trust firewall for wallet
 execution**.
+
+------------------------------------------------------------------------
+
+## v2.2.0 --- WSQK v2 Quantum-Aware Upgrade
+
+**Status:** Locked\
+**Type:** Quantum-aware authority upgrade\
+**Compatibility:** Additive --- legacy/v1 paths remain compatible unless WSQK v2 is explicitly required
+
+This release upgrades WSQK inside AdamantineOS into a quantum-aware authority layer.
+
+### What's locked:
+
+1.  WSQK v2 Authority Contract
+    -   `WSQKAuthorityV2` and `WSQKIssueRequestV2`
+    -   sorted canonical unique `required_evidence_families`
+    -   deterministic `proof_bindings_hash`
+2.  Truth Vector Authority (TVA) Enforcement
+    -   WSQK v2 posture requirements are enforced fail-closed
+    -   tampered bindings are denied before nonce use
+    -   WSQK v1 cannot satisfy explicit WSQK v2 requirements
+3.  Q-ID Hybrid Posture Binding
+    -   `hybrid_required` requires classical AND PQC posture
+    -   `pqc_required` requires PQC evidence
+    -   posture mismatches deny deterministically
+4.  Runtime Boundary Propagation
+    -   orchestrator/runtime paths propagate WSQK v2 requirements
+    -   no silent v1 fallback when v2 is required
+5.  Tamperproof Regression Locks
+    -   hash tampering, context tampering, family drift, downgrade attempts,
+        and Q-ID posture tamper are covered by tests
+    -   WSQK v2 proof pack maps contracts → invariants → implementation → tests → CI proof
+
+Key invariant:
+
+`required_evidence_families` MUST be stored and compared as a sorted canonical set.
 
 ------------------------------------------------------------------------
 
@@ -143,8 +183,9 @@ flowchart LR
 ```
 
 Adamantine enforces layered validation before any execution is
-permitted, and now also seals deterministic compatibility with Adaptive
-Core v3 governance proposal artifacts.
+permitted, seals deterministic compatibility with Adaptive Core v3
+governance proposal artifacts, and now enforces WSQK v2 quantum-aware
+authority through Q-ID posture binding and TVA.
 
 ------------------------------------------------------------------------
 
@@ -175,6 +216,27 @@ AdamantineOS\
 → evaluates governance policy\
 → emits `ac_review_receipt_v1`\
 → produces deterministic allow / deny decision.
+
+------------------------------------------------------------------------
+
+# 🛡️ WSQK v2 Quantum-Aware Authority
+
+WSQK v2 binds wallet authority to explicit quantum-security posture.
+
+Documented proof path:
+
+-   [WSQK Authority v2
+    Contract](docs/CONTRACTS/wsqk_authority_v2.md)\
+-   [WSQK v2 Quantum-Aware Proof
+    Pack](docs/PROOF_PACKS/wsqk_v2_quantum_aware_proof_pack.md)
+
+WSQK v2 is enforced through:
+
+WSQK v2 authority proof\
+→ Q-ID classical/PQC posture binding\
+→ Truth Vector Authority (TVA) enforcement\
+→ Orchestrator/runtime propagation\
+→ deterministic allow / deny decision.
 
 ------------------------------------------------------------------------
 
@@ -237,6 +299,8 @@ Adamantine enforces:
 -   Proposal hash drift fails CI across Adaptive Core v3 compatibility
     vectors
 -   Governance receipt path remains deterministic once sealed
+-   WSQK v2 evidence families remain sorted, canonical, and hash-stable
+-   WSQK v2 cannot silently downgrade to v1 when v2 is required
 
 If any invariant weakens, tests fail.
 
@@ -249,15 +313,16 @@ If any invariant weakens, tests fail.
 -   Execution envelope contracts (v1 + v2)
 -   Orchestrator v2
 -   EQC evaluator
--   WSQK authority proof
+-   WSQK v2 quantum-aware authority proof
 -   Shield v3 adapter
 -   Adaptive Core v3 adapter
 -   Adaptive Core v3 governance compatibility path
 -   Proposal review receipt boundary
 -   Q-ID adapter
--   TVA boundary enforcement
--   Deterministic proof packs (v1.2.0 → v2.0.0)
+-   Truth Vector Authority (TVA) boundary enforcement
+-   Deterministic proof packs (v1.2.0 → v2.2.0)
 -   Compatibility vectors for AC v3 proposal review
+-   WSQK v2 quantum-aware proof pack
 
 ### Excluded
 
@@ -279,6 +344,7 @@ Adamantine is a **decision engine**, not a wallet.
 -   Deterministic replay validation (50-run runtime tests)
 -   Adaptive Core v3 compatibility vectors frozen in CI
 -   CI rejects silent behavioral drift
+-   WSQK v2 tamperproof regression locks remain enforced
 
 Security changes require test changes.
 
@@ -286,6 +352,7 @@ Security changes require test changes.
 
 # 🧭 Version History
 
+-   v2.2.0 --- WSQK v2 Quantum-Aware Upgrade
 -   v2.1.0 --- AC v3 Governance Compatibility Lock
 -   v2.0.1 --- 100% Coverage Gate + Integrity Lock
 -   v2.0.0 --- Runtime Host v2 + Execution Boundary Seal
@@ -298,7 +365,7 @@ Security changes require test changes.
 ------------------------------------------------------------------------
 
 **Adamantine Wallet OS**\
-Deterministic. Fail‑Closed. Governance‑Compatible.
+Deterministic. Fail‑Closed. Quantum‑Aware. Governance‑Compatible.
 
 ------------------------------------------------------------------------
 
