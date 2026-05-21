@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Mapping, cast, Literal, Callable
 
 from adamantine.errors import TVAError
-from adamantine.v1.contracts.authority import WSQKAuthority
+from adamantine.v1.contracts.authority import WSQKAuthority, WSQKAuthorityV2
 from adamantine.v1.contracts.execution_request import ExecutionRequest
 from adamantine.v1.contracts.external_reason_registry import (
     ExternalReasonLayerAllowlist,
@@ -23,6 +23,7 @@ from adamantine.v1.integrations.adaptive_core_oracle_v3_adapter import parse_ada
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_replay_proof, parse_qid_session
 from adamantine.v1.integrations.shield_v3_adapter import parse_shield_bundle_v3
+from adamantine.v1.wsqk.issuer_v2 import WSQK_AUTHORITY_V2
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
@@ -90,7 +91,7 @@ def _extract_wsqk_authority(
     issued_at: int,
     expires_at: int,
     authority_proofs: Mapping[str, Any] | None,
-) -> WSQKAuthority | None:
+) -> WSQKAuthority | WSQKAuthorityV2 | None:
     if authority_proofs is None:
         return None
 
@@ -123,6 +124,30 @@ def _extract_wsqk_authority(
     if ia != issued_at or ea != expires_at:
         return None
 
+    contract_version = wsqk.get("contract_version")
+    if contract_version == WSQK_AUTHORITY_V2:
+        families_raw = wsqk.get("required_evidence_families")
+        posture = wsqk.get("quantum_posture")
+        proof_hash = wsqk.get("proof_bindings_hash")
+        if not isinstance(families_raw, list) or not all(isinstance(x, str) for x in families_raw):
+            return None
+        if not isinstance(posture, str) or not posture:
+            return None
+        if not isinstance(proof_hash, str) or not proof_hash:
+            return None
+        return WSQKAuthorityV2(
+            contract_version=contract_version,
+            wallet_id=w,
+            action=a,
+            context_hash=ch,
+            issued_at=ia,
+            expires_at=ea,
+            nonce=n,
+            required_evidence_families=tuple(families_raw),
+            quantum_posture=posture,
+            proof_bindings_hash=proof_hash,
+        )
+
     return WSQKAuthority(
         wallet_id=w,
         action=a,
@@ -131,6 +156,32 @@ def _extract_wsqk_authority(
         expires_at=ea,
         nonce=n,
     )
+
+
+def _extract_wsqk_v2_runtime_requirements(
+    authority_scope: Mapping[str, Any],
+) -> tuple[tuple[str, ...] | None, str | None]:
+    """Extract opt-in WSQK v2 runtime requirements from authority.scope.
+
+    WSQK v2 remains explicit-only. If the envelope does not declare
+    authority.scope.wsqk_v2, the runtime preserves legacy behavior and does
+    not silently infer quantum-aware requirements.
+    """
+    raw = authority_scope.get("wsqk_v2")
+    if raw is None:
+        return None, None
+    if not isinstance(raw, Mapping):
+        raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+
+    families_raw = raw.get("required_evidence_families")
+    posture_raw = raw.get("required_quantum_posture")
+
+    if not isinstance(families_raw, list) or not all(isinstance(x, str) for x in families_raw):
+        raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+    if not isinstance(posture_raw, str) or not posture_raw:
+        raise TVAError(ReasonId.DENY_AUTHORITY_INVALID.value)
+
+    return tuple(families_raw), posture_raw
 
 
 def _default_reason_map(policy: RiskPolicy) -> Any:
@@ -230,6 +281,9 @@ def orchestrate_execution_v2(
         fields = _extract_fields(p)
 
         protected_requested = _protected_call_requested(req.authority_proofs)
+        required_evidence_families, required_quantum_posture = _extract_wsqk_v2_runtime_requirements(
+            req.authority_scope
+        )
 
         pol = policy or RiskPolicy()
         pol.validate()
@@ -694,6 +748,8 @@ def orchestrate_execution_v2(
             authority=wsqk,
             now=now,
             nonce_store=nonce_store,
+            required_evidence_families=required_evidence_families,
+            required_quantum_posture=required_quantum_posture,
         )
 
         return build_execution_response_v2(
