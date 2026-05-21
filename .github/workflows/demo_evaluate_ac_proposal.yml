@@ -18,6 +18,9 @@ on:
         default: "true"
         type: string
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   eval:
     runs-on: ubuntu-latest
@@ -35,7 +38,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Evaluate proposal (generate receipt + decision)
+      - name: Evaluate proposal
         env:
           PROPOSAL_JSON: ${{ inputs.proposal_json }}
           RECEIPT_DECISION: ${{ inputs.receipt_decision }}
