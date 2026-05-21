@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
-from adamantine.v1.contracts.authority import WSQKAuthority
+from adamantine.v1.contracts.authority import WSQKAuthority, WSQKAuthorityV2
 from adamantine.v1.contracts.context import ExecutionContext
 from adamantine.v1.contracts.execution_request import ExecutionRequest
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -21,9 +21,11 @@ def run_with_tva(
     request: ExecutionRequest,
     context: ExecutionContext,
     verdict: Verdict,
-    authority: WSQKAuthority,
+    authority: WSQKAuthority | WSQKAuthorityV2,
     now: int,
     nonce_store: NonceStore,
+    required_evidence_families: Iterable[str] | None = None,
+    required_quantum_posture: str | None = None,
 ) -> str:
     """
     The execution boundary.
@@ -31,7 +33,15 @@ def run_with_tva(
     This function is the only permitted path to real execution.
     It enforces TVA first. If TVA passes, it calls the executor.
     """
-    enforce_tva(context, verdict, authority, now=now, nonce_store=nonce_store)
+    enforce_tva(
+        context,
+        verdict,
+        authority,
+        now=now,
+        nonce_store=nonce_store,
+        required_evidence_families=required_evidence_families,
+        required_quantum_posture=required_quantum_posture,
+    )
     return executor.execute(request)
 
 
