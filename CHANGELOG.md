@@ -7,6 +7,50 @@ Scope: Foundation Releases and Contract History
 
 ------------------------------------------------------------------------
 
+## v2.2.0 — WSQK v2 Quantum-Aware Upgrade
+
+**Status:** Locked  
+**Type:** Quantum-aware authority upgrade  
+**Compatibility:** Additive — legacy/v1 paths remain compatible unless WSQK v2 is explicitly required
+
+This release upgrades WSQK inside AdamantineOS into a quantum-aware authority layer. WSQK v2 is now contract-defined, deterministically issued, reason-ID mapped, Truth Vector Authority (TVA) enforced, Q-ID posture bound, orchestrator propagated, and regression locked.
+
+### What's locked:
+
+1. WSQK v2 Authority Contract
+   - `WSQKAuthorityV2` and `WSQKIssueRequestV2` defined
+   - Required evidence families locked as a sorted canonical unique set
+   - Deterministic `proof_bindings_hash` semantics sealed
+
+2. Quantum-Aware Issuance and Reason IDs
+   - Deterministic WSQK v2 issuer added
+   - Stable reason IDs locked for malformed posture, invalid evidence families, unknown families, and binding failures
+   - Fail-closed validation preserved
+
+3. Truth Vector Authority (TVA) Enforcement
+   - TVA enforces WSQK v2 posture requirements
+   - Tampered proof binding hashes are denied before nonce use
+   - WSQK v1 cannot satisfy explicit WSQK v2 requirements
+
+4. Q-ID Hybrid Posture Binding
+   - Hybrid-required posture requires classical AND PQC Q-ID posture
+   - PQC-required posture requires PQC evidence
+   - Posture mismatches deterministically deny
+
+5. Orchestrator / Runtime Boundary Propagation
+   - WSQK v2 requirements propagate through the runtime boundary
+   - No silent v1 fallback when v2 is required
+   - Downgrade attempts are regression locked
+
+6. Tamperproof Regression Locks and Proof Pack
+   - Negative-first tests cover hash tampering, context tampering, family drift, downgrade attempts, and Q-ID posture tamper
+   - WSQK v2 proof pack maps contract → invariants → implementation → tests → CI proof
+   - 100% coverage gate remains enforced
+
+Rule: Any semantic change to WSQK v2 authority, proof binding, Q-ID posture binding, or TVA/orchestrator enforcement requires a new versioned compatibility lock.
+
+------------------------------------------------------------------------
+
 ## v2.1.0 — AC v3 Governance Compatibility Lock
 
 **Status:** Locked  
