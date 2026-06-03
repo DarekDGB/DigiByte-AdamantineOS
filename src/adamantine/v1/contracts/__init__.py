@@ -6,6 +6,7 @@ from .qid import QIDSessionProof
 from .reason_ids import ReasonId
 from .risk import RiskReport, RiskSignal
 from .shield import ExternalReasonMap, ExternalReasonMapEntry, ShieldSignal, ShieldSource
+from .shield_orchestrator_receipt import reject_direct_component_verdict, validate_shield_orchestrator_receipt
 from .verdict import Verdict
 
 __all__ = [
@@ -22,4 +23,6 @@ __all__ = [
     "ShieldSignal",
     "ExternalReasonMapEntry",
     "ExternalReasonMap",
+    "reject_direct_component_verdict",
+    "validate_shield_orchestrator_receipt",
 ]
