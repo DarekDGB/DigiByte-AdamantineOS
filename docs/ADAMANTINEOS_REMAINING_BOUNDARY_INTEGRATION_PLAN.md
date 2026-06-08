@@ -579,4 +579,3 @@ Milestone 11 â WSQK v2 Policy Evidence Boundary
 ```
 
 That milestone should consume existing WSQK v2 authority behavior deterministically and convert WSQK success/failure into structured policy evidence with explicit reason IDs.
-
