@@ -21,6 +21,13 @@ from adamantine.v1.integrations.shield_orchestrator_receipt_adapter import (
     adapt_shield_orchestrator_receipt,
 )
 
+from adamantine.v1.integrations.shield_v3_live_orchestrator_harness import (
+    ShieldV3LiveOrchestratorHarnessResult,
+    ShieldV3LiveOrchestratorHarnessState,
+    normalize_live_orchestrator_receipt,
+    run_shield_v3_live_orchestrator_harness,
+)
+
 __all__ = [
     "AdapterError",
     "parse_qid_session",
@@ -36,4 +43,8 @@ __all__ = [
     "verify_shield_orchestrator_receipt",
     "ShieldReceiptVerificationState",
     "ShieldReceiptVerificationResult",
+    "run_shield_v3_live_orchestrator_harness",
+    "normalize_live_orchestrator_receipt",
+    "ShieldV3LiveOrchestratorHarnessState",
+    "ShieldV3LiveOrchestratorHarnessResult",
 ]
