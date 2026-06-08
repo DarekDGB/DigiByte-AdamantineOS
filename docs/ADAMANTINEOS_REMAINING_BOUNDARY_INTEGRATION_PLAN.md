@@ -394,7 +394,7 @@ It does not mean final execution approval.
 
 The remaining implementation sequence should be:
 
-### Milestone 11 â WSQK v2 Policy Evidence Boundary
+### Milestone 11 - WSQK v2 Policy Evidence Boundary
 
 Repository touched:
 
@@ -411,7 +411,7 @@ Purpose:
 
 No Q-ID / Adaptive / AI Gateway implementation in this milestone.
 
-### Milestone 12 â Q-ID Policy Binding Boundary
+### Milestone 12 - Q-ID Policy Binding Boundary
 
 Repository touched:
 
@@ -428,7 +428,7 @@ Purpose:
 
 No full multi-repo harness yet.
 
-### Milestone 13 â Adaptive Core Policy Evidence Boundary
+### Milestone 13 - Adaptive Core Policy Evidence Boundary
 
 Repositories:
 
@@ -447,7 +447,7 @@ Purpose:
 
 No Adaptive Core repository change unless a real defect is found.
 
-### Milestone 14 â AI Gateway Evidence Boundary
+### Milestone 14 - AI Gateway Evidence Boundary
 
 Repositories:
 
@@ -467,7 +467,7 @@ Purpose:
 
 No AI Gateway repository change unless a real defect is found.
 
-### Milestone 15 â Final AdamantineOS Policy Engine Merge
+### Milestone 15 - Final AdamantineOS Policy Engine Merge
 
 Repository touched:
 
@@ -482,7 +482,7 @@ Purpose:
 - preserve explicit reason IDs
 - prove all evidence sources are evidence-only
 
-### Milestone 16 â Carefully Scoped Multi-Repo Integration Harness
+### Milestone 16 - Carefully Scoped Multi-Repo Integration Harness
 
 Repositories inspected / potentially used:
 
@@ -506,7 +506,7 @@ Purpose:
 - test cross-repo evidence compatibility
 - keep AdamantineOS as final decision boundary
 
-### Milestone 17 â Proof Pack / Docs Alignment
+### Milestone 17 - Proof Pack / Docs Alignment
 
 Purpose:
 
@@ -515,13 +515,13 @@ Purpose:
 - update build ledger
 - update README / SECURITY / CHANGELOG if needed
 
-### Milestone 18 â Authorized Red-Team Review
+### Milestone 18 - Authorized Red-Team Review
 
 Purpose:
 
 - attempt safe authorized attacks against architecture bypass, replay, receipt tampering, AI authority bypass, governance reuse, stale evidence, and docs-vs-tests mismatch
 
-### Milestone 19 â Final Release Gate
+### Milestone 19 - Final Release Gate
 
 Purpose:
 
@@ -535,18 +535,18 @@ Purpose:
 Full multi-repo integration does not start until all of the following are complete:
 
 ```text
-Shield receipt boundary complete â
-WSQK v2 policy evidence boundary complete â³
-Q-ID policy binding boundary complete â³
-Adaptive Core policy evidence boundary complete â³
-AI Gateway evidence boundary complete â³
-Final AdamantineOS policy engine order complete â³
+Shield receipt boundary complete - COMPLETE
+WSQK v2 policy evidence boundary complete - PENDING
+Q-ID policy binding boundary complete - PENDING
+Adaptive Core policy evidence boundary complete - PENDING
+AI Gateway evidence boundary complete - PENDING
+Final AdamantineOS policy engine order complete - PENDING
 ```
 
 Only then does the project enter:
 
 ```text
-Milestone 16 â Carefully Scoped Multi-Repo Integration Harness
+Milestone 16 - Carefully Scoped Multi-Repo Integration Harness
 ```
 
 ---
@@ -575,7 +575,7 @@ The next implementation milestone is not full integration.
 The next implementation milestone should be:
 
 ```text
-Milestone 11 â WSQK v2 Policy Evidence Boundary
+Milestone 11 - WSQK v2 Policy Evidence Boundary
 ```
 
 That milestone should consume existing WSQK v2 authority behavior deterministically and convert WSQK success/failure into structured policy evidence with explicit reason IDs.
