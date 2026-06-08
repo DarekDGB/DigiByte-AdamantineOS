@@ -1,0 +1,306 @@
+{
+  "contract": "adamantineos.shield_v3_fixture_negative_test_plan",
+  "version": 1,
+  "adamantineos_boundary": "v2.2.0",
+  "external_shield_baseline": "v3.2.0",
+  "level": 1,
+  "fixtures": [
+    {
+      "name": "valid_combined_context_hash_v1",
+      "path": "combined_context_hash/valid_combined_context_hash_v1.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED",
+      "expected_hash": "30926f0e1d86bccce118090dc516b7564cefb226fc397524f2d4430ff28b2d3a"
+    },
+    {
+      "name": "valid_combined_context_hash_v1_reordered",
+      "path": "combined_context_hash/valid_combined_context_hash_v1_reordered.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED",
+      "expected_hash": "30926f0e1d86bccce118090dc516b7564cefb226fc397524f2d4430ff28b2d3a"
+    },
+    {
+      "name": "invalid_array_value",
+      "path": "combined_context_hash/invalid_array_value.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_boolean_value",
+      "path": "combined_context_hash/invalid_boolean_value.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_control_character",
+      "path": "combined_context_hash/invalid_control_character.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_empty_replay_context_ref",
+      "path": "combined_context_hash/invalid_empty_replay_context_ref.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_empty_request_id",
+      "path": "combined_context_hash/invalid_empty_request_id.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_forbidden_authority_field",
+      "path": "combined_context_hash/invalid_forbidden_authority_field.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_leading_trailing_whitespace",
+      "path": "combined_context_hash/invalid_leading_trailing_whitespace.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_contract",
+      "path": "combined_context_hash/invalid_missing_contract.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_domain",
+      "path": "combined_context_hash/invalid_missing_domain.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_policy_context_hash",
+      "path": "combined_context_hash/invalid_missing_policy_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_qid_auth_context_hash",
+      "path": "combined_context_hash/invalid_missing_qid_auth_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_replay_context_ref",
+      "path": "combined_context_hash/invalid_missing_replay_context_ref.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_request_id",
+      "path": "combined_context_hash/invalid_missing_request_id.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_shield_receipt_context_hash",
+      "path": "combined_context_hash/invalid_missing_shield_receipt_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_transaction_context_hash",
+      "path": "combined_context_hash/invalid_missing_transaction_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_version",
+      "path": "combined_context_hash/invalid_missing_version.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_wallet_context_hash",
+      "path": "combined_context_hash/invalid_missing_wallet_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_missing_wsqk_posture_context_hash",
+      "path": "combined_context_hash/invalid_missing_wsqk_posture_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_nested_object_value",
+      "path": "combined_context_hash/invalid_nested_object_value.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_non_ascii_string",
+      "path": "combined_context_hash/invalid_non_ascii_string.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_non_hex_hash",
+      "path": "combined_context_hash/invalid_non_hex_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_null_required_field",
+      "path": "combined_context_hash/invalid_null_required_field.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_randomness_field",
+      "path": "combined_context_hash/invalid_randomness_field.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_short_hash",
+      "path": "combined_context_hash/invalid_short_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_timestamp_field",
+      "path": "combined_context_hash/invalid_timestamp_field.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_top_level_array",
+      "path": "combined_context_hash/invalid_top_level_array.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_unknown_top_level_field",
+      "path": "combined_context_hash/invalid_unknown_top_level_field.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_uppercase_hash",
+      "path": "combined_context_hash/invalid_uppercase_hash.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_version_float",
+      "path": "combined_context_hash/invalid_version_float.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_version_string",
+      "path": "combined_context_hash/invalid_version_string.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "invalid_duplicate_key",
+      "path": "combined_context_hash/invalid_duplicate_key.json",
+      "category": "combined_context_hash",
+      "expected": "REJECT",
+      "reason": "COMBINED_CONTEXT_HASH_REJECTED_FAIL_CLOSED"
+    },
+    {
+      "name": "changed_policy_context_hash",
+      "path": "combined_context_hash/changed_policy_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "a9881388d21349d6506a2e124f9fdacdca32ea122f559d643433122fdd1c39d6"
+    },
+    {
+      "name": "changed_qid_auth_context_hash",
+      "path": "combined_context_hash/changed_qid_auth_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "8c0348a34b587f8544a48a398d616df3dd2ce24d4f7b7f392b35068166ad0b90"
+    },
+    {
+      "name": "changed_replay_context_ref",
+      "path": "combined_context_hash/changed_replay_context_ref.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "65c626260bc95ca40dd46633a51ad49ac0dd72e0e1e1838f4380c3077e93609d"
+    },
+    {
+      "name": "changed_request_id",
+      "path": "combined_context_hash/changed_request_id.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "e92ccfce6c6551731cc6a4a37fd3f4b136decd3279b8761c628b9606380271c8"
+    },
+    {
+      "name": "changed_shield_receipt_context_hash",
+      "path": "combined_context_hash/changed_shield_receipt_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "a37645ddaef009481bf17fcbe75fb13ca77ebff6a2bd253c941a5b055837d278"
+    },
+    {
+      "name": "changed_transaction_context_hash",
+      "path": "combined_context_hash/changed_transaction_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "95110bdca413454f6bc8aa049a850a7d3f1305a1db45b3b7b0ddca9eacd0983f"
+    },
+    {
+      "name": "changed_wallet_context_hash",
+      "path": "combined_context_hash/changed_wallet_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "5f37bc650d63a187227222d96b3bab9b8b1e17de23e7ba1ce7f0fc31d0eee663"
+    },
+    {
+      "name": "changed_wsqk_posture_context_hash",
+      "path": "combined_context_hash/changed_wsqk_posture_context_hash.json",
+      "category": "combined_context_hash",
+      "expected": "ACCEPT",
+      "reason": "COMBINED_CONTEXT_HASH_ACCEPTED_CHANGED_INPUT",
+      "expected_hash": "5b6bf77fb4b30f1f974dba0a4ffff5007f1b9629cae76359fb766150a2fa400d"
+    }
+  ]
+}
