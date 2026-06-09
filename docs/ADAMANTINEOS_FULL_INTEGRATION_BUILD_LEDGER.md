@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 16C tracker - Shield component baseline compatibility through Orchestrator complete**  
+Status: **Milestone 16D tracker - Q-ID external baseline compatibility complete**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -217,7 +217,7 @@ Shield repositories changed: no
 Direct Shield package import inside AdamantineOS: no
 Direct AI Gateway package import inside AdamantineOS: no
 Full multi-repo harness: not started
-Q-ID external compatibility: not started
+Q-ID external compatibility: complete
 Adaptive Core external compatibility: not started
 AI Gateway external compatibility: not started
 Full Level 4 negative-test matrix: not started
@@ -377,6 +377,51 @@ AdamantineOS remains `v2.2.0`.
 No AdamantineOS tag is created.
 
 Shield component repositories remain external and unchanged.
+
+## 7.4 Milestone 16D completion note
+
+Milestone 16D added the third scoped Level 4 compatibility harness.
+
+It proves that the existing external `DigiByte-Q-ID` AdamantineOS evidence v2 shape is compatible with the existing AdamantineOS Q-ID adapter and Q-ID policy binding boundary.
+
+This milestone did not create a second Q-ID adapter or duplicate integration path.
+
+Files added or updated:
+
+```text
+tests/fixtures/q_id_external_baseline/qid_adamantine_evidence_v2_policy_binding.json
+tests/integrations/test_milestone_16d_q_id_external_baseline_compatibility.py
+docs/ADAMANTINEOS_MILESTONE_16D_Q_ID_EXTERNAL_BASELINE_COMPATIBILITY.md
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+```
+
+Locked Milestone 16D behavior:
+
+```text
+External Q-ID Adamantine evidence v2 parses through the existing AdamantineOS adapter.
+External Q-ID Adamantine evidence v2 enters Q-ID policy binding as evidence only.
+Q-ID evidence success returns ALLOW_EVIDENCE_CONTINUE_CHECKS, not final approval.
+Q-ID evidence alone cannot become final authority.
+Hidden authority fields fail closed.
+Proof hash mismatch fails closed.
+Subject mismatch fails closed before replay proof acceptance.
+External import-failure-shaped payload cannot become allow.
+```
+
+Milestone 16D verification result:
+
+```text
+PYTHONPATH=src pytest -q
+848 passed
+Required test coverage of 100% reached
+Total coverage: 100.00%
+```
+
+AdamantineOS remains `v2.2.0`.
+
+No AdamantineOS tag is created.
+
+The external DigiByte-Q-ID repository remains external and unchanged.
 
 ## 8. What has been intentionally deferred
 
@@ -550,4 +595,10 @@ Milestone 16C is complete as the second scoped Level 4 compatibility harness:
 Shield component baseline compatibility through Orchestrator receipt only
 ```
 
-The next safe step is Milestone 16D, still scoped and still AdamantineOS-first. It must not begin a broad ten-repository harness or the full Level 4 negative-test matrix.
+Milestone 16D is complete as the third scoped Level 4 compatibility harness:
+
+```text
+Q-ID external baseline compatibility through the existing AdamantineOS Q-ID boundary
+```
+
+The next safe step is Milestone 16E, still scoped and still AdamantineOS-first. It must not begin a broad ten-repository harness or the full Level 4 negative-test matrix.
