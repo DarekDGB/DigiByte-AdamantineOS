@@ -41,6 +41,12 @@ from adamantine.v1.integrations.wsqk_v2_policy_evidence import (
     normalize_wsqk_v2_policy_evidence,
 )
 
+from adamantine.v1.integrations.adaptive_core_policy_evidence import (
+    AdaptiveCorePolicyEvidenceResult,
+    AdaptiveCorePolicyEvidenceState,
+    normalize_adaptive_core_policy_evidence,
+)
+
 __all__ = [
     "AdapterError",
     "parse_qid_session",
@@ -66,4 +72,7 @@ __all__ = [
     "normalize_wsqk_v2_policy_evidence",
     "WSQKV2PolicyEvidenceState",
     "WSQKV2PolicyEvidenceResult",
+    "normalize_adaptive_core_policy_evidence",
+    "AdaptiveCorePolicyEvidenceState",
+    "AdaptiveCorePolicyEvidenceResult",
 ]
