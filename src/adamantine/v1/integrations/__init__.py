@@ -28,6 +28,12 @@ from adamantine.v1.integrations.shield_v3_live_orchestrator_harness import (
     run_shield_v3_live_orchestrator_harness,
 )
 
+from adamantine.v1.integrations.wsqk_v2_policy_evidence import (
+    WSQKV2PolicyEvidenceResult,
+    WSQKV2PolicyEvidenceState,
+    normalize_wsqk_v2_policy_evidence,
+)
+
 __all__ = [
     "AdapterError",
     "parse_qid_session",
@@ -47,4 +53,7 @@ __all__ = [
     "normalize_live_orchestrator_receipt",
     "ShieldV3LiveOrchestratorHarnessState",
     "ShieldV3LiveOrchestratorHarnessResult",
+    "normalize_wsqk_v2_policy_evidence",
+    "WSQKV2PolicyEvidenceState",
+    "WSQKV2PolicyEvidenceResult",
 ]
