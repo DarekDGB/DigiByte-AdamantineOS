@@ -45,7 +45,21 @@ class ShieldReceiptVerificationResult:
     receipt: Mapping[str, Any] | None = None
 
 
-_COMPONENT_KEYS = frozenset({"component_id", "verdict", "reason_ids"})
+_LEGACY_COMPONENT_KEYS = frozenset({"component_id", "verdict", "reason_ids"})
+_V3_2_COMPONENT_KEYS = frozenset({
+    "component_id",
+    "contract_version",
+    "schema_version",
+    "request_id",
+    "context_hash",
+    "decision",
+    "reason_ids",
+    "evidence_hash",
+    "evidence_families",
+    "metadata",
+    "fail_closed",
+})
+_V3_2_COMPONENT_DECISIONS = frozenset({"ALLOW", "ESCALATE", "DENY", "ERROR", "SKIPPED"})
 _FORBIDDEN_AUTHORITY_KEYS = frozenset(
     {
         "allow",
@@ -115,29 +129,103 @@ def _contains_authority_bypass(value: Any) -> bool:
     return False
 
 
+def _component_contains_unknown_authority_field(component: Any) -> bool:
+    if not isinstance(component, Mapping):
+        return False
+    keys = set(component.keys())
+    allowed_contract_keys = _LEGACY_COMPONENT_KEYS | _V3_2_COMPONENT_KEYS
+    unknown_keys = keys - allowed_contract_keys
+    if unknown_keys & _FORBIDDEN_AUTHORITY_KEYS:
+        return True
+    metadata = component.get("metadata")
+    return _contains_authority_bypass(metadata)
+
+
+def _is_hash(value: Any) -> bool:
+    if not isinstance(value, str) or len(value) != 64:
+        return False
+    try:
+        int(value, 16)
+    except ValueError:
+        return False
+    return value == value.lower()
+
+
+def _has_non_empty_string_list(value: Any, *, unique: bool = False) -> bool:
+    if not isinstance(value, list) or not value:
+        return False
+    if any(not isinstance(item, str) or not item.strip() for item in value):
+        return False
+    return not unique or len(set(value)) == len(value)
+
+
+def _validate_legacy_component_verdict(component: Mapping[str, Any]) -> bool:
+    if set(component.keys()) != _LEGACY_COMPONENT_KEYS:
+        return False
+    if not isinstance(component["component_id"], str) or not component["component_id"].strip():
+        return False
+    if component["verdict"] not in ALLOWED_FINAL_OUTCOMES:
+        return False
+    return _has_non_empty_string_list(component["reason_ids"])
+
+
+def _validate_v3_2_component_verdict(component: Mapping[str, Any], *, receipt: Mapping[str, Any]) -> bool:
+    if set(component.keys()) != _V3_2_COMPONENT_KEYS:
+        return False
+    if not isinstance(component["component_id"], str) or not component["component_id"].strip():
+        return False
+    if component["contract_version"] != 3:
+        return False
+    if component["schema_version"] != "shield.verdict.v1":
+        return False
+    if component["request_id"] != receipt.get("request_id"):
+        return False
+    if component["context_hash"] != receipt.get("context_hash") or not _is_hash(component["context_hash"]):
+        return False
+    if component["decision"] not in _V3_2_COMPONENT_DECISIONS:
+        return False
+    if not _has_non_empty_string_list(component["reason_ids"]):
+        return False
+    if not _is_hash(component["evidence_hash"]):
+        return False
+    if not _has_non_empty_string_list(component["evidence_families"], unique=True):
+        return False
+    if not isinstance(component["metadata"], Mapping):
+        return False
+    if component["fail_closed"] is not True:
+        return False
+    return True
+
+
 def _validate_component_verdicts(receipt: Mapping[str, Any]) -> bool:
     components = receipt.get("component_verdicts")
     if not isinstance(components, list) or not components:
         return False
     for component in components:
-        if not isinstance(component, Mapping) or set(component.keys()) != _COMPONENT_KEYS:
+        if not isinstance(component, Mapping):
             return False
-        if not isinstance(component["component_id"], str) or not component["component_id"].strip():
-            return False
-        if component["verdict"] not in ALLOWED_FINAL_OUTCOMES:
-            return False
-        reason_ids = component["reason_ids"]
-        if not isinstance(reason_ids, list) or not reason_ids:
-            return False
-        if any(not isinstance(reason_id, str) or not reason_id.strip() for reason_id in reason_ids):
-            return False
+        if _validate_legacy_component_verdict(component):
+            continue
+        if _validate_v3_2_component_verdict(component, receipt=receipt):
+            continue
+        return False
     return True
+
+
+def _component_decision(component: Mapping[str, Any]) -> str:
+    if "decision" in component:
+        return str(component["decision"])
+    return str(component["verdict"])
 
 
 def _deny_dominates(receipt: Mapping[str, Any]) -> bool:
     components = receipt["component_verdicts"]
-    has_component_deny = any(component["verdict"] == "DENY" for component in components)
-    return not has_component_deny or receipt["final_outcome"] == "DENY"
+    decisions = [_component_decision(component) for component in components]
+    if any(decision in {"DENY", "ERROR"} for decision in decisions):
+        return receipt["final_outcome"] == "DENY"
+    if "ESCALATE" in decisions:
+        return receipt["final_outcome"] == "HUMAN_REVIEW_REQUIRED"
+    return True
 
 
 def verify_shield_orchestrator_receipt(
@@ -185,7 +273,7 @@ def verify_shield_orchestrator_receipt(
             payload=valid,
         )
 
-    if _contains_authority_bypass(valid["component_verdicts"]):
+    if any(_component_contains_unknown_authority_field(component) for component in valid["component_verdicts"]):
         return _rejected(
             state=ShieldReceiptVerificationState.REJECTED_AUTHORITY_BYPASS,
             reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
