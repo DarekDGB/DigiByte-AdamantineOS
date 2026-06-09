@@ -137,6 +137,7 @@ docs/ADAMANTINEOS_REMAINING_BOUNDARY_INTEGRATION_PLAN.md
 docs/ADAMANTINEOS_MILESTONE_16_LEVEL4_MULTI_REPO_SCOPE_LOCK.md
 docs/ADAMANTINEOS_MILESTONE_16B_SHIELD_ORCHESTRATOR_RECEIPT_CONTRACT_HARNESS.md
 docs/ADAMANTINEOS_MILESTONE_16C_SHIELD_COMPONENT_BASELINE_THROUGH_ORCHESTRATOR.md
+docs/ADAMANTINEOS_MILESTONE_16D_Q_ID_EXTERNAL_BASELINE_COMPATIBILITY.md
 ```
 
 ### 6.2 Fixture files
@@ -146,6 +147,7 @@ tests/fixtures/shield_v3_integration/manifest.json
 tests/fixtures/shield_v3_integration/combined_context_hash/*.json
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/allow_receipt.json
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/component_baseline_receipt.json
+tests/fixtures/q_id_external_baseline/qid_adamantine_evidence_v2_policy_binding.json
 ```
 
 The combined context hash fixture pack contains forty-one JSON fixtures.
@@ -188,6 +190,7 @@ tests/integrations/test_ai_gateway_policy_evidence.py
 tests/policy/test_final_policy_engine.py
 tests/integrations/test_milestone_16b_shield_orchestrator_v3_2_contract_harness.py
 tests/integrations/test_milestone_16c_shield_component_baseline_through_orchestrator.py
+tests/integrations/test_milestone_16d_q_id_external_baseline_compatibility.py
 ```
 
 ## 7. Verified status at this point
@@ -526,7 +529,100 @@ AdamantineOS policy engine
 Final fail-closed decision
 ```
 
-## 13. Required future negative tests
+## 13. External adapter / handoff completion rule
+
+Full integration must not be declared complete unless every required external connection point is proven on both sides.
+
+AdamantineOS-side compatibility fixtures are not enough by themselves.
+
+For each external evidence source, the project must prove:
+
+1. The external repository can produce AdamantineOS-consumable evidence or a deterministic handoff object.
+2. AdamantineOS has a matching receiver / verifier / policy boundary.
+3. The external evidence remains evidence only and cannot become final execution authority.
+4. Tests prove the external shape is accepted only through the approved boundary.
+5. Negative tests prove authority bypass, malformed payloads, hidden final approval fields, missing evidence, and context mismatches fail closed.
+6. The build ledger records whether the external repository needed changes or already had the required surface.
+
+This rule prevents a false completion claim where AdamantineOS has local fixtures but an external repository has no real AdamantineOS-facing adapter, exporter, or deterministic handoff surface.
+
+Required connection model:
+
+```text
+Shield components:
+Guardian Wallet, ADN, Sentinel AI, DQSN, and QWG do not connect directly to AdamantineOS.
+They connect only through Shield Orchestrator.
+
+Shield path:
+Shield components
+        v
+Shield Orchestrator
+        v
+Shield Orchestrator AdamantineOS receipt / handoff surface
+        v
+AdamantineOS Shield receipt verifier
+        v
+AdamantineOS final policy engine
+
+Q-ID path:
+DigiByte-Q-ID AdamantineOS evidence builder
+        v
+AdamantineOS Q-ID adapter / policy binding
+        v
+AdamantineOS final policy engine
+
+Adaptive Core path:
+Adaptive Core AdamantineOS advisory evidence / export surface
+        v
+AdamantineOS Adaptive Core policy evidence boundary
+        v
+AdamantineOS final policy engine
+
+AI Gateway path:
+AI Gateway AdamantineOS handoff / receipt / output evidence surface
+        v
+AdamantineOS AI Gateway policy evidence boundary
+        v
+AdamantineOS final policy engine
+```
+
+If an external repository lacks the required AdamantineOS-facing export / handoff surface, that is a compatibility gap.
+
+A compatibility gap must be documented before moving forward.
+
+The affected external repository may be modified only when all of the following are true:
+
+1. The gap is proven by inspection or tests.
+2. The fix is the smallest safe adapter / exporter.
+3. The change does not create final authority outside AdamantineOS.
+4. The external repository tests pass.
+5. A fresh ZIP is created.
+6. AdamantineOS compatibility tests pass against the fresh ZIP.
+
+Do not announce or document the system as fully connected until all required external adapter / handoff surfaces and AdamantineOS receivers are proven.
+
+### 13.1 External connection proof table
+
+| External source | Required external AdamantineOS-facing surface | AdamantineOS receiver exists | External side proven | AdamantineOS side proven | Direct authority allowed? | Status |
+|---|---|---:|---:|---:|---:|---|
+| Shield Orchestrator | Shield v3.2 receipt / AdamantineOS handoff surface | Yes | Pending final proof | Yes | No | In progress |
+| Guardian Wallet | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
+| DigiByte-ADN | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
+| Sentinel AI | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
+| DQSN | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
+| QWG | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
+| Q-ID | AdamantineOS Q-ID evidence builder | Yes | Yes | Yes | No | 16D complete |
+| Adaptive Core | AdamantineOS advisory evidence / export surface | Yes | To verify in 16E | Existing boundary present; 16E proof pending | No | 16E next |
+| AI Gateway | AdamantineOS handoff / receipt evidence surface | Yes | To verify in 16F | Existing boundary present; 16F proof pending | No | 16F pending |
+
+### 13.2 Public integration claim rule
+
+No public claim of full system connection is allowed until the external connection proof table shows all required external-side surfaces and AdamantineOS-side receivers as proven.
+
+The valid final claim must be based on tested two-sided connection proof, not fixture-only compatibility.
+
+
+## 14. Required future negative tests
 
 Future stages must continue to add more negative tests than happy-path tests.
 
@@ -552,7 +648,7 @@ multi-repo import failure becoming allow
 external dependency unavailable becoming allow
 ```
 
-## 14. Release and tag rule
+## 15. Release and tag rule
 
 AdamantineOS must not be tagged until all of the following are true:
 
@@ -560,6 +656,8 @@ AdamantineOS must not be tagged until all of the following are true:
 [ ] All roadmap phases complete
 [ ] All build strategy milestones complete
 [ ] All required docs updated
+[ ] External adapter / handoff completion rule satisfied
+[ ] External connection proof table complete
 [ ] All fixtures reviewed
 [ ] All negative tests pass
 [ ] CI green
@@ -577,7 +675,7 @@ AdamantineOS remains v2.2.0.
 No AdamantineOS Shield integration tag is allowed.
 ```
 
-## 15. Current next action
+## 16. Current next action
 
 Milestone 16A is complete as a docs-only scope lock.
 
@@ -601,4 +699,20 @@ Milestone 16D is complete as the third scoped Level 4 compatibility harness:
 Q-ID external baseline compatibility through the existing AdamantineOS Q-ID boundary
 ```
 
-The next safe step is Milestone 16E, still scoped and still AdamantineOS-first. It must not begin a broad ten-repository harness or the full Level 4 negative-test matrix.
+The next safe step is Milestone 16E, still scoped and still AdamantineOS-first.
+
+Milestone 16E must first verify both sides of the Adaptive Core connection:
+
+```text
+DigiByte-Adaptive-Core external AdamantineOS-facing advisory evidence / export surface
+        v
+AdamantineOS Adaptive Core policy evidence boundary
+        v
+AdamantineOS final policy engine
+```
+
+If the Adaptive Core repository already exposes the required AdamantineOS-consumable advisory evidence surface, Milestone 16E may remain an AdamantineOS compatibility proof.
+
+If the Adaptive Core repository lacks the required external export / handoff surface, that is a compatibility gap and must be documented before continuing. The Adaptive Core repository may then be modified only with the smallest safe adapter / exporter and only after tests prove the gap.
+
+Milestone 16E must not begin a broad ten-repository harness or the full Level 4 negative-test matrix.
