@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 15 tracker - Final AdamantineOS policy engine merge complete**  
+Status: **Milestone 16B tracker - Shield Orchestrator v3.2 receipt contract harness complete**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -119,7 +119,9 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 12 | Q-ID policy binding boundary | Q-ID authentication, replay, device, nonce, and WSQK posture binding as evidence only | AdamantineOS | Complete |
 | 13 | Adaptive Core policy evidence boundary | Adaptive Core adapter output normalized as advisory evidence only; score threshold and earlier DENY dominance enforced | AdamantineOS | Complete |
 | 14 | AI Gateway evidence boundary | AI Gateway handoff / receipt evidence validated as evidence only; raw AI output and authority bypass rejected | AdamantineOS | Complete |
-| 15 | Final AdamantineOS policy engine merge | Shield, WSQK, Q-ID, Adaptive Core, AI Gateway, replay, wallet policy, and human gate merged into deterministic local decision order | AdamantineOS | Current |
+| 15 | Final AdamantineOS policy engine merge | Shield, WSQK, Q-ID, Adaptive Core, AI Gateway, replay, wallet policy, and human gate merged into deterministic local decision order | AdamantineOS | Complete |
+| 16A | Level 4 multi-repo scope lock document | Scoped Level 4 rules locked before implementation; AdamantineOS first, external baselines evidence-only, no tag/version bump | AdamantineOS docs only | Complete |
+| 16B | Shield Orchestrator v3.2 receipt contract harness | AdamantineOS consumes Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output through the existing verifier and final policy engine | AdamantineOS | Complete |
 
 ## 6. Files added so far
 
@@ -131,6 +133,8 @@ docs/ADAMANTINEOS_INTEGRATION_HARNESS_SCOPE.md
 docs/ADAMANTINEOS_SHIELD_V3_FIXTURE_AND_NEGATIVE_TEST_PLAN.md
 docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
 docs/ADAMANTINEOS_REMAINING_BOUNDARY_INTEGRATION_PLAN.md
+docs/ADAMANTINEOS_MILESTONE_16_LEVEL4_MULTI_REPO_SCOPE_LOCK.md
+docs/ADAMANTINEOS_MILESTONE_16B_SHIELD_ORCHESTRATOR_RECEIPT_CONTRACT_HARNESS.md
 ```
 
 ### 6.2 Fixture files
@@ -138,6 +142,7 @@ docs/ADAMANTINEOS_REMAINING_BOUNDARY_INTEGRATION_PLAN.md
 ```text
 tests/fixtures/shield_v3_integration/manifest.json
 tests/fixtures/shield_v3_integration/combined_context_hash/*.json
+tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/allow_receipt.json
 ```
 
 The combined context hash fixture pack contains forty-one JSON fixtures.
@@ -157,6 +162,14 @@ src/adamantine/v1/integrations/ai_gateway_policy_evidence.py
 src/adamantine/v1/policy/final_policy_engine.py
 ```
 
+Milestone 16B also hardens:
+
+```text
+src/adamantine/v1/integrations/shield_orchestrator_receipt_verifier.py
+```
+
+The hardening accepts the explicit Shield Orchestrator v3.2 receipt contract component shape while still rejecting raw component verdict bypasses and unknown authority fields inside metadata.
+
 ### 6.4 Test files
 
 ```text
@@ -170,6 +183,7 @@ tests/integrations/test_qid_policy_binding.py
 tests/integrations/test_adaptive_core_policy_evidence.py
 tests/integrations/test_ai_gateway_policy_evidence.py
 tests/policy/test_final_policy_engine.py
+tests/integrations/test_milestone_16b_shield_orchestrator_v3_2_contract_harness.py
 ```
 
 ## 7. Verified status at this point
@@ -190,6 +204,8 @@ Milestone 12 complete: yes
 Milestone 13 complete: yes
 Milestone 14 complete: yes
 Milestone 15 complete: yes
+Milestone 16A complete: yes
+Milestone 16B complete: yes
 AdamantineOS version: still v2.2.0
 AdamantineOS tag: not created
 Shield repositories changed: no
@@ -253,6 +269,49 @@ Coverage remains 100%.
 AdamantineOS remains v2.2.0.
 No AdamantineOS tag is created.
 ```
+
+## 7.2 Milestone 16B completion note
+
+Milestone 16B added the first scoped Level 4 compatibility harness.
+
+Files added or updated:
+
+```text
+src/adamantine/v1/integrations/shield_orchestrator_receipt_verifier.py
+tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/allow_receipt.json
+tests/integrations/test_milestone_16b_shield_orchestrator_v3_2_contract_harness.py
+docs/ADAMANTINEOS_MILESTONE_16B_SHIELD_ORCHESTRATOR_RECEIPT_CONTRACT_HARNESS.md
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+```
+
+Locked Milestone 16B behavior:
+
+```text
+Shield Orchestrator v3.2 receipt contract output is evidence only.
+Shield ALLOW does not become final AdamantineOS approval by itself.
+Raw Shield component verdicts are rejected as bypass attempts.
+Context mismatch fails closed.
+Receipt hash mismatch fails closed.
+Unknown authority fields inside metadata fail closed.
+Import-failure-shaped payloads never become allow.
+ESCALATE or ERROR hidden under ALLOW fails closed.
+Duplicate evidence families and malformed v3.2 component fields fail closed.
+```
+
+Milestone 16B verification result:
+
+```text
+PYTHONPATH=src pytest
+834 passed
+Required test coverage of 100% reached
+Total coverage: 100.00%
+```
+
+AdamantineOS remains `v2.2.0`.
+
+No AdamantineOS tag is created.
+
+Shield Orchestrator remains external and unchanged.
 
 ## 8. What has been intentionally deferred
 
@@ -410,10 +469,14 @@ No AdamantineOS Shield integration tag is allowed.
 
 ## 15. Current next action
 
-After Milestone 15 is added and verified, the next action is:
+Milestone 16A is complete as a docs-only scope lock.
+
+Milestone 16B is complete as the first scoped Level 4 compatibility harness:
 
 ```text
-Milestone 16 - Carefully Scoped Multi-Repo Integration Harness
+AdamantineOS + Shield Orchestrator v3.2 receipt contract only
 ```
 
-Milestone 16 is the first milestone where full integration begins, but it must still be scoped, staged, fail-closed, and evidence-bound.
+Milestone 16B proves that AdamantineOS can consume a Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output as evidence through the existing AdamantineOS verifier and final policy engine without surrendering final decision authority.
+
+The next safe step is Milestone 16C, still scoped and still AdamantineOS-first. It must not begin a broad ten-repository harness.
