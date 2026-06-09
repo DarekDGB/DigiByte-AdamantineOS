@@ -60,6 +60,13 @@ _V3_2_COMPONENT_KEYS = frozenset({
     "fail_closed",
 })
 _V3_2_COMPONENT_DECISIONS = frozenset({"ALLOW", "ESCALATE", "DENY", "ERROR", "SKIPPED"})
+_REQUIRED_SHIELD_V3_2_COMPONENT_IDS = frozenset({
+    "adn",
+    "dqsn",
+    "guardian_wallet",
+    "qwg",
+    "sentinel_ai",
+})
 _FORBIDDEN_AUTHORITY_KEYS = frozenset(
     {
         "allow",
@@ -201,14 +208,25 @@ def _validate_component_verdicts(receipt: Mapping[str, Any]) -> bool:
     components = receipt.get("component_verdicts")
     if not isinstance(components, list) or not components:
         return False
+    v3_2_component_ids: list[str] = []
+    legacy_component_seen = False
     for component in components:
         if not isinstance(component, Mapping):
             return False
         if _validate_legacy_component_verdict(component):
+            legacy_component_seen = True
             continue
         if _validate_v3_2_component_verdict(component, receipt=receipt):
+            v3_2_component_ids.append(str(component["component_id"]))
             continue
         return False
+    if v3_2_component_ids:
+        if legacy_component_seen:
+            return False
+        if len(set(v3_2_component_ids)) != len(v3_2_component_ids):
+            return False
+        if set(v3_2_component_ids) != _REQUIRED_SHIELD_V3_2_COMPONENT_IDS:
+            return False
     return True
 
 
