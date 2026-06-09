@@ -1,8 +1,8 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 9 tracker — docs-only alignment ledger**  
-AdamantineOS release boundary: **v2.2.0 — WSQK v2 Quantum-Aware Upgrade**  
+Status: **Milestone 11 tracker - WSQK v2 policy evidence boundary complete**  
+AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
 ## 1. Purpose
@@ -106,7 +106,9 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 6 | Shield receipt verification boundary | Roadmap Phase 1 hardening; DENY-dominates; tamper/context/replay rejection | AdamantineOS | Complete |
 | 7 | Level 2 AdamantineOS adapter harness | Harness Level 2; adapter evidence mapping | AdamantineOS | Complete |
 | 8 | Level 3 live Orchestrator boundary via injected callable | Harness Level 3 boundary; selected Orchestrator-shaped handoff | AdamantineOS | Complete |
-| 9 | This build ledger | Build Strategy Milestone 9 tracking aid, created early to prevent drift | AdamantineOS docs only | Current |
+| 9 | Full integration build ledger | Build Strategy Milestone 9 tracking aid, created early to prevent drift | AdamantineOS docs only | Complete |
+| 10 | Remaining boundary integration plan | Remaining WSQK, Q-ID, Adaptive Core, AI Gateway, and policy-engine order locked | AdamantineOS docs only | Complete |
+| 11 | WSQK v2 policy evidence boundary | WSQK v2 interaction gate; structured policy evidence with explicit reason IDs | AdamantineOS | Current |
 
 ## 6. Files added so far
 
@@ -117,6 +119,7 @@ docs/ADAMANTINEOS_COMBINED_CONTEXT_HASH_CONTRACT.md
 docs/ADAMANTINEOS_INTEGRATION_HARNESS_SCOPE.md
 docs/ADAMANTINEOS_SHIELD_V3_FIXTURE_AND_NEGATIVE_TEST_PLAN.md
 docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+docs/ADAMANTINEOS_REMAINING_BOUNDARY_INTEGRATION_PLAN.md
 ```
 
 ### 6.2 Fixture files
@@ -136,6 +139,7 @@ src/adamantine/v1/integrations/shield_orchestrator_receipt_adapter.py
 src/adamantine/v1/integrations/shield_orchestrator_receipt_verifier.py
 src/adamantine/v1/integrations/shield_v3_adapter_harness.py
 src/adamantine/v1/integrations/shield_v3_live_orchestrator_harness.py
+src/adamantine/v1/integrations/wsqk_v2_policy_evidence.py
 ```
 
 ### 6.4 Test files
@@ -146,6 +150,7 @@ tests/integrations/test_shield_orchestrator_receipt_adapter.py
 tests/integrations/test_shield_orchestrator_receipt_verifier.py
 tests/integrations/test_shield_v3_adapter_harness.py
 tests/integrations/test_shield_v3_live_orchestrator_harness.py
+tests/integrations/test_wsqk_v2_policy_evidence.py
 ```
 
 ## 7. Verified status at this point
@@ -159,7 +164,9 @@ Milestone 5 complete: yes
 Milestone 6 complete: yes
 Milestone 7 complete: yes
 Milestone 8 complete: yes
-Milestone 9 ledger: this document
+Milestone 9 complete: yes
+Milestone 10 complete: yes
+Milestone 11 complete: yes
 AdamantineOS version: still v2.2.0
 AdamantineOS tag: not created
 Shield repositories changed: no
@@ -199,7 +206,7 @@ Level 3 Orchestrator-shaped boundary: complete
 The current work has not yet completed full AdamantineOS integration because these gates remain open:
 
 ```text
-WSQK gate: open
+WSQK gate: complete
 Q-ID binding: open
 Adaptive Core binding: open
 AI Gateway boundary: open
@@ -216,7 +223,7 @@ Full integration does not start merely because the Shield Orchestrator boundary 
 Full integration starts only after the following local AdamantineOS gates are locked:
 
 ```text
-[ ] WSQK v2 interaction gate complete
+[x] WSQK v2 interaction gate complete
 [ ] Q-ID authentication binding complete
 [ ] Adaptive Core advisory binding complete
 [ ] AI Gateway evidence boundary complete
@@ -230,7 +237,7 @@ Only after those gates pass should the project move into carefully scoped multi-
 
 ## 11. Remaining roadmap sequence
 
-### 11.1 Next recommended stage — boundary plan before more code
+### 11.1 Next recommended stage - boundary plan before more code
 
 The next safe step should be a boundary plan for the remaining evidence sources:
 
@@ -291,7 +298,7 @@ Forbidden integration shape:
 
 ```text
 Guardian Wallet / QWG / ADN / DQSN / Sentinel AI / Q-ID / Adaptive Core / AI Gateway
-        ↓
+        v
 AdamantineOS final approval
 ```
 
@@ -299,13 +306,13 @@ Allowed integration shape:
 
 ```text
 External evidence source
-        ↓
+        v
 Bounded adapter / receipt / context contract
-        ↓
+        v
 AdamantineOS verifier
-        ↓
+        v
 AdamantineOS policy engine
-        ↓
+        v
 Final fail-closed decision
 ```
 
@@ -360,14 +367,55 @@ AdamantineOS remains v2.2.0.
 No AdamantineOS Shield integration tag is allowed.
 ```
 
-## 15. Current next action
+## 15. Milestone 11 update - WSQK v2 policy evidence boundary
 
-After this ledger is added and verified, the next action is:
+Milestone 11 added the AdamantineOS-only WSQK v2 policy evidence boundary.
+
+Files added or updated:
 
 ```text
-Create docs/ADAMANTINEOS_REMAINING_BOUNDARY_INTEGRATION_PLAN.md
+src/adamantine/v1/integrations/wsqk_v2_policy_evidence.py
+src/adamantine/v1/integrations/__init__.py
+tests/integrations/test_wsqk_v2_policy_evidence.py
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
 ```
 
-That document should lock the remaining WSQK, Q-ID, Adaptive Core, AI Gateway, and final policy engine boundaries before more implementation.
+What this locks:
 
-Do not start those implementations until that plan is reviewed.
+```text
+WSQK success becomes ALLOW_EVIDENCE_CONTINUE_CHECKS only.
+WSQK success does not grant final approval.
+WSQK issuer failures become structured DENY results with explicit reason IDs.
+WSQK wallet, action, context hash, contract version, and proof binding mismatches fail closed.
+Boolean-only or unsupported WSQK results are rejected.
+No Q-ID, Adaptive Core, AI Gateway, full policy merge, or multi-repo integration is started in this milestone.
+```
+
+Milestone 11 verification target:
+
+```text
+PYTHONPATH=src pytest tests/integrations/test_wsqk_v2_policy_evidence.py -q --no-cov
+PYTHONPATH=src pytest -q
+```
+
+Expected status:
+
+```text
+Targeted WSQK tests pass.
+Full suite passes.
+Coverage remains 100%.
+AdamantineOS remains v2.2.0.
+No AdamantineOS tag is created.
+```
+
+## 16. Current next action
+
+After Milestone 11 is added and verified, the next action is:
+
+```text
+Milestone 12 - Q-ID Policy Binding Boundary
+```
+
+That milestone should connect existing Q-ID adapter outputs into deterministic policy evidence without starting full multi-repo integration.
+
+Do not start full multi-repo integration yet.
