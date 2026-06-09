@@ -47,6 +47,12 @@ from adamantine.v1.integrations.adaptive_core_policy_evidence import (
     normalize_adaptive_core_policy_evidence,
 )
 
+from adamantine.v1.integrations.ai_gateway_policy_evidence import (
+    AIGatewayPolicyEvidenceResult,
+    AIGatewayPolicyEvidenceState,
+    normalize_ai_gateway_policy_evidence,
+)
+
 __all__ = [
     "AdapterError",
     "parse_qid_session",
@@ -75,4 +81,7 @@ __all__ = [
     "normalize_adaptive_core_policy_evidence",
     "AdaptiveCorePolicyEvidenceState",
     "AdaptiveCorePolicyEvidenceResult",
+    "normalize_ai_gateway_policy_evidence",
+    "AIGatewayPolicyEvidenceState",
+    "AIGatewayPolicyEvidenceResult",
 ]
