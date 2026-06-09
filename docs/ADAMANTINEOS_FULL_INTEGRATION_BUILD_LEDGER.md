@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 11 tracker - WSQK v2 policy evidence boundary complete**  
+Status: **Milestone 12 tracker - Q-ID policy binding boundary complete**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -108,7 +108,8 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 8 | Level 3 live Orchestrator boundary via injected callable | Harness Level 3 boundary; selected Orchestrator-shaped handoff | AdamantineOS | Complete |
 | 9 | Full integration build ledger | Build Strategy Milestone 9 tracking aid, created early to prevent drift | AdamantineOS docs only | Complete |
 | 10 | Remaining boundary integration plan | Remaining WSQK, Q-ID, Adaptive Core, AI Gateway, and policy-engine order locked | AdamantineOS docs only | Complete |
-| 11 | WSQK v2 policy evidence boundary | WSQK v2 interaction gate; structured policy evidence with explicit reason IDs | AdamantineOS | Current |
+| 11 | WSQK v2 policy evidence boundary | WSQK v2 interaction gate; structured policy evidence with explicit reason IDs | AdamantineOS | Complete |
+| 12 | Q-ID policy binding boundary | Q-ID authentication, replay, device, nonce, and WSQK posture binding as evidence only | AdamantineOS | Current |
 
 ## 6. Files added so far
 
@@ -140,6 +141,7 @@ src/adamantine/v1/integrations/shield_orchestrator_receipt_verifier.py
 src/adamantine/v1/integrations/shield_v3_adapter_harness.py
 src/adamantine/v1/integrations/shield_v3_live_orchestrator_harness.py
 src/adamantine/v1/integrations/wsqk_v2_policy_evidence.py
+src/adamantine/v1/integrations/qid_policy_binding.py
 ```
 
 ### 6.4 Test files
@@ -151,6 +153,7 @@ tests/integrations/test_shield_orchestrator_receipt_verifier.py
 tests/integrations/test_shield_v3_adapter_harness.py
 tests/integrations/test_shield_v3_live_orchestrator_harness.py
 tests/integrations/test_wsqk_v2_policy_evidence.py
+tests/integrations/test_qid_policy_binding.py
 ```
 
 ## 7. Verified status at this point
@@ -167,6 +170,7 @@ Milestone 8 complete: yes
 Milestone 9 complete: yes
 Milestone 10 complete: yes
 Milestone 11 complete: yes
+Milestone 12 complete: yes
 AdamantineOS version: still v2.2.0
 AdamantineOS tag: not created
 Shield repositories changed: no
@@ -179,8 +183,6 @@ Full multi-repo harness: not started
 The following items are not missing by accident. They are intentionally deferred by the roadmap:
 
 ```text
-WSQK v2 interaction gate
-Q-ID authentication binding
 Adaptive Core advisory binding
 AI Gateway evidence boundary
 Full AdamantineOS policy engine merge
@@ -207,7 +209,7 @@ The current work has not yet completed full AdamantineOS integration because the
 
 ```text
 WSQK gate: complete
-Q-ID binding: open
+Q-ID binding: complete
 Adaptive Core binding: open
 AI Gateway boundary: open
 Policy engine merge: open
@@ -224,7 +226,7 @@ Full integration starts only after the following local AdamantineOS gates are lo
 
 ```text
 [x] WSQK v2 interaction gate complete
-[ ] Q-ID authentication binding complete
+[x] Q-ID authentication binding complete
 [ ] Adaptive Core advisory binding complete
 [ ] AI Gateway evidence boundary complete
 [ ] Full AdamantineOS policy engine decision order complete
@@ -270,8 +272,8 @@ After the boundary plan is reviewed, implement in small stages:
 | Future milestone | Work | Repository touched | Full integration? |
 |---:|---|---|---|
 | 10 | Remaining boundary integration plan | AdamantineOS docs only | No |
-| 11 | WSQK v2 interaction gate | AdamantineOS | No |
-| 12 | Q-ID authentication binding | AdamantineOS first; inspect Q-ID if needed | No |
+| 11 | WSQK v2 interaction gate | AdamantineOS | Complete locally; no full integration |
+| 12 | Q-ID authentication binding | AdamantineOS first; inspect Q-ID if needed | Complete locally; no full integration |
 | 13 | Adaptive Core advisory binding | AdamantineOS first; inspect Adaptive Core if needed | No |
 | 14 | AI Gateway evidence boundary | AdamantineOS first; inspect AI Gateway if needed | No |
 | 15 | Full AdamantineOS policy engine merge | AdamantineOS | No, still local final decision engine |
@@ -408,14 +410,55 @@ AdamantineOS remains v2.2.0.
 No AdamantineOS tag is created.
 ```
 
-## 16. Current next action
+## 16. Milestone 12 update - Q-ID policy binding boundary
 
-After Milestone 11 is added and verified, the next action is:
+Milestone 12 added the AdamantineOS-only Q-ID policy binding boundary.
+
+Files added or updated:
 
 ```text
-Milestone 12 - Q-ID Policy Binding Boundary
+src/adamantine/v1/integrations/qid_policy_binding.py
+src/adamantine/v1/integrations/__init__.py
+tests/integrations/test_qid_policy_binding.py
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
 ```
 
-That milestone should connect existing Q-ID adapter outputs into deterministic policy evidence without starting full multi-repo integration.
+What this locks:
+
+```text
+Q-ID success becomes ALLOW_EVIDENCE_CONTINUE_CHECKS only.
+Q-ID success does not grant final approval.
+Existing Q-ID adapter parsing remains the source of truth for session and replay proof validation.
+Subject, wallet, device, proof hash, session nonce, replay freshness, and WSQK quantum posture binding are enforced.
+Expired, not-yet-valid, malformed, replayed, mismatched, unsupported, or authority-bearing Q-ID evidence fails closed.
+No Adaptive Core, AI Gateway, full policy merge, or multi-repo integration is started in this milestone.
+```
+
+Milestone 12 verification target:
+
+```text
+PYTHONPATH=src pytest tests/integrations/test_qid_policy_binding.py -q --no-cov
+PYTHONPATH=src pytest -q
+```
+
+Expected status:
+
+```text
+Targeted Q-ID tests pass.
+Full suite passes.
+Coverage remains 100%.
+AdamantineOS remains v2.2.0.
+No AdamantineOS tag is created.
+```
+
+## 17. Current next action
+
+After Milestone 12 is added and verified, the next action is:
+
+```text
+Milestone 13 - Adaptive Core Policy Evidence Boundary
+```
+
+That milestone should connect existing Adaptive Core adapter outputs into deterministic advisory policy evidence without starting full multi-repo integration.
 
 Do not start full multi-repo integration yet.
