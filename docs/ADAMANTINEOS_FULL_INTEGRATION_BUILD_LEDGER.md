@@ -470,3 +470,63 @@ Milestone 14 - AI Gateway Evidence Boundary
 That milestone should define and implement AdamantineOS validation for AI Gateway handoff / receipt evidence without allowing raw AI output to become authority.
 
 Do not start full multi-repo integration yet.
+
+## 19. Milestone 14 update - AI Gateway evidence boundary
+
+Milestone 14 added the AdamantineOS-only AI Gateway policy evidence boundary.
+
+Files added or updated:
+
+```text
+src/adamantine/v1/integrations/ai_gateway_policy_evidence.py
+src/adamantine/v1/integrations/__init__.py
+tests/integrations/test_ai_gateway_policy_evidence.py
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+```
+
+What this locks:
+
+```text
+AI Gateway handoff / receipt evidence is validated inside AdamantineOS.
+AI Gateway success becomes ALLOW_EVIDENCE_CONTINUE_CHECKS only.
+AI Gateway success does not grant final approval.
+Raw AI output is rejected.
+Missing handoff or receipt is rejected.
+Unknown fields are rejected.
+Invalid hashes are rejected.
+Receipt / handoff mismatch is rejected.
+Context hash mismatch is rejected.
+Rejected AI Gateway policy decision becomes DENY with the gateway reason ID.
+Hidden authority fields are rejected.
+Earlier Shield / WSQK / Q-ID / Adaptive Core DENY remains dominant.
+No full policy-engine merge or multi-repo integration is started in this milestone.
+```
+
+Milestone 14 verification target:
+
+```text
+PYTHONPATH=src pytest tests/integrations/test_ai_gateway_policy_evidence.py -q --no-cov
+PYTHONPATH=src pytest -q
+```
+
+Expected status:
+
+```text
+Targeted AI Gateway policy evidence tests pass.
+Full suite passes.
+Coverage remains 100%.
+AdamantineOS remains v2.2.0.
+No AdamantineOS tag is created.
+```
+
+## 20. Current next action
+
+After Milestone 14 is added and verified, the next action is:
+
+```text
+Milestone 15 - Final AdamantineOS Policy Engine Merge
+```
+
+That milestone should merge Shield, WSQK, Q-ID, Adaptive Core, AI Gateway, replay / nonce, wallet policy, and human gate into one deterministic policy-engine order.
+
+Do not start full multi-repo integration yet.
