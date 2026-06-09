@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 13 tracker - Adaptive Core policy evidence boundary complete**  
+Status: **Milestone 14 tracker - AI Gateway evidence boundary complete**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -18,8 +18,8 @@ The ledger answers four questions:
 
 This file is a tracking document only.
 
-It does not start implementation.
-It does not change release status.
+It does not start implementation.  
+It does not change release status.  
 It does not authorize tagging AdamantineOS.
 
 ## 2. Current immutable boundaries
@@ -31,6 +31,7 @@ Shield baseline: v3.2.0 external tagged baseline
 Shield repository status: unchanged during AdamantineOS boundary work
 Integration authority: AdamantineOS remains final fail-closed execution boundary
 Shield authority: evidence only through Shield Orchestrator receipt
+AI Gateway authority: evidence only, never execution authority
 ```
 
 ## 3. Repository boundary map
@@ -68,8 +69,8 @@ A repository may be changed only when one of the following is true:
 3. A compatibility gap is proven by tests.
 4. The change is the smallest safe fix and does not weaken a boundary.
 
-No broad rewrite is allowed.
-No direct raw component authority path is allowed.
+No broad rewrite is allowed.  
+No direct raw component authority path is allowed.  
 No unbounded ten-repository integration is allowed.
 
 ## 4. Non-negotiable integration rules
@@ -89,8 +90,10 @@ Additional locked rules:
 3. Shield `HUMAN_REVIEW_REQUIRED` must not become autonomous allow.
 4. Raw Shield component verdicts must be rejected as bypass attempts.
 5. The Shield Orchestrator receipt is the only valid Shield handoff boundary.
-6. AdamantineOS enforces its own final policy, replay, WSQK, Q-ID, and human-gate checks.
-7. AdamantineOS must not be tagged until the full roadmap is complete, tested, audited, red-team reviewed, and approved.
+6. WSQK, Q-ID, Adaptive Core, and AI Gateway evidence are evidence only.
+7. AI Gateway evidence must never turn raw model output into execution authority.
+8. AdamantineOS enforces its own final policy, replay, wallet-policy, and human-gate checks.
+9. AdamantineOS must not be tagged until the full roadmap is complete, tested, audited, red-team reviewed, and approved.
 
 ## 5. Completed local work ledger
 
@@ -110,7 +113,8 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 10 | Remaining boundary integration plan | Remaining WSQK, Q-ID, Adaptive Core, AI Gateway, and policy-engine order locked | AdamantineOS docs only | Complete |
 | 11 | WSQK v2 policy evidence boundary | WSQK v2 interaction gate; structured policy evidence with explicit reason IDs | AdamantineOS | Complete |
 | 12 | Q-ID policy binding boundary | Q-ID authentication, replay, device, nonce, and WSQK posture binding as evidence only | AdamantineOS | Complete |
-| 13 | Adaptive Core policy evidence boundary | Adaptive Core adapter output normalized as advisory evidence only; score threshold and earlier DENY dominance enforced | AdamantineOS | Current |
+| 13 | Adaptive Core policy evidence boundary | Adaptive Core adapter output normalized as advisory evidence only; score threshold and earlier DENY dominance enforced | AdamantineOS | Complete |
+| 14 | AI Gateway evidence boundary | AI Gateway handoff / receipt evidence validated as evidence only; raw AI output and authority bypass rejected | AdamantineOS | Current |
 
 ## 6. Files added so far
 
@@ -144,6 +148,7 @@ src/adamantine/v1/integrations/shield_v3_live_orchestrator_harness.py
 src/adamantine/v1/integrations/wsqk_v2_policy_evidence.py
 src/adamantine/v1/integrations/qid_policy_binding.py
 src/adamantine/v1/integrations/adaptive_core_policy_evidence.py
+src/adamantine/v1/integrations/ai_gateway_policy_evidence.py
 ```
 
 ### 6.4 Test files
@@ -157,6 +162,7 @@ tests/integrations/test_shield_v3_live_orchestrator_harness.py
 tests/integrations/test_wsqk_v2_policy_evidence.py
 tests/integrations/test_qid_policy_binding.py
 tests/integrations/test_adaptive_core_policy_evidence.py
+tests/integrations/test_ai_gateway_policy_evidence.py
 ```
 
 ## 7. Verified status at this point
@@ -175,10 +181,12 @@ Milestone 10 complete: yes
 Milestone 11 complete: yes
 Milestone 12 complete: yes
 Milestone 13 complete: yes
+Milestone 14 complete: yes
 AdamantineOS version: still v2.2.0
 AdamantineOS tag: not created
 Shield repositories changed: no
 Direct Shield package import inside AdamantineOS: no
+Direct AI Gateway package import inside AdamantineOS: no
 Full multi-repo harness: not started
 ```
 
@@ -211,12 +219,42 @@ Adaptive Core hidden authority field = DENY
 Earlier Shield / WSQK / Q-ID DENY = remains dominant
 ```
 
+## 7.2 Milestone 14 completion note
+
+Milestone 14 added the AI Gateway policy evidence boundary.
+
+AdamantineOS validates AI Gateway handoff / receipt evidence without importing the external AI Gateway package and without trusting raw AI output.
+
+Files added or updated:
+
+```text
+src/adamantine/v1/integrations/ai_gateway_policy_evidence.py
+src/adamantine/v1/integrations/__init__.py
+tests/integrations/test_ai_gateway_policy_evidence.py
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+```
+
+Locked behavior:
+
+```text
+AI Gateway success = ALLOW_EVIDENCE_CONTINUE_CHECKS only
+AI Gateway success = never final approval
+Raw AI output = rejected
+Missing handoff or receipt = rejected
+Unknown fields = rejected
+Invalid hashes = rejected
+Receipt / handoff mismatch = rejected
+Context hash mismatch = rejected
+Rejected AI Gateway policy decision = DENY with gateway reason ID
+Hidden authority fields = rejected
+Earlier Shield / WSQK / Q-ID / Adaptive Core DENY = remains dominant
+```
+
 ## 8. What has been intentionally deferred
 
 The following items are not missing by accident. They are intentionally deferred by the roadmap:
 
 ```text
-AI Gateway evidence boundary
 Full AdamantineOS policy engine merge
 Carefully scoped multi-repo integration
 Proof pack and documentation alignment
@@ -227,7 +265,7 @@ AdamantineOS tag
 
 ## 9. Corrected position in the roadmap
 
-The current work has completed the early AdamantineOS receiving boundary and three local policy evidence boundaries:
+The current work has completed the early AdamantineOS receiving boundary and all four local policy evidence boundaries:
 
 ```text
 Combined context hash boundary: complete
@@ -238,21 +276,22 @@ Level 3 Orchestrator-shaped boundary: complete
 WSQK v2 policy evidence boundary: complete
 Q-ID policy binding boundary: complete
 Adaptive Core policy evidence boundary: complete
+AI Gateway evidence boundary: complete
 ```
 
 The current work has not yet completed full AdamantineOS integration because these gates remain open:
 
 ```text
-AI Gateway boundary: open
 Policy engine merge: open
 Full multi-repo integration: open
+Proof pack / docs alignment: open
 Red-team review: open
 Final release gate: open
 ```
 
 ## 10. When full integration starts
 
-Full integration does not start merely because Shield, WSQK, Q-ID, and Adaptive Core local boundaries exist.
+Full integration does not start merely because Shield, WSQK, Q-ID, Adaptive Core, and AI Gateway local boundaries exist.
 
 Full integration starts only after the following local AdamantineOS gates are locked:
 
@@ -261,7 +300,7 @@ Full integration starts only after the following local AdamantineOS gates are lo
 [x] WSQK v2 interaction gate complete
 [x] Q-ID authentication binding complete
 [x] Adaptive Core advisory binding complete
-[ ] AI Gateway evidence boundary complete
+[x] AI Gateway evidence boundary complete
 [ ] Full AdamantineOS policy engine decision order complete
 [ ] All required negative tests green
 [ ] No authority bypass path exists
@@ -274,7 +313,6 @@ Only after those gates pass should the project move into carefully scoped multi-
 
 | Future milestone | Work | Repository touched | Full integration? |
 |---:|---|---|---|
-| 14 | AI Gateway evidence boundary | AdamantineOS first; inspect AI Gateway if needed | No |
 | 15 | Full AdamantineOS policy engine merge | AdamantineOS | No, still local final decision engine |
 | 16 | Carefully scoped multi-repo integration | AdamantineOS plus selected external baselines | Yes, begins here |
 | 17 | Proof pack and docs alignment | AdamantineOS and docs across touched repos only if needed | After integration |
@@ -459,19 +497,7 @@ AdamantineOS remains v2.2.0.
 No AdamantineOS tag is created.
 ```
 
-## 18. Current next action
-
-After Milestone 13 is added and verified, the next action is:
-
-```text
-Milestone 14 - AI Gateway Evidence Boundary
-```
-
-That milestone should define and implement AdamantineOS validation for AI Gateway handoff / receipt evidence without allowing raw AI output to become authority.
-
-Do not start full multi-repo integration yet.
-
-## 19. Milestone 14 update - AI Gateway evidence boundary
+## 18. Milestone 14 update - AI Gateway evidence boundary
 
 Milestone 14 added the AdamantineOS-only AI Gateway policy evidence boundary.
 
@@ -519,7 +545,7 @@ AdamantineOS remains v2.2.0.
 No AdamantineOS tag is created.
 ```
 
-## 20. Current next action
+## 19. Current next action
 
 After Milestone 14 is added and verified, the next action is:
 
