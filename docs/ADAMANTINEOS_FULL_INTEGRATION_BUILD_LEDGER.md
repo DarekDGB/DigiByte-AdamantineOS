@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 16B tracker - Shield Orchestrator v3.2 receipt contract harness complete**  
+Status: **Milestone 16C tracker - Shield component baseline compatibility through Orchestrator complete**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -122,6 +122,7 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 15 | Final AdamantineOS policy engine merge | Shield, WSQK, Q-ID, Adaptive Core, AI Gateway, replay, wallet policy, and human gate merged into deterministic local decision order | AdamantineOS | Complete |
 | 16A | Level 4 multi-repo scope lock document | Scoped Level 4 rules locked before implementation; AdamantineOS first, external baselines evidence-only, no tag/version bump | AdamantineOS docs only | Complete |
 | 16B | Shield Orchestrator v3.2 receipt contract harness | AdamantineOS consumes Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output through the existing verifier and final policy engine | AdamantineOS | Complete |
+| 16C | Shield component baseline compatibility through Orchestrator only | Five Shield v3.2 component baseline verdicts are represented only inside the Shield Orchestrator receipt; raw component verdict bypasses reject fail-closed | AdamantineOS | Complete |
 
 ## 6. Files added so far
 
@@ -135,6 +136,7 @@ docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
 docs/ADAMANTINEOS_REMAINING_BOUNDARY_INTEGRATION_PLAN.md
 docs/ADAMANTINEOS_MILESTONE_16_LEVEL4_MULTI_REPO_SCOPE_LOCK.md
 docs/ADAMANTINEOS_MILESTONE_16B_SHIELD_ORCHESTRATOR_RECEIPT_CONTRACT_HARNESS.md
+docs/ADAMANTINEOS_MILESTONE_16C_SHIELD_COMPONENT_BASELINE_THROUGH_ORCHESTRATOR.md
 ```
 
 ### 6.2 Fixture files
@@ -143,6 +145,7 @@ docs/ADAMANTINEOS_MILESTONE_16B_SHIELD_ORCHESTRATOR_RECEIPT_CONTRACT_HARNESS.md
 tests/fixtures/shield_v3_integration/manifest.json
 tests/fixtures/shield_v3_integration/combined_context_hash/*.json
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/allow_receipt.json
+tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/component_baseline_receipt.json
 ```
 
 The combined context hash fixture pack contains forty-one JSON fixtures.
@@ -184,6 +187,7 @@ tests/integrations/test_adaptive_core_policy_evidence.py
 tests/integrations/test_ai_gateway_policy_evidence.py
 tests/policy/test_final_policy_engine.py
 tests/integrations/test_milestone_16b_shield_orchestrator_v3_2_contract_harness.py
+tests/integrations/test_milestone_16c_shield_component_baseline_through_orchestrator.py
 ```
 
 ## 7. Verified status at this point
@@ -206,12 +210,17 @@ Milestone 14 complete: yes
 Milestone 15 complete: yes
 Milestone 16A complete: yes
 Milestone 16B complete: yes
+Milestone 16C complete: yes
 AdamantineOS version: still v2.2.0
 AdamantineOS tag: not created
 Shield repositories changed: no
 Direct Shield package import inside AdamantineOS: no
 Direct AI Gateway package import inside AdamantineOS: no
 Full multi-repo harness: not started
+Q-ID external compatibility: not started
+Adaptive Core external compatibility: not started
+AI Gateway external compatibility: not started
+Full Level 4 negative-test matrix: not started
 ```
 
 ## 7.1 Milestone 15 completion note
@@ -312,6 +321,62 @@ AdamantineOS remains `v2.2.0`.
 No AdamantineOS tag is created.
 
 Shield Orchestrator remains external and unchanged.
+
+## 7.3 Milestone 16C completion note
+
+Milestone 16C added the second scoped Level 4 compatibility harness.
+
+It proves that the five Shield v3.2 component baselines remain behind the Shield Orchestrator receipt boundary:
+
+```text
+adn
+dqsn
+guardian_wallet
+qwg
+sentinel_ai
+```
+
+Files added or updated:
+
+```text
+src/adamantine/v1/integrations/shield_orchestrator_receipt_verifier.py
+tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/component_baseline_receipt.json
+tests/integrations/test_milestone_16c_shield_component_baseline_through_orchestrator.py
+docs/ADAMANTINEOS_MILESTONE_16C_SHIELD_COMPONENT_BASELINE_THROUGH_ORCHESTRATOR.md
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+```
+
+Locked Milestone 16C behavior:
+
+```text
+Complete five-component Shield v3.2 baseline receipt accepts as evidence only.
+Raw Guardian Wallet component verdict rejects.
+Raw ADN component verdict rejects.
+Raw Sentinel AI component verdict rejects.
+Raw DQSN component verdict rejects.
+Raw QWG component verdict rejects.
+Missing v3.2 Shield component rejects.
+Duplicate v3.2 Shield component rejects.
+Unknown v3.2 Shield component rejects.
+Mixed legacy and v3.2 component verdicts reject.
+Shield ALLOW remains evidence only.
+AdamantineOS remains final fail-closed authority.
+```
+
+Milestone 16C verification result:
+
+```text
+PYTHONPATH=src pytest -q
+841 passed
+Required test coverage of 100% reached
+Total coverage: 100.00%
+```
+
+AdamantineOS remains `v2.2.0`.
+
+No AdamantineOS tag is created.
+
+Shield component repositories remain external and unchanged.
 
 ## 8. What has been intentionally deferred
 
@@ -479,4 +544,10 @@ AdamantineOS + Shield Orchestrator v3.2 receipt contract only
 
 Milestone 16B proves that AdamantineOS can consume a Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output as evidence through the existing AdamantineOS verifier and final policy engine without surrendering final decision authority.
 
-The next safe step is Milestone 16C, still scoped and still AdamantineOS-first. It must not begin a broad ten-repository harness.
+Milestone 16C is complete as the second scoped Level 4 compatibility harness:
+
+```text
+Shield component baseline compatibility through Orchestrator receipt only
+```
+
+The next safe step is Milestone 16D, still scoped and still AdamantineOS-first. It must not begin a broad ten-repository harness or the full Level 4 negative-test matrix.
