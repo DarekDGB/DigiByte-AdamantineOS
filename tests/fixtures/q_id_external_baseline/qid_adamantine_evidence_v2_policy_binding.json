@@ -1,0 +1,62 @@
+{
+  "adamantine_policy_binding_input": {
+    "qid_posture": {
+      "classical": false,
+      "pqc": true
+    },
+    "replay_proof": {
+      "device_binding": null,
+      "fresh": true,
+      "proof_hash": "51ca207d4993f4b6e8f2ace56296445b30fb740d55ff50115e53140e617386d4",
+      "proof_version": "qid_replay_proof_v1",
+      "registry_commitment": "registry-commitment-16d",
+      "session_nonce": "qid-session-nonce-16d",
+      "subject": "did:qid:darek-16d",
+      "wallet_id": "wallet-darek-16d"
+    },
+    "session": {
+      "hybrid_container_b64": "AAEC",
+      "kind": "qid_login_v2",
+      "login_uri": "qid://login?service_id=adamantineos.local&nonce=qid-session-nonce-16d",
+      "proof_hash": "51ca207d4993f4b6e8f2ace56296445b30fb740d55ff50115e53140e617386d4",
+      "response_payload": {
+        "address": "did:qid:darek-16d",
+        "callback_url": "https://adamantineos.local/qid/callback",
+        "expires_at": 1760000300,
+        "issued_at": 1759999990,
+        "key_id": "primary",
+        "nonce": "qid-session-nonce-16d",
+        "pubkey": "qid-dev-pubkey-16d",
+        "service_id": "adamantineos.local",
+        "version": "1"
+      },
+      "signature": "qid-dev-signature-16d",
+      "subject": "did:qid:darek-16d",
+      "v": "2"
+    }
+  },
+  "external_baseline": "DigiByte-Q-ID v1.1.0",
+  "external_builder": "qid.integration.adamantine.build_adamantine_qid_evidence_v2",
+  "external_contract": "contracts/adamantine_qid_evidence_v2.json",
+  "policy_binding_note": "AdamantineOS consumes this existing Q-ID v2 evidence as the session object inside the existing Q-ID policy binding boundary. This is evidence only, not final approval.",
+  "qid_evidence_v2": {
+    "hybrid_container_b64": "AAEC",
+    "kind": "qid_login_v2",
+    "login_uri": "qid://login?service_id=adamantineos.local&nonce=qid-session-nonce-16d",
+    "proof_hash": "51ca207d4993f4b6e8f2ace56296445b30fb740d55ff50115e53140e617386d4",
+    "response_payload": {
+      "address": "did:qid:darek-16d",
+      "callback_url": "https://adamantineos.local/qid/callback",
+      "expires_at": 1760000300,
+      "issued_at": 1759999990,
+      "key_id": "primary",
+      "nonce": "qid-session-nonce-16d",
+      "pubkey": "qid-dev-pubkey-16d",
+      "service_id": "adamantineos.local",
+      "version": "1"
+    },
+    "signature": "qid-dev-signature-16d",
+    "subject": "did:qid:darek-16d",
+    "v": "2"
+  }
+}
