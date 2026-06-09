@@ -123,6 +123,7 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 16A | Level 4 multi-repo scope lock document | Scoped Level 4 rules locked before implementation; AdamantineOS first, external baselines evidence-only, no tag/version bump | AdamantineOS docs only | Complete |
 | 16B | Shield Orchestrator v3.2 receipt contract harness | AdamantineOS consumes Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output through the existing verifier and final policy engine | AdamantineOS | Complete |
 | 16C | Shield component baseline compatibility through Orchestrator only | Five Shield v3.2 component baseline verdicts are represented only inside the Shield Orchestrator receipt; raw component verdict bypasses reject fail-closed | AdamantineOS | Complete |
+| 16D | Q-ID external baseline compatibility | External DigiByte-Q-ID Adamantine evidence v2 is proven compatible with the existing AdamantineOS Q-ID adapter and policy binding; no duplicate Q-ID adapter or authority path is added | AdamantineOS | Complete |
 
 ## 6. Files added so far
 
@@ -214,6 +215,7 @@ Milestone 15 complete: yes
 Milestone 16A complete: yes
 Milestone 16B complete: yes
 Milestone 16C complete: yes
+Milestone 16D complete: yes
 AdamantineOS version: still v2.2.0
 AdamantineOS tag: not created
 Shield repositories changed: no
