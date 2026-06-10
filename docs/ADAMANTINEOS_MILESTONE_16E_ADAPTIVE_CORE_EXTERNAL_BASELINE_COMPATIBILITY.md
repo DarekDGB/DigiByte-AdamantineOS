@@ -158,6 +158,10 @@ Adaptive Core success returns ALLOW_EVIDENCE_CONTINUE_CHECKS, not final approval
 Adaptive Core evidence alone cannot become final authority.
 Hidden authority fields fail closed.
 Context mismatch fails closed.
+Non-canonical context hash format fails closed.
+Expired Adaptive Core evidence fails closed.
+Not-yet-valid Adaptive Core evidence fails closed.
+Generated-at future evidence fails closed.
 Low score fails closed.
 Earlier gate DENY dominates Adaptive Core success.
 External import-failure-shaped payload cannot become allow.
@@ -176,6 +180,10 @@ Missing or unknown external fields fail closed.
 | AdamantineOS compatibility tests | Added |
 | External authority bypass | Rejected |
 | Final approval from Adaptive Core | Forbidden |
+| Adaptive Core freshness enforcement | Hardened post-audit |
+| Adaptive Core context hash format enforcement | Hardened post-audit |
+| Shared two-sided fixture vector | Added in Adaptive Core and AdamantineOS |
+| Adaptive Core integration documentation | Added in Adaptive Core docs |
 
 ---
 
@@ -213,6 +221,51 @@ No Adaptive Core tag is created.
 
 ---
 
+## 8.1 Post-audit hardening
+
+A defensive pre-16F audit found two blocking 16E hardening gaps and three lower-priority follow-up gaps.
+
+The blocking gaps were fixed before Milestone 16F:
+
+```text
+GAP-16E-01: Adaptive Core issued_at / expires_at freshness was not enforced against now.
+GAP-16E-02: Adaptive Core context_hash format was not enforced as lowercase 64-character hex.
+```
+
+The hardening now requires Adaptive Core oracle evidence to satisfy:
+
+```text
+context_hash = lowercase 64-character hex
+issued_at <= now <= expires_at
+generated_at <= now
+```
+
+The hardening also added explicit tests for:
+
+```text
+expired Adaptive Core evidence
+not-yet-valid Adaptive Core evidence
+future generated_at evidence
+non-hex context_hash
+uppercase context_hash
+non-canonical expected_context_hash
+```
+
+The lower-priority findings were addressed safely where possible:
+
+```text
+GAP-16E-03: Shared two-sided fixture vector added between Adaptive Core exporter and AdamantineOS receiver.
+GAP-16E-04: Adaptive Core AdamantineOS integration documentation added.
+GAP-16E-05: datetime.utcnow() deprecation warnings removed from Adaptive Core source files.
+```
+
+No version bump was made.
+No tag was created.
+Adaptive Core remains advisory evidence only.
+AdamantineOS remains the final fail-closed authority.
+
+---
+
 ## 9. Milestone 16E completion rule
 
 Milestone 16E is complete only when:
@@ -222,6 +275,10 @@ Milestone 16E is complete only when:
 [x] AdamantineOS Adaptive Core receiver remains the single receiving boundary
 [x] Adaptive Core evidence remains advisory only
 [x] Adaptive Core cannot become final authority
+[x] Adaptive Core freshness enforcement hardened
+[x] Adaptive Core context hash format enforcement hardened
+[x] Shared two-sided fixture vector added
+[x] Adaptive Core integration documentation added
 [x] AdamantineOS tests pass
 [x] Adaptive Core tests pass
 [x] Both repositories maintain 100% coverage
