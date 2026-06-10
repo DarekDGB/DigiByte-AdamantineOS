@@ -35,7 +35,7 @@ def build_mobile_decision_result_v1(*, eqc: EQCResult, request_id: str) -> dict[
 
     # For deny, choose the first reason deterministically (ReasonId ordering is stable in our results).
     if eqc.reason_ids:
-        reason_id: ReasonId = eqc.reason_ids[0]
+        reason_id: str = eqc.reason_ids[0]
         reason_code = map_reason_id_to_mobile_code(reason_id)
         explainable = True
         confidence = "high"
