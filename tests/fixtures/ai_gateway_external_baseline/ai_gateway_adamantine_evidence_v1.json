@@ -1,0 +1,28 @@
+{
+  "evidence_version": "adamantine_ai_gateway_evidence_v1",
+  "source": "adamantine-ai-gateway",
+  "evidence_role": "evidence_only",
+  "expected_context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "handoff": {
+    "handoff_version": "ai_gateway_handoff_v1",
+    "adapter": "wallet",
+    "task_type": "signing_review",
+    "policy_decision": "accepted",
+    "reason_id": "ACCEPTED",
+    "envelope_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "context_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "receipt": {
+    "receipt_version": "ai_gateway_receipt_v1",
+    "gateway_version": "1.0.0",
+    "adapter_id": "wallet",
+    "adapter_version": "1.0.0",
+    "envelope_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "policy_decision": "accepted",
+    "reason_id": "ACCEPTED",
+    "created_from_contract": "ai_gateway_output_v1",
+    "determinism_profile": "canonical_sha256_no_time_v1"
+  }
+}
