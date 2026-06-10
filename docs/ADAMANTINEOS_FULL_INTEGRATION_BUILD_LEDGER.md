@@ -124,7 +124,7 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 15 | Final AdamantineOS policy engine merge | Shield, WSQK, Q-ID, Adaptive Core, AI Gateway, replay, wallet policy, and human gate merged into deterministic local decision order | AdamantineOS | Complete |
 | 16A | Level 4 multi-repo scope lock document | Scoped Level 4 rules locked before implementation; AdamantineOS first, external baselines evidence-only, no tag/version bump | AdamantineOS docs only | Complete |
 | 16B | Shield Orchestrator v3.2 receipt contract harness | AdamantineOS consumes Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output through the existing verifier and final policy engine | AdamantineOS | Complete |
-| 16C | Shield component baseline compatibility through Orchestrator only | Five Shield v3.2 component baseline verdicts are represented only inside the Shield Orchestrator receipt; raw component verdict bypasses reject fail-closed | AdamantineOS | Complete |
+| 16C | Shield component baseline compatibility through Orchestrator only | Five Shield v3.2 component baseline verdicts are represented only inside the Shield Orchestrator receipt; raw component verdict bypasses and post-audit component registry gaps reject fail-closed | AdamantineOS + Shield Orchestrator post-audit hardening | Complete + hardened |
 | 16D | Q-ID external baseline compatibility | External DigiByte-Q-ID Adamantine evidence v2 is proven compatible with the existing AdamantineOS Q-ID adapter and policy binding; no duplicate Q-ID adapter or authority path is added | AdamantineOS | Complete |
 | 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only; post-audit freshness and context-hash hardening complete | AdamantineOS + Adaptive Core exporter patch | Complete |
 | 16F | AI Gateway external baseline compatibility | External adamantine-ai-gateway AdamantineOS handoff / receipt evidence exporter is added and proven compatible with the existing AdamantineOS AI Gateway policy evidence boundary; AI Gateway remains evidence only and raw AI output authority is rejected | AdamantineOS + AI Gateway exporter patch | Complete |
@@ -154,6 +154,7 @@ tests/fixtures/shield_v3_integration/manifest.json
 tests/fixtures/shield_v3_integration/combined_context_hash/*.json
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/allow_receipt.json
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/component_baseline_receipt.json
+tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/shared_shield_orchestrator_receipt_v3_2_component_baseline.json
 tests/fixtures/q_id_external_baseline/qid_adamantine_evidence_v2_policy_binding.json
 tests/fixtures/adaptive_core_external_baseline/adaptive_core_adamantine_advisory_evidence_v1.json
 tests/fixtures/ai_gateway_external_baseline/ai_gateway_adamantine_evidence_v1.json
@@ -361,6 +362,7 @@ Files added or updated:
 ```text
 src/adamantine/v1/integrations/shield_orchestrator_receipt_verifier.py
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/component_baseline_receipt.json
+tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/shared_shield_orchestrator_receipt_v3_2_component_baseline.json
 tests/integrations/test_milestone_16c_shield_component_baseline_through_orchestrator.py
 docs/ADAMANTINEOS_MILESTONE_16C_SHIELD_COMPONENT_BASELINE_THROUGH_ORCHESTRATOR.md
 docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
@@ -392,11 +394,42 @@ Required test coverage of 100% reached
 Total coverage: 100.00%
 ```
 
+Post-audit hardening before Milestone 16G added two-sided Shield boundary fixes.
+
+Fixed 16C post-audit gaps:
+
+```text
+GAP-16C-01 fixed: unknown component reason IDs inside rehashed receipts fail closed.
+GAP-16C-02 fixed: unknown component evidence families inside rehashed receipts fail closed.
+GAP-16C-03 fixed: Shield Orchestrator SKIPPED component decisions no longer become ALLOW.
+GAP-16C-04 fixed: Shield Orchestrator rejects authority-looking component metadata fields.
+GAP-16C-05 fixed: shared two-sided Shield Orchestrator fixture vector added and verified by both the Orchestrator contract tests and the AdamantineOS receiver tests.
+GAP-16C-06 fixed: Shield Orchestrator hashes must remain lowercase SHA-256 hex.
+```
+
+Post-audit verification:
+
+```text
+AdamantineOS:
+PYTHONPATH=src pytest -q
+All tests passed.
+Required test coverage of 100% reached.
+Total coverage: 100.00%
+
+Shield Orchestrator:
+PYTHONPATH=src pytest --cov=shield_orchestrator --cov-report=term-missing --cov-fail-under=100 -q
+All tests passed.
+Required test coverage of 100% reached.
+Total coverage: 100.00%
+```
+
 AdamantineOS remains `v2.2.0`.
 
 No AdamantineOS tag is created.
 
-Shield component repositories remain external and unchanged.
+The five Shield component repositories remain external and unchanged.
+
+Shield Orchestrator remains the only valid Shield handoff boundary.
 
 ## 7.4 Milestone 16D completion note
 
