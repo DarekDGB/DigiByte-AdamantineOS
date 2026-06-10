@@ -1,0 +1,19 @@
+{
+  "ac_iface_version": "adaptive_core_oracle_v3",
+  "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "issued_at": 1760000000,
+  "expires_at": 1760003600,
+  "generated_at": 1760000100,
+  "overall_score": 91,
+  "signals": [
+    {
+      "source": "adaptive-core",
+      "severity": 5,
+      "reason_ids": [
+        "ok"
+      ]
+    }
+  ],
+  "oracle_version": "adaptive-core/3.0.0",
+  "external_source_id": "adaptive-core-v3-adamantine-export"
+}
