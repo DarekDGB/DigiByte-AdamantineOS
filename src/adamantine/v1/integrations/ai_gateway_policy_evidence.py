@@ -417,8 +417,16 @@ def normalize_ai_gateway_policy_evidence(
     if receipt_error is not None:
         return receipt_error
 
-    assert isinstance(handoff, Mapping)
-    assert isinstance(receipt, Mapping)
+    if not isinstance(handoff, Mapping):
+        return _deny(
+            state=AIGatewayPolicyEvidenceState.DENY_UNSUPPORTED_INPUT,
+            reason_id=ReasonId.DENY_ADAPTER_INVALID,
+        )
+    if not isinstance(receipt, Mapping):
+        return _deny(
+            state=AIGatewayPolicyEvidenceState.DENY_UNSUPPORTED_INPUT,
+            reason_id=ReasonId.DENY_ADAPTER_INVALID,
+        )
 
     if not _receipt_matches_handoff(handoff, receipt):
         return _deny(
