@@ -789,7 +789,7 @@ Do not announce or document the system as fully connected until all required ext
 
 | External source | Required external AdamantineOS-facing surface | AdamantineOS receiver exists | External side proven | AdamantineOS side proven | Direct authority allowed? | Status |
 |---|---|---:|---:|---:|---:|---|
-| Shield Orchestrator | Shield v3.2 receipt / AdamantineOS handoff surface | Yes | Pending final proof | Yes | No | In progress |
+| Shield Orchestrator | Shield v3.2 receipt / AdamantineOS handoff surface | Yes | Yes - v3.2 receipt contract and 16C hardened shared fixture proven | Yes | No | 16C hardened; 16G matrix pending |
 | Guardian Wallet | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
 | DigiByte-ADN | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
 | Sentinel AI | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
@@ -798,6 +798,12 @@ Do not announce or document the system as fully connected until all required ext
 | Q-ID | AdamantineOS Q-ID evidence builder | Yes | Yes | Yes | No | 16D complete |
 | Adaptive Core | AdamantineOS advisory evidence / export surface | Yes | Yes - exporter added in 16E | Yes | No | 16E complete |
 | AI Gateway | AdamantineOS handoff / receipt evidence surface | Yes | Yes - exporter added in 16F | Yes | No | 16F complete |
+
+Shield Orchestrator external proof note:
+
+```text
+The Shield Orchestrator external side is proven for the v3.2 receipt contract and the 16C hardened shared fixture. The remaining Shield work is not basic handoff proof; it is the later 16G full Level 4 negative-test matrix across all connected evidence paths.
+```
 
 ### 13.2 Public integration claim rule
 
