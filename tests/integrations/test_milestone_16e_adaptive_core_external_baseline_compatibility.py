@@ -149,3 +149,108 @@ def test_milestone_16e_missing_or_unknown_external_fields_fail_closed() -> None:
     assert missing_result.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
     assert unknown_result.state is AdaptiveCorePolicyEvidenceState.DENY_ADAPTIVE_CORE_REJECTED
     assert unknown_result.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
+
+
+def test_milestone_16e_external_adaptive_core_expired_evidence_denies() -> None:
+    payload = _fixture()
+    payload["expires_at"] = NOW - 1
+
+    result = _run(payload)
+
+    assert result.state is AdaptiveCorePolicyEvidenceState.DENY_ADAPTIVE_CORE_REJECTED
+    assert result.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+
+
+def test_milestone_16e_external_adaptive_core_not_yet_valid_evidence_denies() -> None:
+    payload = _fixture()
+    payload["issued_at"] = NOW + 1
+    payload["generated_at"] = NOW
+    payload["expires_at"] = NOW + 3_600
+
+    result = _run(payload)
+
+    assert result.state is AdaptiveCorePolicyEvidenceState.DENY_ADAPTIVE_CORE_REJECTED
+    assert result.reason_id is ReasonId.EQC_INVALID_RISK_REPORT
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+
+
+def test_milestone_16e_external_adaptive_core_non_hex_context_hash_denies() -> None:
+    payload = _fixture()
+    payload["context_hash"] = "not-a-hex-context"
+
+    result = _run(payload)
+
+    assert result.state is AdaptiveCorePolicyEvidenceState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id is ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+
+
+def test_milestone_16e_external_adaptive_core_uppercase_context_hash_denies_even_if_expected_matches() -> None:
+    payload = _fixture()
+    payload["context_hash"] = "A" * 64
+
+    result = normalize_adaptive_core_policy_evidence(
+        payload,
+        now=NOW,
+        expected_context_hash="A" * 64,
+        reason_map=PolicyPack().external_reason_map,
+    )
+
+    assert result.state is AdaptiveCorePolicyEvidenceState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id is ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+
+from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
+from adamantine.v1.contracts.risk import RiskReport, RiskSignal
+
+
+def _oracle_object(*, issued_at: int, expires_at: int) -> AdaptiveCoreOracleV3:
+    report = RiskReport(
+        context_hash=CTX,
+        signals=(RiskSignal(source="adaptive-core", severity=5, reason_ids=("EVIDENCE_OK",)),),
+        overall_score=91,
+        generated_at=min(NOW, issued_at),
+        oracle_version="adaptive-core/3.0.0",
+        external_source_id="adaptive-core-v3-adamantine-export",
+    )
+    return AdaptiveCoreOracleV3(
+        context_hash=CTX,
+        issued_at=issued_at,
+        expires_at=expires_at,
+        report=report,
+    )
+
+
+def test_milestone_16e_oracle_object_not_yet_valid_evidence_denies() -> None:
+    result = _run(_oracle_object(issued_at=NOW + 1, expires_at=NOW + 3_600))
+
+    assert result.state is AdaptiveCorePolicyEvidenceState.DENY_EVIDENCE_NOT_YET_VALID
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+
+
+def test_milestone_16e_oracle_object_expired_evidence_denies() -> None:
+    result = _run(_oracle_object(issued_at=NOW - 3_600, expires_at=NOW - 1))
+
+    assert result.state is AdaptiveCorePolicyEvidenceState.DENY_EVIDENCE_EXPIRED
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+
+
+def test_milestone_16e_expected_context_hash_must_be_canonical_hex() -> None:
+    result = normalize_adaptive_core_policy_evidence(
+        _fixture(),
+        now=NOW,
+        expected_context_hash="not-a-hex-context",
+        reason_map=PolicyPack().external_reason_map,
+    )
+
+    assert result.state is AdaptiveCorePolicyEvidenceState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id is ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
