@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import re
+
 from typing import Any, Mapping, Sequence
 
 from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
@@ -30,6 +32,8 @@ class AdaptiveCorePolicyEvidenceState(str, Enum):
     DENY_EARLIER_GATE_DENIED = "DENY_EARLIER_GATE_DENIED"
     DENY_HIDDEN_AUTHORITY_FIELD = "DENY_HIDDEN_AUTHORITY_FIELD"
     DENY_POLICY_INVALID = "DENY_POLICY_INVALID"
+    DENY_EVIDENCE_NOT_YET_VALID = "DENY_EVIDENCE_NOT_YET_VALID"
+    DENY_EVIDENCE_EXPIRED = "DENY_EVIDENCE_EXPIRED"
 
 
 @dataclass(frozen=True)
@@ -54,6 +58,22 @@ class AdaptiveCorePolicyEvidenceResult:
     dominant_reason_ids: tuple[str, ...]
     report: RiskReport | None = None
     oracle: AdaptiveCoreOracleV3 | None = None
+
+_CONTEXT_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _is_canonical_context_hash(value: Any) -> bool:
+    return isinstance(value, str) and _CONTEXT_HASH_RE.fullmatch(value) is not None
+
+
+def _extract_context_hash_candidate(value: Any) -> Any:
+    if isinstance(value, AdaptiveCoreOracleV3):
+        return value.context_hash
+    if isinstance(value, RiskReport):
+        return value.context_hash
+    if isinstance(value, Mapping):
+        return value.get("context_hash")
+    return None
 
 
 def _reason_text(reason_id: ReasonId | str) -> str:
@@ -255,6 +275,25 @@ def normalize_adaptive_core_policy_evidence(
             min_overall_score=selected_policy.min_overall_score,
         )
 
+    if not _is_canonical_context_hash(expected_context_hash):
+        return _deny(
+            state=AdaptiveCorePolicyEvidenceState.DENY_CONTEXT_HASH_MISMATCH,
+            reason_id=ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH,
+            min_overall_score=selected_policy.min_overall_score,
+        )
+
+    candidate_context_hash = _extract_context_hash_candidate(adaptive_core_input)
+    has_context_hash_candidate = isinstance(adaptive_core_input, (AdaptiveCoreOracleV3, RiskReport)) or (
+        isinstance(adaptive_core_input, Mapping) and "context_hash" in adaptive_core_input
+    )
+    if has_context_hash_candidate and not _is_canonical_context_hash(candidate_context_hash):
+        return _deny(
+            state=AdaptiveCorePolicyEvidenceState.DENY_CONTEXT_HASH_MISMATCH,
+            reason_id=ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH,
+            context_hash=candidate_context_hash if isinstance(candidate_context_hash, str) else None,
+            min_overall_score=selected_policy.min_overall_score,
+        )
+
     normalized = _report_from_input(
         adaptive_core_input,
         now=now,
@@ -274,6 +313,38 @@ def normalize_adaptive_core_policy_evidence(
         return _deny(
             state=AdaptiveCorePolicyEvidenceState.DENY_CONTEXT_HASH_MISMATCH,
             reason_id=ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH,
+            context_hash=report.context_hash,
+            overall_score=report.overall_score,
+            min_overall_score=selected_policy.min_overall_score,
+            generated_at=report.generated_at,
+            issued_at=issued_at,
+            expires_at=expires_at,
+            oracle_version=report.oracle_version,
+            external_source_id=report.external_source_id,
+            report=report,
+            oracle=oracle,
+        )
+
+    if oracle is not None and issued_at is not None and issued_at > now:
+        return _deny(
+            state=AdaptiveCorePolicyEvidenceState.DENY_EVIDENCE_NOT_YET_VALID,
+            reason_id=ReasonId.EQC_INVALID_RISK_REPORT,
+            context_hash=report.context_hash,
+            overall_score=report.overall_score,
+            min_overall_score=selected_policy.min_overall_score,
+            generated_at=report.generated_at,
+            issued_at=issued_at,
+            expires_at=expires_at,
+            oracle_version=report.oracle_version,
+            external_source_id=report.external_source_id,
+            report=report,
+            oracle=oracle,
+        )
+
+    if oracle is not None and expires_at is not None and expires_at < now:
+        return _deny(
+            state=AdaptiveCorePolicyEvidenceState.DENY_EVIDENCE_EXPIRED,
+            reason_id=ReasonId.EQC_INVALID_RISK_REPORT,
             context_hash=report.context_hash,
             overall_score=report.overall_score,
             min_overall_score=selected_policy.min_overall_score,
