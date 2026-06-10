@@ -146,3 +146,47 @@ def test_oracle_v3_determinism_replay() -> None:
         policy=_policy(),
     )
     assert out1 == out2
+
+
+def test_oracle_v3_rejects_non_canonical_context_hash_format() -> None:
+    p = _payload()
+    p["context_hash"] = "A" * 64
+    with pytest.raises(AdapterError) as e:
+        parse_adaptive_core_oracle_v3(
+            payload=p,
+            now=150,
+            expected_context_hash="A" * 64,
+            reason_map=_reason_map(),
+            policy=_policy(),
+        )
+    assert e.value.reason_id == ReasonId.EQC_INVALID_RISK_REPORT
+
+
+def test_oracle_v3_rejects_not_yet_valid_or_expired_window() -> None:
+    future = _payload()
+    future["issued_at"] = 151
+    future["expires_at"] = 200
+    future["generated_at"] = 150
+    with pytest.raises(AdapterError) as future_error:
+        parse_adaptive_core_oracle_v3(
+            payload=future,
+            now=150,
+            expected_context_hash="a" * 64,
+            reason_map=_reason_map(),
+            policy=_policy(),
+        )
+    assert future_error.value.reason_id == ReasonId.EQC_INVALID_RISK_REPORT
+
+    expired = _payload()
+    expired["issued_at"] = 100
+    expired["expires_at"] = 149
+    expired["generated_at"] = 120
+    with pytest.raises(AdapterError) as expired_error:
+        parse_adaptive_core_oracle_v3(
+            payload=expired,
+            now=150,
+            expected_context_hash="a" * 64,
+            reason_map=_reason_map(),
+            policy=_policy(),
+        )
+    assert expired_error.value.reason_id == ReasonId.EQC_INVALID_RISK_REPORT
