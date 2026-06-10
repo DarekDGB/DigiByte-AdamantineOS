@@ -11,6 +11,11 @@ class Executor:
 
     Implementations perform real actions (sign, broadcast, etc).
     Foundation stage: interface only.
+
+    Security invariant: any concrete Executor is outside this repository and
+    must be independently reviewed. It must execute only after AdamantineOS
+    returns a final allow decision and must never reinterpret external evidence
+    as signing/broadcast authority.
     """
 
     def execute(self, req: ExecutionRequest) -> str:
