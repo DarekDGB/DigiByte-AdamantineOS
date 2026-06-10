@@ -18,6 +18,13 @@ FIXTURE = (
     / "orchestrator_v3_2_receipt"
     / "component_baseline_receipt.json"
 )
+SHARED_FIXTURE = (
+    Path(__file__).resolve().parents[1]
+    / "fixtures"
+    / "shield_v3_integration"
+    / "orchestrator_v3_2_receipt"
+    / "shared_shield_orchestrator_receipt_v3_2_component_baseline.json"
+)
 
 EXPECTED_COMPONENTS = {
     "adn": {
@@ -77,6 +84,22 @@ def test_milestone_16c_fixture_represents_all_five_shield_baseline_components() 
         assert component["fail_closed"] is True
         assert set(component["reason_ids"]) == expected["reason_ids"]
         assert set(component["evidence_families"]) == expected["evidence_families"]
+
+
+def test_milestone_16c_shared_orchestrator_fixture_is_accepted_as_evidence_only() -> None:
+    receipt = json.loads(SHARED_FIXTURE.read_text())
+
+    result = verify_shield_orchestrator_receipt(
+        receipt,
+        expected_context_hash=CTX,
+        expected_request_id="req-milestone-16c-shared-vector",
+    )
+
+    assert result.state == ShieldReceiptVerificationState.VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS
+    assert result.verified is True
+    assert result.accepted_as_evidence is True
+    assert result.final_approval is False
+    assert result.final_outcome == "ALLOW"
 
 
 def test_milestone_16c_component_baseline_receipt_is_accepted_as_evidence_only() -> None:
@@ -150,3 +173,39 @@ def test_milestone_16c_mixed_legacy_and_v3_2_components_fail_closed() -> None:
 
     assert result.state == ShieldReceiptVerificationState.REJECTED_INVALID_RECEIPT
     assert result.dominant_reason_ids == ("COMPONENT_VERDICTS_INVALID",)
+
+
+def test_milestone_16c_unknown_component_reason_id_from_rehashed_receipt_fails_closed() -> None:
+    receipt = _load_receipt()
+    receipt["component_verdicts"][0]["reason_ids"] = ["UNKNOWN_COMPONENT_REASON"]
+    receipt = _rehash(receipt)
+
+    result = _verify(receipt)
+
+    assert result.state == ShieldReceiptVerificationState.REJECTED_INVALID_RECEIPT
+    assert result.dominant_reason_ids == ("COMPONENT_VERDICTS_INVALID",)
+    assert result.accepted_as_evidence is False
+
+
+def test_milestone_16c_unknown_component_evidence_family_from_rehashed_receipt_fails_closed() -> None:
+    receipt = _load_receipt()
+    receipt["component_verdicts"][0]["evidence_families"] = ["unknown_component_family"]
+    receipt = _rehash(receipt)
+
+    result = _verify(receipt)
+
+    assert result.state == ShieldReceiptVerificationState.REJECTED_INVALID_RECEIPT
+    assert result.dominant_reason_ids == ("COMPONENT_VERDICTS_INVALID",)
+    assert result.accepted_as_evidence is False
+
+
+def test_milestone_16c_skipped_component_from_rehashed_receipt_fails_closed() -> None:
+    receipt = _load_receipt()
+    receipt["component_verdicts"][0]["decision"] = "SKIPPED"
+    receipt = _rehash(receipt)
+
+    result = _verify(receipt)
+
+    assert result.state == ShieldReceiptVerificationState.REJECTED_INVALID_RECEIPT
+    assert result.dominant_reason_ids == ("COMPONENT_VERDICTS_INVALID",)
+    assert result.accepted_as_evidence is False
