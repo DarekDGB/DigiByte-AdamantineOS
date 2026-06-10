@@ -4,6 +4,8 @@ from typing import Any, Mapping, cast
 
 from adamantine.v1.contracts.reason_ids import ReasonId
 
+_DENY_REASON_PREFIXES = ("DENY_", "TVA_", "EQC_")
+
 
 def _require_mapping(obj: Any) -> Mapping[str, Any]:
     if not isinstance(obj, Mapping):
@@ -38,7 +40,7 @@ def validate_execution_response_v1(*, payload: Mapping[str, Any]) -> Mapping[str
     - deny-by-default (unknown fields rejected)
     - fail-closed (raises ValueError)
     - validates the *shape* + key invariants only
-    - D3: locks status ↔ reason_id semantics + nonce/timebox safety invariants
+    - D3: locks status â reason_id semantics + nonce/timebox safety invariants
     """
     top = _require_mapping(payload)
 
@@ -107,11 +109,11 @@ def validate_execution_response_v1(*, payload: Mapping[str, Any]) -> Mapping[str
             raise ValueError("allow status requires decision.allowed == True")
 
     # ---------------------------------------------------------------------
-    # D3 locks: status ↔ reason_id semantics + nonce/timebox safety invariants
+    # D3 locks: status â reason_id semantics + nonce/timebox safety invariants
     # ---------------------------------------------------------------------
     if status == "deny":
-        if not reason_id.startswith("DENY_"):
-            raise ValueError("deny status requires reason_id starting with DENY_")
+        if not reason_id.startswith(_DENY_REASON_PREFIXES):
+            raise ValueError("deny status requires DENY_, TVA_, or EQC_ reason_id prefix")
         if allowed is not False:
             raise ValueError("deny status requires decision.allowed == False")
         if nonce_consumed is True:
