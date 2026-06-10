@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 from adamantine.v1.contracts.reason_ids import ReasonId
 
@@ -73,6 +73,77 @@ _GATE_DENY_STATES = {
     "wallet_policy": FinalPolicyEngineState.DENY_WALLET_POLICY_GATE,
     "human": FinalPolicyEngineState.DENY_HUMAN_GATE,
 }
+
+_FORBIDDEN_AUTHORITY_KEYS = frozenset({
+    "approved",
+    "authority",
+    "auto_approve",
+    "broadcast",
+    "bypass",
+    "can_sign",
+    "execute",
+    "force_allow",
+    "grant_execution",
+    "human_approved",
+    "override",
+    "sign",
+    "trusted",
+    "wallet_signing_approval",
+})
+_NESTED_AUTHORITY_CONTAINERS = frozenset({
+    "authority",
+    "extra",
+    "metadata",
+    "override",
+    "policy_override",
+    "raw",
+})
+_ALLOWED_NORMALIZED_AUTHORITY_FIELDS = frozenset({"final_approval", "handoff_allowed"})
+
+
+def _truthy_authority_value(value: Any) -> bool:
+    return value not in (False, None, "", (), [], {})
+
+
+def _contains_forbidden_authority_mapping(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if isinstance(key, str) and key in _FORBIDDEN_AUTHORITY_KEYS and _truthy_authority_value(child):
+                return True
+            if _contains_forbidden_authority_mapping(child):
+                return True
+    elif isinstance(value, list):
+        return any(_contains_forbidden_authority_mapping(item) for item in value)
+    return False
+
+
+def _contains_forbidden_authority_signal(evidence: Any) -> bool:
+    """Detect authority-shaped data that should never reach final policy.
+
+    Adapter boundaries should reject hidden authority fields first. 16G adds this
+    final fail-closed guard so a normalized-looking evidence object cannot smuggle
+    signing, execution, override, or trust authority into the final policy engine.
+    Standard normalized fields such as ``final_approval`` and ``handoff_allowed``
+    are handled by explicit engine checks and are not treated as hidden fields.
+    """
+
+    if isinstance(evidence, Mapping):
+        return _contains_forbidden_authority_mapping(evidence)
+
+    data = getattr(evidence, "__dict__", None)
+    if not isinstance(data, Mapping):
+        return False
+
+    for key, value in data.items():
+        if not isinstance(key, str):
+            continue
+        if key in _ALLOWED_NORMALIZED_AUTHORITY_FIELDS:
+            continue
+        if key in _FORBIDDEN_AUTHORITY_KEYS and _truthy_authority_value(value):
+            return True
+        if key in _NESTED_AUTHORITY_CONTAINERS and _contains_forbidden_authority_mapping(value):
+            return True
+    return False
 
 
 def _reason_text(reason_id: ReasonId | str) -> str:
@@ -155,6 +226,16 @@ def _evaluate_evidence_gate(
             stopped_at=gate,
             evaluation_order=evaluation_order,
             dominant_reason_ids=(f"UPSTREAM_FINAL_APPROVAL_BYPASS:{gate}",),
+        )
+
+    if _contains_forbidden_authority_signal(evidence):
+        return _result(
+            state=FinalPolicyEngineState.DENY_AUTHORITY_BYPASS,
+            outcome="DENY",
+            reason_id=ReasonId.DENY_AUTHORITY_INVALID,
+            stopped_at=gate,
+            evaluation_order=evaluation_order,
+            dominant_reason_ids=(f"HIDDEN_AUTHORITY_BYPASS:{gate}",),
         )
 
     if _evidence_indicates_human_review(evidence):
