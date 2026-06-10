@@ -356,3 +356,41 @@ def test_invalid_receipt_envelope_hash_denies():
 
     assert result.state is AIGatewayPolicyEvidenceState.DENY_INVALID_HASH
     assert result.reason_id is ReasonId.DENY_ADAPTER_INVALID
+
+
+def test_non_mapping_handoff_after_shape_validation_still_denies(monkeypatch):
+    """Production safety check must not depend on stripped assert statements."""
+    from adamantine.v1.integrations import ai_gateway_policy_evidence as module
+
+    monkeypatch.setattr(module, "_validate_handoff_shape", lambda *args, **kwargs: None)
+    monkeypatch.setattr(module, "_validate_receipt_shape", lambda *args, **kwargs: None)
+
+    result = module.normalize_ai_gateway_policy_evidence(
+        handoff=["not", "mapping"],
+        receipt=_receipt(),
+        expected_context_hash=HASH_C,
+    )
+
+    assert result.state is AIGatewayPolicyEvidenceState.DENY_UNSUPPORTED_INPUT
+    assert result.reason_id is ReasonId.DENY_ADAPTER_INVALID
+    assert result.outcome == "DENY"
+    assert result.final_approval is False
+
+
+def test_non_mapping_receipt_after_shape_validation_still_denies(monkeypatch):
+    """Production safety check must not depend on stripped assert statements."""
+    from adamantine.v1.integrations import ai_gateway_policy_evidence as module
+
+    monkeypatch.setattr(module, "_validate_handoff_shape", lambda *args, **kwargs: None)
+    monkeypatch.setattr(module, "_validate_receipt_shape", lambda *args, **kwargs: None)
+
+    result = module.normalize_ai_gateway_policy_evidence(
+        handoff=_handoff(),
+        receipt=["not", "mapping"],
+        expected_context_hash=HASH_C,
+    )
+
+    assert result.state is AIGatewayPolicyEvidenceState.DENY_UNSUPPORTED_INPUT
+    assert result.reason_id is ReasonId.DENY_ADAPTER_INVALID
+    assert result.outcome == "DENY"
+    assert result.final_approval is False
