@@ -165,6 +165,10 @@ def normalize_qid_policy_binding(
     Q-ID evidence becomes ALLOW_EVIDENCE_CONTINUE_CHECKS only. Any adapter
     failure, binding mismatch, stale replay flag, unsupported shape, hidden
     authority field, or WSQK/Q-ID posture mismatch becomes a structured DENY.
+
+    Production invariant: require_fresh MUST remain True in execution paths.
+    The parameter exists only for explicit tests that need to exercise stale
+    replay-proof handling; no production orchestrator path may disable it.
     """
 
     if not isinstance(qid_input, Mapping):
