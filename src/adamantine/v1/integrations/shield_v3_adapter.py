@@ -89,7 +89,7 @@ def _is_hex_64(s: Any) -> bool:
     if not isinstance(s, str) or len(s) != 64:
         return False
     for ch in s:
-        if ch not in "0123456789abcdefABCDEF":
+        if ch not in "0123456789abcdef":
             return False
     return True
 
@@ -279,11 +279,11 @@ def _parse_signal_v3(
         label="signal.reason_id",
     )
 
-    # ✅ Correct registry API + correct reason id
+    # â Correct registry API + correct reason id
     if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
         _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
 
-    # ✅ Correct reason map API
+    # â Correct reason map API
     mapped = reason_map.lookup(ext_reason)
     if mapped is None:
         _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {ext_reason}")
