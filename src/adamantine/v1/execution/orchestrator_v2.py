@@ -832,7 +832,15 @@ def orchestrate_execution_v2(
             context_hash="0" * 64,
             status="deny",
             reason_id=rid,
-            protection_mode="full",
+            # TVA failure means the request did not reach full protection; keep
+            # telemetry conservative so audit consumers never confuse a deny at
+            # the TVA gate with completed full verification.
+            protection_mode=_compute_protection_mode(
+                protected_requested=False,
+                qid_ok=False,
+                oracle_ok=False,
+                shield_ok=False,
+            ),
             tva_allowed=False,
             eqc_allowed=True,
             wsqk_allowed=True,
