@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 16E tracker - Adaptive Core external baseline compatibility complete**  
+Status: **Milestone 16F tracker - AI Gateway external baseline compatibility complete**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -41,11 +41,12 @@ AI Gateway authority: evidence only, never execution authority
 
 ### 3.1 Repository currently modified
 
-The current Milestone 16 work primarily modifies AdamantineOS. Milestone 16E also required the smallest safe external Adaptive Core exporter patch because the two-sided connection rule proved an external handoff gap.
+The current Milestone 16 work primarily modifies AdamantineOS. Milestone 16E required the smallest safe external Adaptive Core exporter patch because the two-sided connection rule proved an external handoff gap. Milestone 16F required the smallest safe external AI Gateway exporter patch because the two-sided connection rule proved an external handoff gap.
 
 ```text
 DigiByte-Adamantine-Wallet-OS
 DigiByte-Adaptive-Core  # 16E external exporter patch only
+adamantine-ai-gateway  # 16F external exporter patch only
 ```
 
 ### 3.2 Repositories inspected or treated as external baselines
@@ -126,6 +127,7 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 16C | Shield component baseline compatibility through Orchestrator only | Five Shield v3.2 component baseline verdicts are represented only inside the Shield Orchestrator receipt; raw component verdict bypasses reject fail-closed | AdamantineOS | Complete |
 | 16D | Q-ID external baseline compatibility | External DigiByte-Q-ID Adamantine evidence v2 is proven compatible with the existing AdamantineOS Q-ID adapter and policy binding; no duplicate Q-ID adapter or authority path is added | AdamantineOS | Complete |
 | 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only; post-audit freshness and context-hash hardening complete | AdamantineOS + Adaptive Core exporter patch | Complete |
+| 16F | AI Gateway external baseline compatibility | External adamantine-ai-gateway AdamantineOS handoff / receipt evidence exporter is added and proven compatible with the existing AdamantineOS AI Gateway policy evidence boundary; AI Gateway remains evidence only and raw AI output authority is rejected | AdamantineOS + AI Gateway exporter patch | Complete |
 
 ## 6. Files added so far
 
@@ -142,6 +144,7 @@ docs/ADAMANTINEOS_MILESTONE_16B_SHIELD_ORCHESTRATOR_RECEIPT_CONTRACT_HARNESS.md
 docs/ADAMANTINEOS_MILESTONE_16C_SHIELD_COMPONENT_BASELINE_THROUGH_ORCHESTRATOR.md
 docs/ADAMANTINEOS_MILESTONE_16D_Q_ID_EXTERNAL_BASELINE_COMPATIBILITY.md
 docs/ADAMANTINEOS_MILESTONE_16E_ADAPTIVE_CORE_EXTERNAL_BASELINE_COMPATIBILITY.md
+docs/ADAMANTINEOS_MILESTONE_16F_AI_GATEWAY_EXTERNAL_BASELINE_COMPATIBILITY.md
 ```
 
 ### 6.2 Fixture files
@@ -153,6 +156,7 @@ tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/allow_receipt.jso
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/component_baseline_receipt.json
 tests/fixtures/q_id_external_baseline/qid_adamantine_evidence_v2_policy_binding.json
 tests/fixtures/adaptive_core_external_baseline/adaptive_core_adamantine_advisory_evidence_v1.json
+tests/fixtures/ai_gateway_external_baseline/ai_gateway_adamantine_evidence_v1.json
 ```
 
 The combined context hash fixture pack contains forty-one JSON fixtures.
@@ -197,6 +201,7 @@ tests/integrations/test_milestone_16b_shield_orchestrator_v3_2_contract_harness.
 tests/integrations/test_milestone_16c_shield_component_baseline_through_orchestrator.py
 tests/integrations/test_milestone_16d_q_id_external_baseline_compatibility.py
 tests/integrations/test_milestone_16e_adaptive_core_external_baseline_compatibility.py
+tests/integrations/test_milestone_16f_ai_gateway_external_baseline_compatibility.py
 ```
 
 ## 7. Verified status at this point
@@ -222,17 +227,19 @@ Milestone 16B complete: yes
 Milestone 16C complete: yes
 Milestone 16D complete: yes
 Milestone 16E complete: yes
+Milestone 16F complete: yes
 AdamantineOS version: still v2.2.0
 AdamantineOS tag: not created
 Shield repositories changed: no
 Adaptive Core repository changed: yes - smallest safe AdamantineOS-facing advisory evidence exporter added for 16E
+AI Gateway repository changed: yes - smallest safe AdamantineOS-facing handoff / receipt evidence exporter added for 16F
 Direct Shield package import inside AdamantineOS: no
 Direct AI Gateway package import inside AdamantineOS: no
 Full multi-repo harness: not started
 Q-ID external compatibility: complete
 Adaptive Core external compatibility: complete
 Adaptive Core post-audit hardening: complete
-AI Gateway external compatibility: not started
+AI Gateway external compatibility: complete
 Full Level 4 negative-test matrix: not started
 ```
 
@@ -513,6 +520,63 @@ No AdamantineOS tag is created.
 
 No Adaptive Core tag is created.
 
+
+## 7.6 Milestone 16F completion note
+
+Milestone 16F added the fifth scoped Level 4 compatibility harness.
+
+A real two-sided connection gap was found before 16F: `adamantine-ai-gateway` exposed strong handoff and receipt contracts, but did not have a clearly named AdamantineOS-facing exporter equivalent to the Q-ID evidence builder or the Adaptive Core exporter.
+
+The smallest safe external exporter was added to `adamantine-ai-gateway`, and AdamantineOS added a compatibility harness that consumes the exported handoff / receipt evidence through the existing AI Gateway policy evidence boundary.
+
+Files added or updated in AdamantineOS:
+
+```text
+docs/ADAMANTINEOS_MILESTONE_16F_AI_GATEWAY_EXTERNAL_BASELINE_COMPATIBILITY.md
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+tests/fixtures/ai_gateway_external_baseline/ai_gateway_adamantine_evidence_v1.json
+tests/integrations/test_milestone_16f_ai_gateway_external_baseline_compatibility.py
+```
+
+Files added or updated in AI Gateway:
+
+```text
+ai_gateway/integration/__init__.py
+ai_gateway/integration/adamantine.py
+tests/fixtures/adamantine/ai_gateway_adamantine_evidence_v1.json
+tests/test_integration_adamantine.py
+docs/reports/v1/ADAMANTINEOS_INTEGRATION.md
+```
+
+Locked Milestone 16F behavior:
+
+```text
+External AI Gateway AdamantineOS evidence accepts as evidence only.
+AI Gateway accepted decision returns ALLOW_EVIDENCE_CONTINUE_CHECKS, not final approval.
+AI Gateway rejected decision denies.
+Raw AI output bypass rejects.
+Context hash mismatch rejects.
+Receipt / handoff mismatch rejects.
+Hidden authority fields reject.
+AI Gateway remains evidence only.
+AdamantineOS remains final fail-closed authority.
+```
+
+Milestone 16F verification target:
+
+```text
+AdamantineOS: PYTHONPATH=src pytest -q
+AI Gateway: PYTHONPATH=. pytest --cov=ai_gateway --cov-report=term-missing -q
+```
+
+AdamantineOS remains `v2.2.0`.
+
+AI Gateway remains `v1.0.0`.
+
+No AdamantineOS tag is created.
+
+No AI Gateway tag is created.
+
 ## 8. What has been intentionally deferred
 
 The following items are not missing by accident. They are intentionally deferred by the roadmap:
@@ -700,7 +764,7 @@ Do not announce or document the system as fully connected until all required ext
 | QWG | Through Shield Orchestrator only | N/A direct | Through Orchestrator | Yes via receipt | No | 16C complete |
 | Q-ID | AdamantineOS Q-ID evidence builder | Yes | Yes | Yes | No | 16D complete |
 | Adaptive Core | AdamantineOS advisory evidence / export surface | Yes | Yes - exporter added in 16E | Yes | No | 16E complete |
-| AI Gateway | AdamantineOS handoff / receipt evidence surface | Yes | To verify in 16F | Existing boundary present; 16F proof pending | No | 16F pending |
+| AI Gateway | AdamantineOS handoff / receipt evidence surface | Yes | Yes - exporter added in 16F | Yes | No | 16F complete |
 
 ### 13.2 Public integration claim rule
 
@@ -746,6 +810,7 @@ AdamantineOS must not be tagged until all of the following are true:
 [ ] External adapter / handoff completion rule satisfied for all required sources
 [x] Adaptive Core external adapter / handoff completion rule satisfied
 [x] Adaptive Core post-audit hardening complete
+[x] AI Gateway external adapter / handoff completion rule satisfied
 [ ] External connection proof table complete
 [ ] All fixtures reviewed
 [ ] All negative tests pass
@@ -794,20 +859,29 @@ Milestone 16E is complete as the fourth scoped Level 4 compatibility harness:
 Adaptive Core external baseline compatibility through the Adaptive Core AdamantineOS advisory evidence exporter and existing AdamantineOS Adaptive Core boundary
 ```
 
-The next safe step is Milestone 16F, still scoped and still AdamantineOS-first.
-
-Milestone 16F must verify both sides of the AI Gateway connection:
+Milestone 16F is complete as the fifth scoped Level 4 compatibility harness:
 
 ```text
-adamantine-ai-gateway external AdamantineOS-facing handoff / receipt evidence surface
-        v
-AdamantineOS AI Gateway policy evidence boundary
-        v
-AdamantineOS final policy engine
+AI Gateway external baseline compatibility through the AI Gateway AdamantineOS handoff / receipt evidence exporter and existing AdamantineOS AI Gateway boundary
 ```
 
-If the AI Gateway repository already exposes the required AdamantineOS-consumable handoff / receipt evidence surface, Milestone 16F may remain an AdamantineOS compatibility proof.
+The next safe step is Milestone 16G.
 
-If the AI Gateway repository lacks the required external export / handoff surface, that is a compatibility gap and must be documented before continuing. The AI Gateway repository may then be modified only with the smallest safe adapter / exporter and only after tests prove the gap.
+Milestone 16G must run the full Level 4 negative-test matrix across all connected evidence paths:
 
-Milestone 16F must not begin a broad ten-repository harness or the full Level 4 negative-test matrix.
+```text
+Shield Orchestrator receipt
+Shield component baselines through Orchestrator only
+Q-ID evidence
+Adaptive Core advisory evidence
+AI Gateway handoff / receipt evidence
+WSQK v2 evidence
+Replay / nonce gate
+Wallet policy gate
+Human gate
+Final AdamantineOS policy engine
+```
+
+Milestone 16G must not introduce new authority paths.
+
+Milestone 16G must prove the full connected evidence system fails closed under malformed, missing, mismatched, stale, bypass, hidden-authority, and import-failure conditions.
