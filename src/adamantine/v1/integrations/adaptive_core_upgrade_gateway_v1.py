@@ -386,6 +386,13 @@ def evaluate_upgrade_request_v1(
     review_receipt: Optional[Mapping[str, Any]] = None,
     require_receipt: bool = True,
 ) -> UpgradeGatewayDecision:
+    """Evaluate an Adaptive Core upgrade proposal and review receipt.
+
+    Production invariant: require_receipt MUST remain True in any production
+    execution path. The receipt-optional compatibility branch is retained only
+    for explicit tests/offline tooling and must never be wired into autonomous
+    upgrade approval.
+    """
     """Evaluate an Adaptive Core v3 upgrade request through the gateway.
 
     Invariants:
