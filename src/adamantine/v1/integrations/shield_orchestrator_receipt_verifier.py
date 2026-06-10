@@ -67,6 +67,71 @@ _REQUIRED_SHIELD_V3_2_COMPONENT_IDS = frozenset({
     "qwg",
     "sentinel_ai",
 })
+_COMPONENT_REASON_IDS = {
+    "guardian_wallet": frozenset({
+        "GW_OK_HEALTHY_ALLOW",
+        "GW_ESCALATE_QID_REQUIRED",
+        "GW_DENY_POLICY_BLOCKED",
+        "GW_ERROR_INVALID_VERDICT",
+        "GW_ERROR_CONTEXT_HASH_MISMATCH",
+    }),
+    "adn": frozenset({
+        "ADN_OK_COORDINATION_ALLOW",
+        "ADN_ESCALATE_POLICY_REVIEW",
+        "ADN_DENY_DEFENSE_TRIGGERED",
+        "ADN_ERROR_INVALID_VERDICT",
+        "ADN_ERROR_CONTEXT_HASH_MISMATCH",
+    }),
+    "sentinel_ai": frozenset({
+        "SNTL_OK_TELEMETRY_ALLOW",
+        "SNTL_ESCALATE_THREAT_REVIEW",
+        "SNTL_DENY_THREAT_DETECTED",
+        "SNTL_ERROR_AI_OUTPUT_UNTRUSTED",
+        "SNTL_ERROR_CONTEXT_HASH_MISMATCH",
+    }),
+    "dqsn": frozenset({
+        "DQSN_OK_NETWORK_ALLOW",
+        "DQSN_ESCALATE_QUANTUM_SIGNAL",
+        "DQSN_DENY_NETWORK_RISK",
+        "DQSN_ERROR_INVALID_VERDICT",
+        "DQSN_ERROR_CONTEXT_HASH_MISMATCH",
+    }),
+    "qwg": frozenset({
+        "QWG_OK_POSTURE_ALLOW",
+        "QWG_ESCALATE_QUANTUM_POSTURE",
+        "QWG_DENY_KEY_RISK",
+        "QWG_ERROR_INVALID_VERDICT",
+        "QWG_ERROR_CONTEXT_HASH_MISMATCH",
+    }),
+}
+_COMPONENT_EVIDENCE_FAMILIES = {
+    "guardian_wallet": frozenset({
+        "wallet_context",
+        "transaction_context",
+        "qid_auth_context",
+        "sentinel_signal",
+        "device_signal",
+    }),
+    "adn": frozenset({"defense_signal", "policy_context", "coordination_state"}),
+    "sentinel_ai": frozenset({
+        "telemetry",
+        "monitor_signal",
+        "threat_observation",
+        "adaptive_core_bridge_event",
+    }),
+    "dqsn": frozenset({
+        "network_observation",
+        "quantum_signal",
+        "node_state",
+        "aggregate_signal",
+    }),
+    "qwg": frozenset({
+        "wallet_posture",
+        "quantum_risk_context",
+        "key_age_context",
+        "dormancy_context",
+    }),
+}
 _FORBIDDEN_AUTHORITY_KEYS = frozenset(
     {
         "allow",
@@ -187,6 +252,9 @@ def _validate_v3_2_component_verdict(component: Mapping[str, Any], *, receipt: M
         return False
     if not isinstance(component["component_id"], str) or not component["component_id"].strip():
         return False
+    component_id = str(component["component_id"])
+    if component_id not in _REQUIRED_SHIELD_V3_2_COMPONENT_IDS:
+        return False
     if component["contract_version"] != 3:
         return False
     if component["schema_version"] != "shield.verdict.v1":
@@ -197,11 +265,17 @@ def _validate_v3_2_component_verdict(component: Mapping[str, Any], *, receipt: M
         return False
     if component["decision"] not in _V3_2_COMPONENT_DECISIONS:
         return False
+    if component["decision"] == "SKIPPED":
+        return False
     if not _has_non_empty_string_list(component["reason_ids"]):
+        return False
+    if not set(component["reason_ids"]).issubset(_COMPONENT_REASON_IDS[component_id]):
         return False
     if not _is_hash(component["evidence_hash"]):
         return False
     if not _has_non_empty_string_list(component["evidence_families"], unique=True):
+        return False
+    if not set(component["evidence_families"]).issubset(_COMPONENT_EVIDENCE_FAMILIES[component_id]):
         return False
     if not isinstance(component["metadata"], Mapping):
         return False
