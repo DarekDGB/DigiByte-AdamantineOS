@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from typing import Any, Mapping
 
 from adamantine.v1.contracts.adaptive_core_oracle_v3 import AdaptiveCoreOracleV3
@@ -10,6 +12,13 @@ from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.obs.metrics import Metrics
 from adamantine.v1.policy.risk_policy import RiskPolicy
+
+
+_CONTEXT_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _is_canonical_context_hash(value: Any) -> bool:
+    return isinstance(value, str) and _CONTEXT_HASH_RE.fullmatch(value) is not None
 
 
 _ALLOWED_KEYS = {
@@ -50,8 +59,8 @@ def parse_adaptive_core_oracle_v3(
     if not isinstance(now, int):
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
 
-    if not isinstance(expected_context_hash, str) or not expected_context_hash.strip():
-        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "expected_context_hash must be non-empty str")
+    if not _is_canonical_context_hash(expected_context_hash):
+        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "expected_context_hash must be lowercase 64-character hex")
 
     if not isinstance(payload, Mapping):
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "payload must be mapping")
@@ -63,8 +72,8 @@ def parse_adaptive_core_oracle_v3(
         _fail(metrics, ReasonId.DENY_VERSION_MISMATCH, "ac_iface_version must be adaptive_core_oracle_v3")
 
     ctx = payload.get("context_hash")
-    if not isinstance(ctx, str) or not ctx:
-        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "context_hash must be non-empty str")
+    if not _is_canonical_context_hash(ctx):
+        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "context_hash must be lowercase 64-character hex")
 
     if ctx != expected_context_hash:
         _fail(metrics, ReasonId.EQC_RISK_CONTEXT_HASH_MISMATCH, "oracle context_hash mismatch")
@@ -76,6 +85,12 @@ def parse_adaptive_core_oracle_v3(
 
     if expires_at < issued_at:
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "expires_at must be >= issued_at")
+
+    if issued_at > now:
+        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "issued_at cannot be in the future")
+
+    if expires_at < now:
+        _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "expires_at cannot be in the past")
 
     report = parse_risk_report(
         payload=payload,
