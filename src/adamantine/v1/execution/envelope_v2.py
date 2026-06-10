@@ -10,6 +10,8 @@ from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution.errors import EnvelopeError
 from adamantine.v1.obs.metrics import Metrics
 
+_MAX_TIMEBOX_SKEW_SECONDS = 300
+
 
 @dataclass(frozen=True, slots=True)
 class ParsedExecutionRequestEnvelopeV2:
@@ -236,6 +238,8 @@ def parse_execution_request_envelope_v2(
     skew = tb_m.get("max_skew_seconds", 0)
     if not isinstance(skew, int) or skew < 0:
         _fail(metrics, ReasonId.DENY_TIMEBOX_INVALID, "timebox.max_skew_seconds must be non-negative int")
+    if skew > _MAX_TIMEBOX_SKEW_SECONDS:
+        _fail(metrics, ReasonId.DENY_TIMEBOX_INVALID, "timebox.max_skew_seconds exceeds maximum allowed skew")
     max_skew_seconds = skew
 
     # Enforce timebox against injected now (unix seconds)
