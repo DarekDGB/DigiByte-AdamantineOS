@@ -125,7 +125,7 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 16B | Shield Orchestrator v3.2 receipt contract harness | AdamantineOS consumes Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output through the existing verifier and final policy engine | AdamantineOS | Complete |
 | 16C | Shield component baseline compatibility through Orchestrator only | Five Shield v3.2 component baseline verdicts are represented only inside the Shield Orchestrator receipt; raw component verdict bypasses reject fail-closed | AdamantineOS | Complete |
 | 16D | Q-ID external baseline compatibility | External DigiByte-Q-ID Adamantine evidence v2 is proven compatible with the existing AdamantineOS Q-ID adapter and policy binding; no duplicate Q-ID adapter or authority path is added | AdamantineOS | Complete |
-| 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only | AdamantineOS + Adaptive Core exporter patch | Complete |
+| 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only; post-audit freshness and context-hash hardening complete | AdamantineOS + Adaptive Core exporter patch | Complete |
 
 ## 6. Files added so far
 
@@ -231,6 +231,7 @@ Direct AI Gateway package import inside AdamantineOS: no
 Full multi-repo harness: not started
 Q-ID external compatibility: complete
 Adaptive Core external compatibility: complete
+Adaptive Core post-audit hardening: complete
 AI Gateway external compatibility: not started
 Full Level 4 negative-test matrix: not started
 ```
@@ -449,6 +450,9 @@ The smallest safe external patch was added to `DigiByte-Adaptive-Core`:
 src/adaptive_core/v3/integration/__init__.py
 src/adaptive_core/v3/integration/adamantine.py
 tests/test_v3_integration_adamantine.py
+tests/test_v3_integration_adamantine_fixture_vector.py
+tests/fixtures/adamantine/adaptive_core_adamantine_advisory_evidence_v1.json
+docs/reports/v3/ADAMANTINEOS_INTEGRATION.md
 ```
 
 AdamantineOS files added or updated:
@@ -473,6 +477,22 @@ Low score fails closed.
 Earlier gate DENY dominates Adaptive Core success.
 External import-failure-shaped payload cannot become allow.
 Missing or unknown external fields fail closed.
+Expired Adaptive Core evidence fails closed.
+Not-yet-valid Adaptive Core evidence fails closed.
+Future generated_at evidence fails closed.
+Non-canonical context hashes fail closed.
+Shared two-sided fixture vector is locked between Adaptive Core and AdamantineOS.
+datetime.utcnow() deprecation warnings are removed from Adaptive Core source files.
+```
+
+Milestone 16E post-audit hardening result:
+
+```text
+GAP-16E-01 fixed: issued_at / expires_at freshness enforced against now.
+GAP-16E-02 fixed: context_hash must be lowercase 64-character hex.
+GAP-16E-03 fixed: shared two-sided fixture vector added.
+GAP-16E-04 fixed: Adaptive Core AdamantineOS integration doc added.
+GAP-16E-05 fixed: datetime.utcnow() usage removed from Adaptive Core source files.
 ```
 
 Milestone 16E verification result:
@@ -725,6 +745,7 @@ AdamantineOS must not be tagged until all of the following are true:
 [ ] All required docs updated
 [ ] External adapter / handoff completion rule satisfied for all required sources
 [x] Adaptive Core external adapter / handoff completion rule satisfied
+[x] Adaptive Core post-audit hardening complete
 [ ] External connection proof table complete
 [ ] All fixtures reviewed
 [ ] All negative tests pass
