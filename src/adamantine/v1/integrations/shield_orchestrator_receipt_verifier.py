@@ -118,6 +118,12 @@ def _rejected(
 
 
 def _classify_base_error(exc: ValueError) -> tuple[ShieldReceiptVerificationState, ReasonId]:
+    # WARNING: This minimum pre-16F hardening intentionally documents a
+    # dependency on exact ValueError message wording from
+    # validate_shield_orchestrator_receipt and reject_direct_component_verdict.
+    # If those contract messages change, update this classifier and its tests in
+    # the same commit. Prefer typed contract exceptions in a future contract
+    # version before changing the public receipt validation API.
     message = str(exc).lower()
     if "direct shield component" in message:
         return ShieldReceiptVerificationState.REJECTED_RAW_COMPONENT_BYPASS, ReasonId.EQC_INVALID_SHIELD_BUNDLE
