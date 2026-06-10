@@ -2,7 +2,7 @@
 
 Author attribution: **DarekDGB**  
 Repository: `DigiByte-Adamantine-Wallet-OS`  
-Status: Milestone 16C complete  
+Status: Milestone 16C complete and post-audit hardened  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
 External Shield baseline: Shield v3.2.0 remains external and unchanged  
 Tag status: no AdamantineOS tag yet
@@ -21,7 +21,9 @@ This milestone does not start a full ten-repository harness.
 
 It does not import Shield components into AdamantineOS runtime.
 It does not allow raw Shield component verdicts to become AdamantineOS authority.
-It does not change any Shield repository.
+It did not change any Shield repository during the original 16C compatibility harness.
+
+Post-audit hardening later updated the Shield Orchestrator only because a two-sided connection gap was proven before 16G.
 It does not change Q-ID, Adaptive Core, or AI Gateway.
 It does not bump the AdamantineOS version.
 It does not tag AdamantineOS.
@@ -47,7 +49,9 @@ The following repository was modified:
 DigiByte-Adamantine-Wallet-OS
 ```
 
-No external Shield repository was modified.
+No external Shield repository was modified during the original 16C harness.
+
+Post-audit hardening later modified only `DGB-Quantum-Shield-Orchestrator` to close proven Orchestrator-side contract gaps before 16G.
 
 ---
 
@@ -110,6 +114,11 @@ v3.2 receipt missing a required Shield component
 v3.2 receipt with duplicate Shield component verdicts
 v3.2 receipt with an unknown Shield component
 mixed legacy and v3.2 component verdicts inside one receipt
+unknown component reason IDs inside a rehashed receipt
+unknown component evidence families inside a rehashed receipt
+SKIPPED component decisions inside a rehashed receipt
+component metadata authority fields
+uppercase / non-canonical Shield hashes
 ```
 
 These are rejected as fail-closed boundary violations.
@@ -122,6 +131,8 @@ Milestone 16C adds a scoped component-baseline receipt fixture and a dedicated i
 
 The verifier was minimally hardened so a v3.2 Shield component receipt must contain exactly the five required Shield baseline component IDs when v3.2 component verdicts are present.
 
+Post-audit hardening also requires component reason IDs and evidence families to match the known Shield v3.2 component registries, rejects `SKIPPED` component decisions at the AdamantineOS boundary, and keeps metadata authority fields fail-closed.
+
 Legacy local receipt fixture behavior remains supported separately and is not promoted into the v3.2 component baseline path.
 
 ---
@@ -131,9 +142,16 @@ Legacy local receipt fixture behavior remains supported separately and is not pr
 ```text
 src/adamantine/v1/integrations/shield_orchestrator_receipt_verifier.py
 tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/component_baseline_receipt.json
+tests/fixtures/shield_v3_integration/orchestrator_v3_2_receipt/shared_shield_orchestrator_receipt_v3_2_component_baseline.json
 tests/integrations/test_milestone_16c_shield_component_baseline_through_orchestrator.py
 docs/ADAMANTINEOS_MILESTONE_16C_SHIELD_COMPONENT_BASELINE_THROUGH_ORCHESTRATOR.md
 docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+
+External post-audit hardening files in `DGB-Quantum-Shield-Orchestrator`:
+
+src/shield_orchestrator/v3/contracts/v3_2_receipt.py
+tests/fixtures/adamantine/shield_orchestrator_receipt_v3_2_component_baseline.json
+tests/test_v3_2_orchestrator_receipt_lock.py
 ```
 
 ---
@@ -149,8 +167,20 @@ PYTHONPATH=src pytest -q
 Result:
 
 ```text
-841 passed
-Required test coverage of 100% reached
+Post-audit AdamantineOS verification:
+
+PYTHONPATH=src pytest -q
+
+All tests passed.
+Required test coverage of 100% reached.
+Total coverage: 100.00%
+
+Post-audit Shield Orchestrator verification:
+
+PYTHONPATH=src pytest --cov=shield_orchestrator --cov-report=term-missing --cov-fail-under=100 -q
+
+All tests passed.
+Required test coverage of 100% reached.
 Total coverage: 100.00%
 ```
 
@@ -165,6 +195,11 @@ Shield component baselines remain behind the Shield Orchestrator receipt boundar
 AdamantineOS consumes only Orchestrator receipt-shaped Shield evidence.
 Raw Shield component verdicts cannot bypass the Orchestrator.
 The v3.2 receipt must represent the complete five-component Shield baseline.
+Unknown component reason IDs fail closed.
+Unknown component evidence families fail closed.
+SKIPPED component decisions cannot become Shield ALLOW.
+Component metadata authority fields fail closed.
+Shield hashes remain canonical lowercase SHA-256 hex.
 Shield ALLOW remains evidence only.
 AdamantineOS remains the final fail-closed decision boundary.
 ```
