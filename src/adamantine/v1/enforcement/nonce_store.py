@@ -47,7 +47,8 @@ class InMemoryNonceStore(NonceStore):
     """
     Minimal deterministic store for tests and local use.
 
-    Not production storage. No persistence. No background cleanup.
+    Not production storage. No persistence. No expiry cleanup. Long-running
+    staging or production processes must use an injected DurableNonceStore.
     """
     _used: dict[tuple[str, str], int] | None = None
 
