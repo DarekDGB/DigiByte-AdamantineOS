@@ -55,6 +55,14 @@ Locked rules:
 
 ------------------------------------------------------------------------
 
+## Unreleased - Milestone 18 second red-team hardening pass
+
+- Fixed second-review N1 by replacing unconditional synthetic runtime evidence on the v2 final-policy path with evidence normalized only after real runtime boundaries accept Shield, Q-ID, Adaptive Core oracle, WSQK authority, EQC, and TVA/replay checks.
+- Fixed second-review N2 by routing the legacy v1 executor path through final policy engine gating before executor execution.
+- Updated runtime adapter guidance so integrators do not route live execution around the final policy engine.
+- Added regression tests proving a live EQC deny reaches the final policy engine and that v1 execution is blocked when final policy denies.
+- AdamantineOS remains v2.2.0 and untagged; Milestone 19 remains blocked pending third confirmation review.
+
 ## v2.2.0 — WSQK v2 Quantum-Aware Upgrade
 
 **Status:** Locked  
