@@ -1,7 +1,7 @@
 # AdamantineOS Milestone 16C - Shield Component Baseline Through Orchestrator Only
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 Status: Milestone 16C complete and post-audit hardened  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
 External Shield baseline: Shield v3.2.0 remains external and unchanged  
@@ -46,7 +46,7 @@ DGB-Quantum-Shield-Orchestrator
 The following repository was modified:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 No external Shield repository was modified during the original 16C harness.
