@@ -2,7 +2,7 @@
   <img src="assets/branding/adamantineos-logo-primary.PNG" width="420"/>
 </p>
 
-# 🔷 DigiByte Adamantine Wallet OS
+# 🔷 DigiByte AdamantineOS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-v2.2.0-brightgreen.svg)
@@ -21,7 +21,7 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 
 ## What is AdamantineOS?
 
-Adamantine Wallet OS is a **deterministic security decision engine for
+DigiByte AdamantineOS is a **deterministic security decision engine for
 digital wallets and autonomous systems**.
 
 It verifies execution requests using:
@@ -363,7 +363,7 @@ Security changes require test changes.
 
 ------------------------------------------------------------------------
 
-**Adamantine Wallet OS**\
+**AdamantineOS**\
 Deterministic. Fail‑Closed. Quantum‑Aware. Governance‑Compatible.
 
 ------------------------------------------------------------------------
@@ -377,6 +377,6 @@ architecture**.
 
 ------------------------------------------------------------------------
 
-## License
+## License 2025-2026
 
 MIT License --- **DarekDGB**
