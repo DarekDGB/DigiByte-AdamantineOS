@@ -399,3 +399,154 @@ def test_string_slots_hidden_authority_branch_is_locked() -> None:
         **gates(),
     )
     assert result.state == FinalPolicyEngineState.DENY_AUTHORITY_BYPASS
+
+
+def _v1_envelope(now: int, context_hash: str) -> dict[str, Any]:
+    issued_at = 1706990400
+    expires_at = 1706990460
+    return {
+        "v": "execution_request_v1",
+        "request_id": "req-v1-m18",
+        "intent": "authorize",
+        "context": {
+            "wallet_id": "w1",
+            "device_id": "d1",
+            "app_id": "app",
+            "session_id": "s1",
+            "action": "SEND",
+            "fields": {"amount": "10", "to": "DGB1"},
+        },
+        "authority": {
+            "class": "user",
+            "scope": {"policy_pack": "default"},
+            "proofs": {
+                "wsqk": {
+                    "wallet_id": "w1",
+                    "action": "SEND",
+                    "context_hash": context_hash,
+                    "issued_at": issued_at,
+                    "expires_at": expires_at,
+                    "nonce": "nonce-1",
+                }
+            },
+        },
+        "timebox": {"issued_at": "2024-02-03T20:00:00Z", "expires_at": "2024-02-03T20:01:00Z"},
+        "nonce": {"value": "nonce-1", "store": "tva", "mode": "single_use"},
+        "payload": {
+            "ui_confirmed": True,
+            "evidence": {
+                "qid": {
+                    "qid_iface_version": "qid-session-v0",
+                    "subject": "did:example:123",
+                    "issued_at": now - 50,
+                    "expires_at": now + 50,
+                    "proof_hash": "proofhash123",
+                    "device_binding": "device-1",
+                    "issuer_version": "qid-v0",
+                },
+                "risk": {
+                    "ac_iface_version": "adaptive-core-risk-v0",
+                    "context_hash": context_hash,
+                    "generated_at": now - 10,
+                    "overall_score": 95,
+                    "signals": [{"source": "adaptive-core", "severity": 10, "reason_ids": ["ok"]}],
+                    "oracle_version": "ac-v0",
+                    "external_source_id": "rpt-1",
+                },
+            },
+        },
+        "audit": {"platform": "ios", "client_version": "0.1.0"},
+    }
+
+
+def test_claude_n2_legacy_v1_executes_only_after_final_policy(monkeypatch) -> None:
+    import adamantine.v1.execution.orchestrator_v1 as legacy
+
+    now = 1706990400
+    fields = {"amount": "10", "to": "DGB1"}
+    ctx_hash = compute_context_hash(wallet_id="w1", action="SEND", fields=fields)
+    payload = _v1_envelope(now, ctx_hash)
+    executor = RecordingExecutor()
+
+    def deny_final_policy(**kwargs):
+        assert kwargs["expected_context_hash"] == ctx_hash
+        return FinalPolicyEngineResult(
+            state=FinalPolicyEngineState.DENY_HUMAN_GATE,
+            outcome="DENY",
+            reason_id="NOT_A_VALID_REASON",
+            final_approval=False,
+            handoff_allowed=False,
+            stopped_at="human",
+            evaluation_order=("shield", "wsqk_v2", "qid", "adaptive_core", "ai_gateway", "replay", "wallet_policy", "human"),
+            dominant_reason_ids=("NOT_A_VALID_REASON",),
+        )
+
+    monkeypatch.setattr(legacy, "evaluate_final_policy_engine", deny_final_policy)
+    resp = legacy.orchestrate_execution_v1(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.UNKNOWN_EXTERNAL_REASON.value
+    assert resp["artifacts"]["final_policy"]["state"] == FinalPolicyEngineState.DENY_HUMAN_GATE.value
+    assert executor.called is False
+
+
+def test_claude_n1_eqc_deny_reaches_final_policy_engine(monkeypatch) -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=list(orch.REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=50,
+        with_wsqk=True,
+    )
+    observed: dict[str, Any] = {}
+    real_engine = orch.evaluate_final_policy_engine
+
+    def observe_engine(**kwargs):
+        result = real_engine(**kwargs)
+        observed["stopped_at"] = result.stopped_at
+        observed["state"] = result.state.value
+        observed["shield_source"] = kwargs["shield"].source
+        observed["adaptive_core_source"] = kwargs["adaptive_core"].source
+        return result
+
+    monkeypatch.setattr(orch, "evaluate_final_policy_engine", observe_engine)
+    executor = RecordingExecutor()
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert observed["stopped_at"] == "wallet_policy"
+    assert observed["state"] == FinalPolicyEngineState.DENY_WALLET_POLICY_GATE.value
+    assert observed["shield_source"].startswith("shield:")
+    assert observed["adaptive_core_source"] == "adaptive_core:oracle_v3"
+    assert executor.called is False
+
+
+def test_claude_n2_v1_final_policy_reason_sanitizes_bad_values() -> None:
+    import adamantine.v1.execution.orchestrator_v1 as legacy
+
+    class StringReason:
+        reason_id = "NOT_A_VALID_REASON"
+
+    class ObjectReason:
+        reason_id = object()
+
+    class EnumReason:
+        reason_id = ReasonId.DENY_POLICY
+
+    assert legacy._v1_final_policy_reason(StringReason()) is ReasonId.UNKNOWN_EXTERNAL_REASON
+    assert legacy._v1_final_policy_reason(ObjectReason()) is ReasonId.UNKNOWN_EXTERNAL_REASON
+    assert legacy._v1_final_policy_reason(EnumReason()) is ReasonId.DENY_POLICY
