@@ -9,7 +9,7 @@ Scope: Foundation Releases and Contract History
 
 ## Unreleased — Milestone 18: Authorized Red-Team Review, Runtime Authority Wiring, and Fail-Closed Hardening
 
-**Status:** In progress — Option 2 full evidence-level wiring prepared, fourth red-team confirmation pending
+**Status:** In progress — fourth red-team passed with notes; N8/N7 no-debt closure patch prepared
 **Type:** Runtime authority wiring, red-team fixes, and fail-closed hardening
 **Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
 
@@ -29,9 +29,15 @@ Verification before maintainer copy-back:
 
 ```text
 PYTHONPATH=src python -m pytest -q
-923 passed
+925 passed
 100.00% coverage
 ```
+
+
+Additional no-debt closure hardening after Claude's fourth review:
+
+8. N8 fixed: reject branches now fail closed if the final policy engine unexpectedly returns ALLOW inside an already-rejected runtime branch.
+9. N7 closed: EQC aggregate runtime policy verdicts are explicitly documented as flowing through the stable `wallet_policy` local gate.
 
 Milestone 18 remains open until the fresh patched ZIP is inspected and a second Claude AI red-team confirmation is clean or all new findings are fixed.
 
@@ -333,6 +339,6 @@ Verification:
 
 ```text
 PYTHONPATH=src python -m pytest -q
-923 passed
+925 passed
 100.00% coverage
 ```
