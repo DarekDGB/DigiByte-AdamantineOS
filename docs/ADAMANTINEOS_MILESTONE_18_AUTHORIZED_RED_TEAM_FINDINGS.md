@@ -256,3 +256,35 @@ EQC rejected          -> stopped_at=wallet_policy
 ```
 
 This corrects the earlier N6 wording issue by no longer claiming only aggregate EQC wiring as full evidence wiring. Milestone 18 remains open pending fourth Claude confirmation review.
+
+
+### Milestone 18 N7 closure — EQC / wallet_policy gate semantics
+
+EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate. This is a contract-preserving audit note: the final policy engine keeps the stable `wallet_policy` local gate name, while docs explicitly define that live EQC aggregate policy failures are represented there.
+
+
+## Fourth-review no-debt closure: N8/N7
+
+Claude AI's fourth confirmation review returned `PASS WITH NOTES` and stated Milestone 18 can close, with only N8 and N7 remaining as non-blocking notes. The maintainer selected no-debt closure instead of carrying those notes into Milestone 19.
+
+### N8 closure
+
+Reject branches now explicitly fail closed if a future refactor ever makes `evaluate_final_policy_engine()` return `ALLOW_FINAL_ADAMANTINEOS_DECISION` while the runtime branch is already handling a rejected source. The runtime response remains `deny`, uses `DENY_POLICY`, and records a `final_policy_invariant` artifact.
+
+Regression proof:
+
+```text
+test_milestone_18_n8_reject_branch_unexpected_engine_allow_fails_closed
+```
+
+### N7 closure
+
+EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate. This preserves the locked final-policy local-gate contract while making the audit meaning explicit for future reviewers.
+
+Regression proof:
+
+```text
+test_milestone_18_n7_eqc_wallet_policy_mapping_is_explicit_in_docs
+```
+
+Milestone 18 remains pending only until this closure patch is copied, CI stays green, and the fresh ZIP is inspected. AdamantineOS remains v2.2.0 and untagged.
