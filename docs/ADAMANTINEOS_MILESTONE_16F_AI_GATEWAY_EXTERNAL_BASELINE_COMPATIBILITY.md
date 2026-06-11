@@ -1,7 +1,7 @@
 # AdamantineOS Milestone 16F - AI Gateway External Baseline Compatibility
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 External repository: `adamantine-ai-gateway`  
 Status: Milestone 16F scoped compatibility harness  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
@@ -29,7 +29,7 @@ AdamantineOS remains the final fail-closed execution boundary.
 Repositories touched:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 adamantine-ai-gateway
 ```
 
