@@ -1,8 +1,8 @@
 # DigiByte AdamantineOS Milestone 17 - Rebrand, Proof Pack, and Docs Alignment
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
-Status: **Milestone 17 in progress**  
+Repository: `DigiByte-AdamantineOS`  
+Status: **Milestone 17 complete after fresh ZIP verification**  
 AdamantineOS version boundary: **v2.2.0 remains unchanged**  
 Tag status: **no AdamantineOS tag yet**
 
@@ -36,9 +36,15 @@ The short name is:
 AdamantineOS
 ```
 
-Historical wording may appear only when describing the previous name or repository path.
+Historical public-name wording may appear only when describing the previous name.
 
-The repository folder and package metadata remain stable during Milestone 17 so existing tests, imports, and CI paths do not break.
+The GitHub repository path is now:
+
+```text
+DarekDGB/DigiByte-AdamantineOS
+```
+
+Package metadata, Python package name, and import paths remain stable during Milestone 17 so existing tests, imports, and CI paths do not break.
 
 ---
 
