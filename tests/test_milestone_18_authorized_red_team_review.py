@@ -550,3 +550,190 @@ def test_claude_n2_v1_final_policy_reason_sanitizes_bad_values() -> None:
     assert legacy._v1_final_policy_reason(StringReason()) is ReasonId.UNKNOWN_EXTERNAL_REASON
     assert legacy._v1_final_policy_reason(ObjectReason()) is ReasonId.UNKNOWN_EXTERNAL_REASON
     assert legacy._v1_final_policy_reason(EnumReason()) is ReasonId.DENY_POLICY
+
+
+def test_milestone_18_outer_tva_error_path_remains_fail_closed_for_bad_wsqk_v2_scope() -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=list(orch.REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=99,
+        with_wsqk=True,
+    )
+    payload["authority"]["scope"]["wsqk_v2"] = {
+        "required_evidence_families": "not-a-list",
+        "required_quantum_posture": "hybrid_required",
+    }
+    executor = RecordingExecutor()
+
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.DENY_AUTHORITY_INVALID.value
+    assert resp["decision"]["allowed"] is False
+    assert executor.called is False
+
+
+def _observe_v2_engine(monkeypatch, observed: dict[str, Any]) -> None:
+    real_engine = orch.evaluate_final_policy_engine
+
+    def observe_engine(**kwargs):
+        result = real_engine(**kwargs)
+        observed["stopped_at"] = result.stopped_at
+        observed["state"] = result.state.value
+        observed["reason_id"] = result.reason_id.value if isinstance(result.reason_id, ReasonId) else result.reason_id
+        observed["inputs"] = kwargs
+        return result
+
+    monkeypatch.setattr(orch, "evaluate_final_policy_engine", observe_engine)
+
+
+def test_milestone_18_option2_qid_reject_reaches_final_policy_engine(monkeypatch) -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=list(orch.REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=99,
+        with_wsqk=True,
+    )
+    payload["payload"]["evidence"]["qid"]["proof_hash"] = ""
+    observed: dict[str, Any] = {}
+    _observe_v2_engine(monkeypatch, observed)
+    executor = RecordingExecutor()
+
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert observed["stopped_at"] == "qid"
+    assert observed["inputs"]["qid"].accepted_as_evidence is False
+    assert executor.called is False
+
+
+def test_milestone_18_option2_shield_reject_reaches_final_policy_engine(monkeypatch) -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=["sentinel_ai"],
+        oracle_score=99,
+        with_wsqk=True,
+    )
+    observed: dict[str, Any] = {}
+    _observe_v2_engine(monkeypatch, observed)
+    executor = RecordingExecutor()
+
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert observed["stopped_at"] == "shield"
+    assert observed["inputs"]["shield"].accepted_as_evidence is False
+    assert executor.called is False
+
+
+def test_milestone_18_option2_wsqk_reject_reaches_final_policy_engine(monkeypatch) -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=list(orch.REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=99,
+        with_wsqk=False,
+    )
+    observed: dict[str, Any] = {}
+    _observe_v2_engine(monkeypatch, observed)
+    executor = RecordingExecutor()
+
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert observed["stopped_at"] == "wsqk_v2"
+    assert observed["inputs"]["wsqk_v2"].accepted_as_evidence is False
+    assert executor.called is False
+
+
+def test_milestone_18_option2_replay_gate_reject_reaches_final_policy_engine(monkeypatch) -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=list(orch.REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=99,
+        with_wsqk=True,
+    )
+    observed: dict[str, Any] = {}
+    _observe_v2_engine(monkeypatch, observed)
+    monkeypatch.setattr(orch, "run_with_tva", lambda **kwargs: (_ for _ in ()).throw(orch.TVAError(ReasonId.TVA_NONCE_REPLAY.value)))
+    executor = RecordingExecutor()
+
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert observed["stopped_at"] == "replay"
+    assert observed["inputs"]["replay"].passed is False
+    assert executor.called is False
+
+
+def test_milestone_18_option2_human_gate_reject_reaches_final_policy_engine(monkeypatch) -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=list(orch.REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=99,
+        with_wsqk=True,
+    )
+    payload["payload"]["body"]["ui_confirmed"] = False
+    observed: dict[str, Any] = {}
+    _observe_v2_engine(monkeypatch, observed)
+    executor = RecordingExecutor()
+
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert observed["stopped_at"] == "human"
+    assert observed["inputs"]["human"].passed is False
+    assert executor.called is False
