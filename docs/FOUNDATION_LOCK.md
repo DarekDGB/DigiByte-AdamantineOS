@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-This document defines what it means for the Adamantine Wallet OS **execution foundation** to be **locked**.
+This document defines what it means for the AdamantineOS **execution foundation** to be **locked**.
 
 A locked foundation is a security and stability checkpoint:
 - Interfaces are stable
