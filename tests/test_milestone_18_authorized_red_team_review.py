@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 import adamantine.v1.execution.orchestrator_v2 as orch
+from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.reason_ids import ReasonId
+from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapEntry
 from adamantine.v1.execution.executor import RecordingExecutor
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
 from adamantine.v1.eqc.context_hash import compute_context_hash
@@ -13,7 +16,150 @@ from adamantine.v1.policy.final_policy_engine import (
     LocalPolicyGateResult,
     evaluate_final_policy_engine,
 )
-from tests.test_execution_orchestrator_v2_matrix import _envelope_v2, _policy
+
+
+def _reason_map() -> ExternalReasonMap:
+    return ExternalReasonMap(
+        entries=(
+            ExternalReasonMapEntry(external_id="ok", internal_reason_id=ReasonId.EVIDENCE_OK.value),
+            ExternalReasonMapEntry(external_id="AC_OK", internal_reason_id=ReasonId.EVIDENCE_OK.value),
+            ExternalReasonMapEntry(external_id="OK", internal_reason_id=ReasonId.EVIDENCE_OK.value),
+            ExternalReasonMapEntry(external_id="BLOCK", internal_reason_id=ReasonId.DENY_POLICY.value),
+        )
+    )
+
+
+def _policy(*, min_score: int = 85) -> orch.RiskPolicy:
+    pack = PolicyPack(
+        min_overall_score=min_score,
+        allowed_external_reason_ids=("ok", "AC_OK", "OK", "BLOCK"),
+        external_reason_map=_reason_map(),
+    )
+    return orch.RiskPolicy(min_overall_score=min_score, policy_pack=pack)
+
+
+def _qid_payload(*, issued_at: int, expires_at: int) -> dict[str, Any]:
+    return {
+        "qid_iface_version": "qid-session-v0",
+        "subject": "did:example:123",
+        "issued_at": issued_at,
+        "expires_at": expires_at,
+        "proof_hash": "proofhash123",
+        "device_binding": "device-1",
+        "issuer_version": "qid-v0",
+    }
+
+
+def _oracle_payload(*, context_hash: str, issued_at: int, expires_at: int, generated_at: int, score: int) -> dict[str, Any]:
+    return {
+        "ac_iface_version": "adaptive_core_oracle_v3",
+        "context_hash": context_hash,
+        "issued_at": issued_at,
+        "expires_at": expires_at,
+        "generated_at": generated_at,
+        "overall_score": score,
+        "signals": [{"source": "ac_model", "severity": 10, "reason_ids": ["AC_OK"]}],
+        "oracle_version": "adaptive-core/3.0.0",
+        "external_source_id": "ac-prod-1",
+    }
+
+
+def _shield_signal(*, layer: str, signal_id: str, context_hash: str, ext_reason: str = "OK") -> dict[str, Any]:
+    return {
+        "v": "shield_signal_v3",
+        "layer": layer,
+        "layer_version": "1.0.0",
+        "signal_id": signal_id,
+        "context_hash": context_hash,
+        "issued_at": 1706990400,
+        "expires_at": 1706990460,
+        "verdict": "allow",
+        "reason_id": ext_reason,
+        "confidence": 90,
+        "facts": {"k": "v"},
+        "meta": {},
+    }
+
+
+def _shield_bundle(*, context_hash: str, required_layers: list[str]) -> dict[str, Any]:
+    signals = [
+        _shield_signal(layer="adn", signal_id="a-1", context_hash=context_hash),
+        _shield_signal(layer="dqsn", signal_id="d-1", context_hash=context_hash),
+        _shield_signal(layer="guardian_wallet", signal_id="g-1", context_hash=context_hash),
+        _shield_signal(layer="qwg", signal_id="q-1", context_hash=context_hash),
+        _shield_signal(layer="sentinel_ai", signal_id="s-1", context_hash=context_hash),
+    ]
+    return {
+        "v": "shield_bundle_v3",
+        "shield_bundle_version": "1.0.0",
+        "bundle_id": "b1",
+        "context_hash": context_hash,
+        "issued_at": 1706990400,
+        "expires_at": 1706990460,
+        "required_layers": required_layers,
+        "signals": signals,
+        "meta": {},
+    }
+
+
+def _envelope_v2(
+    *,
+    now: int,
+    context_hash: str,
+    shield_context_hash: str | None = None,
+    shield_required_layers: list[str],
+    oracle_score: int,
+    with_wsqk: bool,
+) -> dict[str, Any]:
+    issued_iso = "2024-02-03T20:00:00Z"
+    expires_iso = "2024-02-03T20:01:00Z"
+    issued_at = 1706990400
+    expires_at = 1706990460
+
+    proofs: dict[str, Any] = {}
+    if with_wsqk:
+        proofs["wsqk"] = {
+            "wallet_id": "w1",
+            "action": "send",
+            "context_hash": context_hash,
+            "issued_at": issued_at,
+            "expires_at": expires_at,
+            "nonce": "n1",
+        }
+
+    return {
+        "v": "execution_request_v2",
+        "request_id": "req-1",
+        "intent": "authorize",
+        "context": {
+            "wallet_id": "w1",
+            "device_id": "d1",
+            "app_id": "app",
+            "session_id": "s1",
+            "action": "send",
+            "fields": {"asset": "DGB", "amount": "1"},
+        },
+        "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs},
+        "timebox": {"issued_at": issued_iso, "expires_at": expires_iso},
+        "nonce": {"value": "n1", "store": "tva", "mode": "single_use"},
+        "payload": {
+            "evidence": {
+                "qid": _qid_payload(issued_at=now - 10, expires_at=now + 10),
+                "oracle": _oracle_payload(
+                    context_hash=context_hash,
+                    issued_at=now - 5,
+                    expires_at=now + 5,
+                    generated_at=now - 1,
+                    score=oracle_score,
+                ),
+                "shield": _shield_bundle(
+                    context_hash=(shield_context_hash if shield_context_hash is not None else context_hash),
+                    required_layers=shield_required_layers,
+                ),
+            },
+            "body": {"ui_confirmed": True},
+        },
+    }
 
 
 @dataclass(frozen=True)
