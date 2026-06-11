@@ -1,6 +1,8 @@
-blank_issues_enabled: true
-
+blank_issues_enabled: false
 contact_links:
-  - name: Security vulnerabilities (private)
-    url: https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/security/policy
-    about: Please report security issues privately via the Security Policy.
+  - name: DigiByte AdamantineOS security policy
+    url: https://github.com/DarekDGB/DigiByte-AdamantineOS/security/policy
+    about: Please report security issues through the security policy instead of public issues.
+  - name: DigiByte AdamantineOS discussions
+    url: https://github.com/DarekDGB/DigiByte-AdamantineOS/discussions
+    about: Use discussions for design questions, integration ideas, and non-security topics.
