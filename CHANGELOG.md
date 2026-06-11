@@ -7,6 +7,37 @@ Scope: Foundation Releases and Contract History
 
 ------------------------------------------------------------------------
 
+## Unreleased — Milestone 19: Final Release Gate, Tag Readiness, and Evidence Lock
+
+**Status:** Started — final release gate prepared, not complete  
+**Type:** Release-gate evidence, tag-readiness decision, and proof-pack indexing  
+**Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
+
+Milestone 19 is the final gate before any AdamantineOS tag decision. It prepares the release-gate document, tag-decision boundary, and final proof-pack index for the candidate `v3.0.0` release.
+
+Current decision state:
+
+```text
+Candidate tag: v3.0.0
+Tag approved: no
+Release approved: no
+Version bump applied: no
+AdamantineOS remains: v2.2.0 and untagged
+```
+
+Verification before gate package:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+TOTAL 4097 statements, 0 missed
+```
+
+Milestone 19 is not complete until maintainer copy-back, fresh post-copy ZIP inspection, repeated tests, 100.00% coverage, and explicit tag approval.
+
+------------------------------------------------------------------------
+
 ## Unreleased — Milestone 18: Authorized Red-Team Review, Runtime Authority Wiring, and Fail-Closed Hardening
 
 **Status:** Complete — fourth red-team passed; N8/N7 no-debt closure verified
