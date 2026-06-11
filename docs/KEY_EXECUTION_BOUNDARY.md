@@ -1,4 +1,4 @@
-## Adamantine Wallet OS — Execution Boundary
+## AdamantineOS — Execution Boundary
 
 **License:** MIT  
 **© 2025 DarekDGB**
@@ -10,7 +10,7 @@
 This document defines the **execution boundary** between:
 
 - private key custody (platform secure hardware)
-- transaction execution (Adamantine Wallet OS)
+- transaction execution (AdamantineOS)
 
 Adamantine **never touches private keys**.
 
