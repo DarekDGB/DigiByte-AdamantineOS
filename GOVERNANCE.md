@@ -1,10 +1,10 @@
-# Adamantine Wallet OS — Governance (v1)
+# AdamantineOS — Governance (v1)
 
 **License:** MIT  
 **Author:** DarekDGB  
 **Scope:** Foundation contract governance for the sealed OS (no wallet runtime).
 
-This document defines **non-negotiable governance rules** for evolving the Adamantine Wallet OS foundation.
+This document defines **non-negotiable governance rules** for evolving the AdamantineOS foundation.
 
 If a change violates these rules, it is **rejected**.
 
