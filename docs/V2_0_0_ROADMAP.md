@@ -1,4 +1,4 @@
-# Adamantine Wallet OS — v2.0.0 Roadmap (Phase A–E)
+# AdamantineOS — v2.0.0 Roadmap (Phase A–E)
 
 **License:** MIT — **Author:** DarekDGB  
 **Scope:** v2.0.0 reference runtime host + production envelope proof pack.
