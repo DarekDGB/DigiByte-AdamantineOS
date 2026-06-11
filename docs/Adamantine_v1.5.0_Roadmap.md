@@ -1,4 +1,4 @@
-# Adamantine Wallet OS — v1.5.0 Roadmap (Option C)
+# AdamantineOS — v1.5.0 Roadmap (Option C)
 
 **License:** MIT — **Author:** DarekDGB  
 **Scope:** v1.5.0 implementation plan for the **Mobile SDK Contract Pack** (contract-first, deterministic, fail-closed).  
