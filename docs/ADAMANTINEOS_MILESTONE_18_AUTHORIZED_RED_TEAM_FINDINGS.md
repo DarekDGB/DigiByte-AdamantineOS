@@ -166,3 +166,72 @@ Claude AI performs second red-team confirmation
 all second-pass findings are fixed or explicitly accepted with rationale
 AdamantineOS remains untagged
 ```
+
+## Second Claude red-team confirmation triage
+
+A second authorized Claude review returned `PASS WITH NOTES`, not a clean close. It confirmed F2-F8 were fixed and F1 was structurally fixed, but identified two new Milestone 18 blockers:
+
+```text
+N1 MEDIUM - final policy engine was fed synthetic always-ALLOW runtime evidence
+N2 MEDIUM - legacy orchestrate_execution_v1 remained an executor-running path without final policy engine gating
+```
+
+Milestone 18 remains open until these are fixed and re-reviewed.
+
+### M18-N1 — Semantic runtime evidence wiring
+
+Status: **fixed in second patch**
+
+The v2 runtime path no longer feeds `_runtime_evidence_allow()` constants into the final policy engine. The final policy inputs are now built only after the corresponding live runtime evidence boundary has accepted the request:
+
+```text
+shield       <- parsed ShieldBundleV3
+wsqk_v2      <- validated WSQK authority proof
+qid          <- parsed Q-ID session proof
+adaptive_core<- parsed Adaptive Core oracle v3 result
+ai_gateway   <- explicit not-required marker for non-AI runtime ingress
+replay       <- TVA/replay gate result after enforce_tva succeeds
+wallet_policy<- EQC result, including live EQC denies
+human        <- explicit local human gate result
+```
+
+A live EQC deny now reaches `evaluate_final_policy_engine()` and is stopped by the final engine at the `wallet_policy` gate before executor execution.
+
+Regression proof:
+
+```text
+test_claude_n1_eqc_deny_reaches_final_policy_engine
+```
+
+### M18-N2 — Legacy v1 executor path fenced by final policy
+
+Status: **fixed in second patch**
+
+`orchestrate_execution_v1` no longer calls the executor through `boundary.run_with_tva`. It enforces TVA first, then calls `evaluate_final_policy_engine()`, and only then calls `executor.execute()` if the final AdamantineOS decision is ALLOW.
+
+The v1 runtime adapter documentation now warns that live execution must not route around the final policy engine.
+
+Regression proof:
+
+```text
+test_claude_n2_legacy_v1_executes_only_after_final_policy
+test_claude_n2_v1_final_policy_reason_sanitizes_bad_values
+```
+
+### M18-N3/N4/N5 — Documentation and placeholder clarity
+
+Status: **updated / tracked**
+
+- Docs now record that the second review found N1/N2 and that the second patch removes the unconditional synthetic runtime evidence pattern.
+- The `ai_gateway:not_required_for_runtime_path` marker is intentionally not an approval source. It means the live wallet runtime path is not AI Gateway ingress. It is still evidence-only and cannot grant final approval by itself.
+- Local gates are no longer all merely decorative: EQC deny flows into the `wallet_policy` gate and TVA success feeds the `replay` gate before executor execution.
+
+## Second-patch verification
+
+```text
+PYTHONPATH=src python -m pytest -q
+917 passed
+100.00% coverage
+```
+
+Milestone 18 still must not be closed until a fresh patched ZIP is inspected and Claude AI performs another confirmation review.
