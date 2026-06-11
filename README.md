@@ -75,6 +75,26 @@ execution**.
 
 ------------------------------------------------------------------------
 
+## Milestone 19 --- Final Release Gate
+
+Milestone 19 is the final release gate before any AdamantineOS version bump or tag decision.
+
+Current state:
+
+```text
+Current version: v2.2.0
+Candidate tag under review: v3.0.0
+Tag approved: no
+Release approved: no
+Package/import names: unchanged
+```
+
+The candidate `v3.0.0` tag is not approved until the Milestone 19 gate passes after fresh ZIP inspection, repeated tests, 100.00% coverage, proof-pack alignment, and explicit maintainer approval.
+
+AdamantineOS does not change DigiByte consensus. It remains an external deterministic fail-closed execution protection boundary.
+
+------------------------------------------------------------------------
+
 ## v2.2.0 --- WSQK v2 Quantum-Aware Upgrade
 
 **Status:** Locked\
