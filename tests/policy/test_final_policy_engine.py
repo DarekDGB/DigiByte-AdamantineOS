@@ -95,7 +95,7 @@ def test_shield_deny_stops_before_wsqk():
     )
 
     assert result.state == FinalPolicyEngineState.DENY_EVIDENCE_REJECTED
-    assert result.reason_id == "SHIELD_DENY"
+    assert result.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
     assert result.stopped_at == "shield"
     assert result.evaluation_order == ("shield",)
 
@@ -165,7 +165,7 @@ def test_ai_gateway_deny_stops_before_replay_gate():
     )
 
     assert result.state == FinalPolicyEngineState.DENY_EVIDENCE_REJECTED
-    assert result.reason_id == "AI_GATEWAY_POLICY_REJECTED"
+    assert result.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
     assert result.stopped_at == "ai_gateway"
     assert result.evaluation_order == ("shield", "wsqk_v2", "qid", "adaptive_core", "ai_gateway")
 
@@ -235,7 +235,7 @@ def test_local_gate_can_require_human_review_without_allowing():
     result = run_engine(wallet_policy=LocalPolicyGateResult("wallet_policy", True, "WALLET_POLICY_REQUIRES_HUMAN", requires_human_review=True))
 
     assert result.state == FinalPolicyEngineState.HUMAN_REVIEW_REQUIRED
-    assert result.reason_id == "WALLET_POLICY_REQUIRES_HUMAN"
+    assert result.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
     assert result.stopped_at == "wallet_policy"
     assert result.final_approval is False
 
@@ -295,5 +295,5 @@ def test_non_string_dominant_reasons_are_ignored():
         )
     )
 
-    assert result.reason_id == "AI_REASON"
-    assert result.dominant_reason_ids == ("AI_REASON",)
+    assert result.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
+    assert result.dominant_reason_ids == (ReasonId.UNKNOWN_EXTERNAL_REASON.value,)
