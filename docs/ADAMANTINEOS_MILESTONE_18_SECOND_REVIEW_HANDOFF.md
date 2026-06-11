@@ -88,3 +88,49 @@ PYTHONPATH=src python -m pytest -q
 917 passed
 100.00% coverage
 ```
+
+
+## Fourth confirmation request after Option 2 full evidence-level wiring
+
+Claude's third review left N1 partially fixed and offered two options. The maintainer selected **Option 2**: full evidence-level wiring instead of accepted residual scope.
+
+Ask Claude to verify specifically:
+
+```text
+Please perform a fourth authorized Milestone 18 confirmation review of the fresh DigiByte-AdamantineOS ZIP.
+
+Previous third-review residual:
+N1 was partially fixed because only EQC denial reached the final policy engine, while Shield / Q-ID / WSQK structural rejects still denied upstream, and replay/human gates were not fully runtime-fed.
+
+New Option 2 fix claims:
+- Q-ID adapter/verifier failures now reach evaluate_final_policy_engine as rejected qid evidence.
+- Q-ID replay proof failures now reach evaluate_final_policy_engine as rejected qid evidence and failed replay gate.
+- Adaptive Core oracle failures now reach evaluate_final_policy_engine as rejected adaptive_core evidence.
+- Shield adapter, structural, context, and required-layer failures now reach evaluate_final_policy_engine as rejected shield evidence.
+- Missing/invalid WSQK authority now reaches evaluate_final_policy_engine as rejected wsqk_v2 evidence.
+- TVA / nonce replay failure now reaches evaluate_final_policy_engine as a failed replay local gate.
+- Human confirmation failure now reaches evaluate_final_policy_engine as a failed human local gate.
+- EQC deny still reaches evaluate_final_policy_engine as wallet_policy failure.
+- Executor execution still occurs only after ALLOW_FINAL_ADAMANTINEOS_DECISION.
+- No source rejection should bypass the final policy engine unless the envelope itself cannot be parsed.
+
+Regression tests added:
+test_milestone_18_option2_qid_reject_reaches_final_policy_engine
+test_milestone_18_option2_shield_reject_reaches_final_policy_engine
+test_milestone_18_option2_wsqk_reject_reaches_final_policy_engine
+test_milestone_18_option2_replay_gate_reject_reaches_final_policy_engine
+test_milestone_18_option2_human_gate_reject_reaches_final_policy_engine
+test_milestone_18_outer_tva_error_path_remains_fail_closed_for_bad_wsqk_v2_scope
+
+Please try to break these claims. Confirm whether N1 is now fixed, partially fixed, or still open. Also look for any new bypass, fail-open path, executor-before-final-policy path, synthetic evidence overclaim, v1/v2 shadowing trap, docs-vs-tests mismatch, package/CI reality gap, reason-ID drift, replay/nonce assumption, or release-gate overclaim.
+
+Do not approve tagging. AdamantineOS must remain v2.2.0 and untagged. Milestone 19 remains blocked unless this review is clean.
+```
+
+Current local proof before fourth review:
+
+```text
+PYTHONPATH=src python -m pytest -q
+923 passed
+100.00% coverage
+```
