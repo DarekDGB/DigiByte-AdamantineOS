@@ -240,7 +240,7 @@ DGB-Sentinel-AI
 DigiByte-Quantum-Shield-Network
 DGB-Quantum-Wallet-Guard
 DGB-Quantum-Shield-Orchestrator
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 DigiByte-Q-ID
 DigiByte-Adaptive-Core
 adamantine-ai-gateway
