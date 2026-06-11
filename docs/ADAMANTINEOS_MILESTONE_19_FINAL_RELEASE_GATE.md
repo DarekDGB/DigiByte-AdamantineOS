@@ -3,60 +3,69 @@
 Author attribution: **DarekDGB**  
 Repository: `DigiByte-AdamantineOS`  
 Public project name: **DigiByte AdamantineOS**  
-Current package version: `v2.2.0`  
-Candidate release tag under review: `v3.0.0`  
-Tag status: **approved after final post-copy verification**  
-Release status: **approved after final post-copy verification**  
-Package/import status: **unchanged**
+Release-stamped package version: `v3.0.0`  
+Approved release tag: `v3.0.0`  
+Tag status: **approved after release-stamp copy-back, CI green, and final fresh-ZIP inspection**  
+Release status: **approved after release-stamp copy-back, CI green, and final fresh-ZIP inspection**  
+Package/import status: **distribution name and Python import paths unchanged**
 
 ---
 
 ## 1. Purpose
 
-Milestone 19 is the final release gate before any AdamantineOS version bump or tag.
+Milestone 19 is the final release gate before the AdamantineOS `v3.0.0` tag.
 
-This milestone does **not** create new runtime authority logic. It verifies whether the completed Shield integration, proof pack, documentation alignment, authorized red-team closure, and no-debt hardening evidence are strong enough to approve a future AdamantineOS tag.
+This milestone does not add new runtime authority logic. It verifies the completed Shield integration, final-policy runtime wiring, authorized red-team closure, proof-pack alignment, documentation alignment, package version stamp, README badge, changelog, and build ledger before tagging.
 
-The expected tag candidate is `v3.0.0`. After fresh post-copy ZIP inspection, repeated tests, and 100.00% coverage verification, this gate approves `v3.0.0` as the AdamantineOS tag candidate.
+Milestone 19 converts the completed gate from `v2.2.0` candidate status into a release-stamped `v3.0.0` state.
 
 ---
 
 ## 2. Locked boundaries
-
-The following boundaries remain locked during Milestone 19:
 
 ```text
 Public project name: DigiByte AdamantineOS
 Repository: DigiByte-AdamantineOS
 Internal package distribution name: adamantine-wallet-os
 Python import paths: unchanged
-Current package version: 2.2.0
-Current AdamantineOS tag status: untagged
-Candidate tag under review: v3.0.0
+Release-stamped package version: 3.0.0
+Approved tag: v3.0.0
+DigiByte consensus change: no
 ```
 
-Milestone 19 must not rename the internal package distribution or Python import paths.
+The package distribution name remains `adamantine-wallet-os` for compatibility. The version field is bumped to `3.0.0` for the release stamp.
 
 ---
 
-## 3. Incoming source audit
+## 3. Source audit and release-stamp evidence
 
-The Milestone 19 gate begins only after inspecting a fresh repository ZIP.
-
-Incoming source evidence:
+Incoming source evidence before release stamping:
 
 ```text
-Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(11).zip
+Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(12).zip
 pyproject package name: adamantine-wallet-os
-pyproject version: 2.2.0
+pyproject version before stamp: 2.2.0
 Final red-team .docx archive: present
 Final red-team .md GitHub-readable report: present and corrected
 Milestone 17 status: complete
 Milestone 18 status: complete / closed
-AdamantineOS tag status: untagged
+Milestone 19 gate artifacts: present and approved
+AdamantineOS tag status before stamp: untagged
 ```
 
-Test evidence from the inspected ZIP:
+Release stamp prepared:
+
+```text
+pyproject version after stamp: 3.0.0
+README status badge: v3.0.0
+CHANGELOG release section: v3.0.0
+Docs index current version: v3.0.0
+Final proof-pack index: v3.0.0
+Tag decision document: v3.0.0 approved
+Build ledger: v3.0.0 release-stamp entry added
+```
+
+Test evidence before the release-stamp package:
 
 ```text
 PYTHONPATH=src python -m pytest -q
@@ -65,11 +74,11 @@ PYTHONPATH=src python -m pytest -q
 TOTAL 4097 statements, 0 missed
 ```
 
+The same command must pass again after this release-stamp package is copied back.
+
 ---
 
 ## 4. Final release gate checklist
-
-Milestone 19 must verify every item below before release/tag approval can be granted.
 
 ```text
 [x] Shield v3.2.0 repos recorded as tagged and stable external baselines
@@ -90,114 +99,65 @@ Milestone 19 must verify every item below before release/tag approval can be gra
 [x] Public project identity uses DigiByte AdamantineOS / AdamantineOS
 [x] Internal package distribution name remains unchanged for compatibility
 [x] Python import paths remain unchanged
-[x] AdamantineOS remains v2.2.0 before final tag decision
-[x] No AdamantineOS tag has been created during this gate
-[x] Maintainer copy-back completed
-[x] Fresh post-copy repository ZIP inspected
-[x] Final post-copy tests confirmed green
-[x] Final post-copy coverage confirmed 100.00%
-[x] Final tag decision explicitly approved
+[x] Package version stamped to 3.0.0 for release
+[x] README badge stamped to v3.0.0
+[x] CHANGELOG stamped with v3.0.0 release notes
+[x] Final proof-pack index stamped to v3.0.0
+[x] Tag decision document approves v3.0.0 after final copied-repo verification
 ```
-
-All Milestone 19 release-gate checklist items are now verified from the fresh post-copy repository ZIP. Milestone 19 is ready for maintainer copy-back of this approval update and one final ZIP inspection before the tag command is run.
 
 ---
 
 ## 5. Release decision rule
 
-A release/tag decision is approved because all conditions below have been verified:
+The `v3.0.0` tag is approved only after all of the following are true:
 
-1. This Milestone 19 gate document is copied into the repository.
-2. The build ledger records Milestone 19 accurately.
-3. The proof-pack index points to the final evidence set.
-4. A fresh repository ZIP is uploaded after copy-back.
-5. The fresh post-copy ZIP is inspected.
-6. The exact test command passes again.
-7. Coverage remains 100.00%.
-8. No docs/package/import mismatch is introduced.
-9. The maintainer explicitly approves the final tag decision.
+```text
+[ ] This release-stamp package is copied into the repository
+[ ] CI remains green after copy-back
+[ ] A fresh post-copy repository ZIP is uploaded
+[ ] The fresh ZIP is inspected
+[ ] PYTHONPATH=src python -m pytest -q passes again
+[ ] Coverage remains 100.00%
+[ ] pyproject version is confirmed as 3.0.0
+[ ] README / CHANGELOG / docs / ledger all agree on v3.0.0
+```
 
-If any later copy-back or CI verification fails, the tag becomes blocked again until corrected.
+If any post-copy verification fails, the tag is blocked until corrected.
 
 ---
 
-## 6. Candidate tag rationale
+## 6. Why v3.0.0 is the correct tag
 
-`v3.0.0` is a defensible candidate because Milestone 18 changed AdamantineOS from a proof/integration hardening state into a live runtime final-policy authority boundary with full per-source evidence-level deny wiring.
+`v3.0.0` is a major AdamantineOS release boundary because the system now records the completed connection of all major protection layers into the live final-policy runtime authority path.
 
-The candidate tag represents a major release boundary for AdamantineOS itself, not a Shield repo tag and not a DigiByte Core consensus change.
+The release locks evidence that:
+
+```text
+- Shield v3.2.0 evidence is consumed through the orchestrator receipt boundary
+- Q-ID reject reaches the final policy engine
+- Shield reject reaches the final policy engine
+- WSQK v2 reject reaches the final policy engine
+- wallet_policy / EQC reject reaches the final policy engine
+- replay / nonce reject reaches the final policy engine
+- human gate reject reaches the final policy engine
+- legacy v1 executor path is final-policy gated
+- executor runs only after ALLOW_FINAL_ADAMANTINEOS_DECISION
+- authorized red-team review closed with no known debt
+```
+
+This release does not change DigiByte consensus and does not claim to be a wallet UI, key custody layer, transaction builder, or network broadcaster.
 
 ---
 
-## 7. Non-goals
+## 7. Current Milestone 19 state
 
-Milestone 19 must not:
-
-```text
-- add new runtime authority logic unless a final audit discovers a bug
-- rename Python package/import paths
-- change package metadata casually
-- change DigiByte consensus
-- claim release approval before the final gate passes
-- hide limitations
-- carry unresolved findings silently
-- tag AdamantineOS before explicit final approval
-```
-
----
-
-## 8. Current Milestone 19 state
-
-Status: **final gate passed / approval update prepared / awaiting final copied-repo verification before tag command**.
-
-AdamantineOS remains:
+Status: **release-stamp package prepared / awaiting copy-back, CI, and final fresh-ZIP verification**.
 
 ```text
-version: 2.2.0
-tag status: untagged
-release status: approved after final copied-repo verification
-candidate tag: v3.0.0 approved
-```
-
-
----
-
-## 9. Final post-copy verification evidence
-
-The maintainer copied the initial Milestone 19 release-gate package into the repository and provided a fresh updated repository ZIP for final audit.
-
-Verified source:
-
-```text
-Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(11).zip
-pyproject package name: adamantine-wallet-os
-pyproject version: 2.2.0
-Final red-team .docx archive: present
-Final red-team .md GitHub-readable report: present and corrected
-Milestone 17 status: complete
-Milestone 18 status: complete / closed
-Milestone 19 gate artifacts: present
-AdamantineOS tag status before approval update: untagged
-```
-
-Final gate test evidence:
-
-```text
-PYTHONPATH=src python -m pytest -q
-925 passed
-100.00% coverage
-TOTAL 4097 statements, 0 missed
-```
-
-Final Milestone 19 decision:
-
-```text
-Milestone 19 final release gate: PASSED
-Candidate tag: v3.0.0
-Tag decision: APPROVED after this approval update is copied back and verified from a fresh ZIP
-Release decision: APPROVED after this approval update is copied back and verified from a fresh ZIP
-Package/import rename: no
+Release version: 3.0.0
+Approved tag: v3.0.0
+Package distribution name: adamantine-wallet-os
+Python import paths: unchanged
 DigiByte consensus change: no
 ```
-
-This approval does not create the tag by itself. The tag command must only be run after this approval update is copied into the repository, CI remains green, and the final repository ZIP is inspected.
