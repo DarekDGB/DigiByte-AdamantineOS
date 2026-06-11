@@ -55,3 +55,36 @@ PYTHONPATH=src python -m pytest -q
 ## Maintainer rule
 
 A clean local test run does not automatically close Milestone 18. Milestone 18 closes only after fresh ZIP inspection and second red-team confirmation.
+
+## Third confirmation request after N1/N2 second patch
+
+Claude's second review found N1 and N2. The second Milestone 18 patch claims to fix them.
+
+Ask Claude to verify specifically:
+
+```text
+Please perform a third authorized Milestone 18 confirmation review of the fresh DigiByte-AdamantineOS ZIP.
+
+Previous second-review blockers:
+N1 MEDIUM - final policy engine was fed synthetic always-ALLOW runtime evidence.
+N2 MEDIUM - legacy orchestrate_execution_v1 was an executor-running path without final policy engine gating.
+
+New fix claims:
+- orchestrator_v2 no longer feeds unconditional always-ALLOW runtime constants into evaluate_final_policy_engine.
+- v2 final-policy inputs are derived after real runtime evidence boundaries accept Shield, Q-ID, Adaptive Core oracle, WSQK authority, EQC, TVA/replay, wallet_policy, and human gate status.
+- a live EQC deny now reaches evaluate_final_policy_engine and stops at the wallet_policy gate before executor execution.
+- orchestrator_v1 no longer uses boundary.run_with_tva as an executor-running shortcut; it enforces TVA, then calls evaluate_final_policy_engine, then executes only after final ALLOW.
+- runtime_adapter docs no longer instruct implementers to wire live execution around the final policy engine.
+
+Please try to break these claims. Confirm whether N1 and N2 are fixed, partially fixed, or still open. Also look for any new bypass, fail-open path, executor-before-final-policy path, synthetic evidence overclaim, v1/v2 shadowing trap, docs-vs-tests mismatch, or release-gate overclaim.
+
+Do not approve tagging. AdamantineOS must remain v2.2.0 and untagged. Milestone 19 remains blocked unless this review is clean.
+```
+
+Current local proof before this third review:
+
+```text
+PYTHONPATH=src python -m pytest -q
+917 passed
+100.00% coverage
+```
