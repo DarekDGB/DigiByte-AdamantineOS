@@ -9,7 +9,7 @@ from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.verdict import Verdict
 from adamantine.v1.enforcement.nonce_store import NonceStore
 from adamantine.v1.eqc.evaluator import evaluate_eqc
-from adamantine.v1.execution.boundary import run_with_tva
+from adamantine.v1.enforcement.tva_gate import enforce_tva
 from adamantine.v1.execution.envelope_v1 import parse_execution_request_envelope_v1
 from adamantine.v1.execution.errors import EnvelopeError
 from adamantine.v1.execution.executor import Executor
@@ -17,7 +17,68 @@ from adamantine.v1.execution.response_v1 import build_execution_response_v1
 from adamantine.v1.integrations.adaptive_core_adapter import parse_risk_report
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_session
+from adamantine.v1.policy.final_policy_engine import (
+    FinalPolicyEngineState,
+    LocalPolicyGateResult,
+    evaluate_final_policy_engine,
+)
 from adamantine.v1.policy.risk_policy import RiskPolicy
+
+
+
+class _V1FinalPolicyEvidence:
+    __slots__ = (
+        "source",
+        "state",
+        "outcome",
+        "reason_id",
+        "accepted_as_evidence",
+        "final_approval",
+        "handoff_allowed",
+        "context_hash",
+        "dominant_reason_ids",
+    )
+
+    def __init__(self, *, source: str, context_hash: str, reason_id: ReasonId = ReasonId.EVIDENCE_OK) -> None:
+        self.source = source
+        self.state = "ALLOW_EVIDENCE_CONTINUE_CHECKS"
+        self.outcome = "ALLOW_EVIDENCE"
+        self.reason_id = reason_id
+        self.accepted_as_evidence = True
+        self.final_approval = False
+        self.handoff_allowed = True
+        self.context_hash = context_hash
+        self.dominant_reason_ids = (reason_id.value,)
+
+
+def _v1_runtime_evidence(*, source: str, context_hash: str) -> _V1FinalPolicyEvidence:
+    return _V1FinalPolicyEvidence(source=source, context_hash=context_hash)
+
+
+def _v1_final_policy_artifacts(result: object) -> dict[str, Any]:
+    return {
+        "final_policy": {
+            "state": getattr(getattr(result, "state", None), "value", str(getattr(result, "state", "unknown"))),
+            "outcome": getattr(result, "outcome", "unknown"),
+            "final_approval": getattr(result, "final_approval", False),
+            "handoff_allowed": getattr(result, "handoff_allowed", False),
+            "stopped_at": getattr(result, "stopped_at", "unknown"),
+            "evaluation_order": list(getattr(result, "evaluation_order", ())),
+            "dominant_reason_ids": list(getattr(result, "dominant_reason_ids", ())),
+        }
+    }
+
+
+def _v1_final_policy_reason(result: object) -> ReasonId:
+    reason = getattr(result, "reason_id", ReasonId.UNKNOWN_EXTERNAL_REASON)
+    if isinstance(reason, ReasonId):
+        return reason
+    if isinstance(reason, str):
+        try:
+            return ReasonId(reason)
+        except ValueError:
+            return ReasonId.UNKNOWN_EXTERNAL_REASON
+    return ReasonId.UNKNOWN_EXTERNAL_REASON
 
 
 def _safe_str(value: Any, *, fallback: str) -> str:
@@ -235,15 +296,44 @@ def orchestrate_execution_v1(
             payload="opaque",
         )
 
-        out = run_with_tva(
-            executor=executor,
-            request=exec_req,
-            context=req.context,
-            verdict=eqc.verdict,
-            authority=wsqk,
+        enforce_tva(
+            req.context,
+            eqc.verdict,
+            wsqk,
             now=now,
             nonce_store=nonce_store,
         )
+
+        final_policy = evaluate_final_policy_engine(
+            shield=_v1_runtime_evidence(source="v1:no_shield_contract", context_hash=req.context.context_hash),
+            wsqk_v2=_v1_runtime_evidence(source="v1:wsqk_authority", context_hash=wsqk.context_hash),
+            qid=_v1_runtime_evidence(source="v1:qid_session" if session is not None else "v1:qid_absent_allowed", context_hash=req.context.context_hash),
+            adaptive_core=_v1_runtime_evidence(source="v1:risk_report" if risk is not None else "v1:risk_absent_allowed", context_hash=req.context.context_hash),
+            ai_gateway=_v1_runtime_evidence(source="v1:ai_gateway_not_required", context_hash=req.context.context_hash),
+            replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+            wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+            human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+            expected_context_hash=req.context.context_hash,
+        )
+        if final_policy.state is not FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION:
+            final_reason = _v1_final_policy_reason(final_policy)
+            return build_execution_response_v1(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=final_reason,
+                protection_mode="legacy",
+                tva_allowed=True,
+                eqc_allowed=True,
+                wsqk_allowed=True,
+                nonce_consumed=True,
+                timebox_valid=True,
+                artifacts=_v1_final_policy_artifacts(final_policy),
+            )
+
+        out = executor.execute(exec_req)
 
         return build_execution_response_v1(
             request_id=req.request_id,
