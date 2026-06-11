@@ -1,9 +1,27 @@
-# Adamantine Wallet OS — Changelog
+# AdamantineOS — Changelog
 
 License: MIT License  
 Author: DarekDGB  
-Repository: DigiByte Adamantine Wallet OS  
+Repository: DigiByte AdamantineOS  
 Scope: Foundation Releases and Contract History
+
+------------------------------------------------------------------------
+
+## Unreleased — Milestone 17: Rebrand, Proof Pack, and Docs Alignment
+
+**Status:** In progress  
+**Type:** Documentation, release evidence, and public identity alignment  
+**Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
+
+Milestone 17 performs a controlled public identity alignment from **DigiByte Adamantine Wallet OS** to **DigiByte AdamantineOS** and adds the Level 4 integration proof-pack structure before authorized red-team review.
+
+Locked rules:
+
+1. `DigiByte AdamantineOS` is the public project name going forward.
+2. `AdamantineOS` is the short project name going forward.
+3. Package names, import paths, repository path assumptions, and release version remain unchanged.
+4. AdamantineOS remains `v2.2.0` and untagged until Milestones 17, 18, and 19 are complete and verified.
+5. Milestone 17 does not create new authority paths or weaken any fail-closed boundary.
 
 ------------------------------------------------------------------------
 
@@ -244,7 +262,7 @@ This release freezes the Shield v3 external evidence interface and locks determi
 **Type:** Deterministic integration freeze (execution proof pack)  
 **Compatibility:** Additive only — contracts unchanged
 
-This release seals the deterministic integration harness for Adamantine Wallet OS.
+This release seals the deterministic integration harness for AdamantineOS.
 
 Seal Statement:
 
@@ -258,6 +276,6 @@ As of v1.2.0, the execution integration layer is cryptographically reproducible 
 **Type:** Foundation seal (contracts + deterministic reasoning + boundaries)  
 **Compatibility:** Additive changes only beyond this point
 
-This release seals the Adamantine Wallet OS foundation.
+This release seals the AdamantineOS foundation.
 
 Breaking changes require a new major version.
