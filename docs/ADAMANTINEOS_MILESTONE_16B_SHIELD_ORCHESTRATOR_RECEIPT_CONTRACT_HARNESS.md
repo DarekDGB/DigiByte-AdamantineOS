@@ -1,7 +1,7 @@
 # AdamantineOS Milestone 16B - Shield Orchestrator Receipt Contract Harness
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 Status: Milestone 16B complete  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
 External Shield baseline: Shield Orchestrator `v3.2.0` remains external and unchanged  
@@ -36,7 +36,7 @@ Shield `ALLOW` is not final AdamantineOS approval.
 Modified:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 Inspected / used as external baseline only:
