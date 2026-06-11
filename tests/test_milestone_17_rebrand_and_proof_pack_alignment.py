@@ -48,3 +48,21 @@ def test_milestone_17_proof_pack_maps_completed_level4_milestones() -> None:
     assert "no AdamantineOS tag yet" in milestone_doc
     assert "| 17 | Rebrand, proof pack, and docs alignment |" in ledger
     assert "AdamantineOS must remain v2.2.0 and untagged" in ledger
+
+
+def test_milestone_17_repository_identity_uses_new_github_slug() -> None:
+    checked_paths = [
+        "README.md",
+        ".github/ISSUE_TEMPLATE/config.yml",
+        "docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md",
+        "docs/ADAMANTINEOS_MILESTONE_17_REBRAND_PROOF_PACK_AND_DOCS_ALIGNMENT.md",
+        "docs/PROOF_PACKS/ADAMANTINEOS_LEVEL4_INTEGRATION_PROOF_PACK.md",
+    ]
+    for path in checked_paths:
+        content = read(path)
+        assert "DigiByte-AdamantineOS" in content
+        assert "DigiByte-Adamantine-Wallet-OS" not in content
+
+    pyproject = read("pyproject.toml")
+    assert 'name = "adamantine-wallet-os"' in pyproject
+    assert 'version = "2.2.0"' in pyproject
