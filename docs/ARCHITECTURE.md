@@ -1,15 +1,15 @@
-# Adamantine Wallet OS — Architecture
+# AdamantineOS — Architecture
 
 **License:** MIT License  
 **Author:** DarekDGB  
-**Repository:** DigiByte Adamantine Wallet OS  
+**Repository:** DigiByte AdamantineOS  
 **Status:** Foundation Architecture (Frozen)
 
 ---
 
 ## 1. Purpose and Scope
 
-This document defines the **architectural design** of the Adamantine Wallet OS as implemented in this repository.
+This document defines the **architectural design** of the AdamantineOS as implemented in this repository.
 
 Adamantine is a **deterministic security decision engine** designed to sit at the *final execution boundary* of DigiByte wallets and related systems.
 
