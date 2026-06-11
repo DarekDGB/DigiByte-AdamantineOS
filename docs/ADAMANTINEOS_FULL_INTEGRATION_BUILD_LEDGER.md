@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 17 tracker - rebrand, proof pack, and docs alignment in progress**  
+Status: **Milestone 17 verified - rebrand, proof pack, and docs alignment complete**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -44,7 +44,7 @@ AI Gateway authority: evidence only, never execution authority
 The current Level 4 integration work primarily modifies AdamantineOS. Milestone 16E required the smallest safe external Adaptive Core exporter patch because the two-sided connection rule proved an external handoff gap. Milestone 16F required the smallest safe external AI Gateway exporter patch because the two-sided connection rule proved an external handoff gap.
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 DigiByte-Adaptive-Core  # 16E external exporter patch only
 adamantine-ai-gateway  # 16F external exporter patch only
 ```
@@ -938,7 +938,7 @@ The current safe step is Build Strategy Milestone 17:
 Milestone 17 - Rebrand, proof pack, and docs alignment
 ```
 
-Milestone 17 performs a controlled public identity alignment from the previous **DigiByte Adamantine Wallet OS** wording to **DigiByte AdamantineOS**. This is a documentation and project-identity update only. It does not rename packages, import paths, repository paths, contracts, or release versions.
+Milestone 17 performs a controlled public identity alignment from the previous **DigiByte Adamantine Wallet OS** wording to **DigiByte AdamantineOS**. The GitHub repository was renamed to `DigiByte-AdamantineOS` during this milestone. This is a public identity and repository-path alignment only. It does not rename packages, import paths, contracts, or release versions.
 
 Milestone 17 must verify that docs, contracts, fixtures, reason IDs, invariants, CI evidence, two-sided adapter / handoff proof, and tests all match before any red-team or release-gate work begins.
 
@@ -950,13 +950,13 @@ docs/PROOF_PACKS/ADAMANTINEOS_LEVEL4_INTEGRATION_PROOF_PACK.md
 tests/test_milestone_17_rebrand_and_proof_pack_alignment.py
 ```
 
-Milestone 17 pending verification:
+Milestone 17 verification:
 
 ```text
-Fresh updated ZIP must be uploaded back after copy.
-Fresh ZIP must be inspected before declaring Milestone 17 complete.
-Full tests must pass.
-Required coverage must remain 100.00%.
-Docs and ledger alignment must match the applied files.
+Fresh updated ZIP uploaded after copy: complete.
+Fresh ZIP inspected before declaring Milestone 17 complete: complete.
+Full tests passed: 901 passed.
+Required coverage remained 100.00%.
+Docs, repository-name alignment, proof pack, and ledger alignment verified.
 AdamantineOS must remain v2.2.0 and untagged.
 ```
