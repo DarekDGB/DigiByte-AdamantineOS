@@ -2,7 +2,24 @@
 
 ## Current Version
 
-**v3.0.0 --- Final Policy Runtime Authority Release**
+**v3.0.0 --- Connected Evidence Architecture Release**
+
+------------------------------------------------------------------------
+
+
+## Connected Evidence Architecture
+
+The `v3.0.0` release connects Shield components, Shield Orchestrator v3.2 receipts, WSQK v2, Q-ID, Adaptive Core, AI Gateway evidence-only input, replay / nonce enforcement, wallet policy evidence, and human review into the final AdamantineOS fail-closed decision engine.
+
+- Shield components: Guardian Wallet, ADN, Sentinel AI, DQSN, QWG
+- Shield Orchestrator v3.2 receipt boundary
+- WSQK v2 posture / policy evidence
+- Q-ID identity / session evidence
+- Adaptive Core advisory policy evidence
+- AI Gateway evidence only, never final authority
+- Replay / nonce freshness gate
+- Human review exact-context gate
+- Final allow / deny / review decision
 
 ------------------------------------------------------------------------
 
@@ -20,7 +37,7 @@ Architecture and system design documents.
 
 Documents describing governance interactions.
 
--   Adaptive Core → Adamantine Governance Flow
+-   Adaptive Core â Adamantine Governance Flow
 -   Governance Review Contract
 
 ------------------------------------------------------------------------
@@ -42,7 +59,7 @@ Artifact schemas and interface definitions.
 AdamantineOS follows strict architectural guardrails:
 
 -   deterministic behavior
--   fail‑closed validation
+-   failâclosed validation
 -   canonical serialization
 -   explicit invariants
 -   no silent fallback
@@ -70,7 +87,7 @@ Every major feature is supported by:
 
 ## Release Gate
 
-Final gate documents before any AdamantineOS version bump or tag decision.
+Final release-gate and proof documents for the AdamantineOS v3.0.0 tag boundary.
 
 -   [Milestone 19 Final Release Gate](ADAMANTINEOS_MILESTONE_19_FINAL_RELEASE_GATE.md)
 -   [Milestone 19 Tag Decision](ADAMANTINEOS_MILESTONE_19_TAG_DECISION.md)
