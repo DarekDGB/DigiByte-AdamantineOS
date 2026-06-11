@@ -42,7 +42,7 @@ The integration harness is split into four levels.
 
 The wider integration ecosystem may eventually touch:
 
-1. `DigiByte-Adamantine-Wallet-OS`
+1. `DigiByte-AdamantineOS`
 2. `DGB-Quantum-Shield-Orchestrator`
 3. `DGB-Wallet-Guardian`
 4. `DGB-Quantum-Wallet-Guard`
