@@ -1,7 +1,7 @@
 # Pull Request
 
 ## Summary
-Describe what you changed and why it belongs in Adamantine Wallet OS.
+Describe what you changed and why it belongs in AdamantineOS.
 
 ## Contract Impact
 - [ ] No contract-visible behavior change
