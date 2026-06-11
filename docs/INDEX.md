@@ -76,4 +76,4 @@ Final gate documents before any AdamantineOS version bump or tag decision.
 -   [Milestone 19 Tag Decision](ADAMANTINEOS_MILESTONE_19_TAG_DECISION.md)
 -   [Final Proof Pack Index](ADAMANTINEOS_FINAL_PROOF_PACK_INDEX.md)
 
-Milestone 19 does not approve a tag by itself. AdamantineOS remains `v2.2.0` and untagged until the final gate passes after fresh ZIP inspection, repeated tests, 100.00% coverage, and explicit maintainer approval.
+Milestone 19 records the final release-gate proof set for the approved `v3.0.0` tag candidate. AdamantineOS remains untagged until the approval update is copied back, CI remains green, and the final copied-repo ZIP is inspected.
