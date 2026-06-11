@@ -1,8 +1,8 @@
-# AdamantineOS Full Shield v3 Integration Build Ledger
+AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
 Status: **Milestones 17 and 18 verified complete; Milestone 19 final gate passed; v3.0.0 candidate approved after final copied-repo verification**  
-AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
+AdamantineOS release boundary: **v3.0.0 - Final Policy Runtime Authority Release**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
 ## 1. Purpose
@@ -1138,7 +1138,7 @@ PYTHONPATH=src python -m pytest -q
 Option 2 closure conditions were completed: fresh ZIP inspected, tests green, coverage 100.00%, and fourth Claude AI confirmation returned `PASS WITH NOTES - Milestone 18 can be closed`. N8/N7 were then closed with no technical debt carried forward.
 
 
-### Milestone 18 N7 closure ÃÂ¢ÃÂÃÂ EQC / wallet_policy gate semantics
+### Milestone 18 N7 closure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ EQC / wallet_policy gate semantics
 
 EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate. This is a contract-preserving audit note: the final policy engine keeps the stable `wallet_policy` local gate name, while docs explicitly define that live EQC aggregate policy failures are represented there.
 
@@ -1358,3 +1358,60 @@ DigiByte consensus change: no
 ```
 
 Milestone 19 does not create the tag by itself. The tag command must only be run after this approval update is copied into the repository, CI remains green, and the final copied-repo ZIP is inspected.
+
+
+---
+
+## Milestone 19 Release Stamp â v3.0.0
+
+Status: **release-stamp package prepared / awaiting copy-back, CI, and final fresh-ZIP verification**.
+
+Author attribution: **DarekDGB**  
+Repository: `DigiByte-AdamantineOS`  
+Public project name: **DigiByte AdamantineOS**
+
+Release-stamp source:
+
+```text
+Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(12).zip
+Pre-stamp pyproject package name: adamantine-wallet-os
+Pre-stamp pyproject version: 2.2.0
+Milestone 19 final release gate: passed
+Milestone 19 tag decision: v3.0.0 approved after final release-stamp verification
+```
+
+Release-stamp changes prepared:
+
+```text
+pyproject version: 3.0.0
+README status badge: v3.0.0
+README release section: v3.0.0 final policy runtime authority release
+CHANGELOG: v3.0.0 release section added
+Final proof-pack index: v3.0.0 aligned
+Milestone 19 release gate: v3.0.0 release-stamp state
+Milestone 19 tag decision: v3.0.0 approved after release-stamp copy-back and final ZIP verification
+docs/INDEX.md: current version v3.0.0
+docs/ADAMANTINEOS_V3_0_0_RELEASE_NOTES.md: added
+```
+
+Verification before release-stamp package:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+TOTAL 4097 statements, 0 missed
+```
+
+Locked boundaries:
+
+```text
+Public project name: DigiByte AdamantineOS
+Repository: DigiByte-AdamantineOS
+Internal package distribution name: adamantine-wallet-os
+Python import paths: unchanged
+DigiByte consensus change: no
+Runtime code change in this release-stamp package: no
+```
+
+The `v3.0.0` tag remains blocked until this release-stamp package is copied into the repository, CI remains green, and a final fresh repository ZIP is inspected.
