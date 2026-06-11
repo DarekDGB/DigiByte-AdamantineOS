@@ -1,4 +1,4 @@
-# Adamantine Wallet OS — Key Custody Options
+# AdamantineOS — Key Custody Options
 
 MIT License  
 © 2026 DarekDGB
@@ -8,7 +8,7 @@ MIT License
 ## Purpose
 
 This document explains **key custody choices available to users** of systems built with
-Adamantine Wallet OS, including the **risks, benefits, and guarantees** associated with each.
+AdamantineOS, including the **risks, benefits, and guarantees** associated with each.
 
 Adamantine **does not enforce how keys are stored**.  
 Adamantine enforces **how and when actions are allowed to execute**.
@@ -143,7 +143,7 @@ Adamantine ensures only approved execution requests reach the signer.
 
 ## Final Note
 
-Adamantine Wallet OS is designed to be **honest about guarantees**.
+AdamantineOS is designed to be **honest about guarantees**.
 
 > **Inside the envelope, guarantees are strong.  
 > Outside the envelope, users retain freedom — and responsibility.**
