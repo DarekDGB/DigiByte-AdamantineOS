@@ -1,15 +1,15 @@
-# Adamantine Wallet OS — External Interfaces
+# AdamantineOS — External Interfaces
 
 **License:** MIT License  
 **Author:** DarekDGB  
-**Repository:** DigiByte Adamantine Wallet OS  
+**Repository:** DigiByte AdamantineOS  
 **Scope:** External Interface Contracts (Foundation)
 
 ---
 
 ## 1. Purpose and Scope
 
-This document defines the **external interface contracts** for the Adamantine Wallet OS.
+This document defines the **external interface contracts** for the AdamantineOS.
 
 External interfaces describe how **untrusted callers and systems** interact with Adamantine at its boundaries.  
 They are treated as **security-critical attack surfaces** and are enforced strictly.
