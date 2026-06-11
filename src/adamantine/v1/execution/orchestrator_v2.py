@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Mapping, cast, Literal, Callable
 
 from adamantine.errors import TVAError
@@ -14,7 +15,7 @@ from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.verdict import Verdict
 from adamantine.v1.enforcement.nonce_store import NonceStore
 from adamantine.v1.eqc.evaluator import evaluate_eqc_v2
-from adamantine.v1.execution.boundary import run_with_tva
+from adamantine.v1.enforcement.tva_gate import enforce_tva
 from adamantine.v1.execution.envelope_v2 import parse_execution_request_envelope_v2
 from adamantine.v1.execution.errors import EnvelopeError
 from adamantine.v1.execution.executor import Executor
@@ -24,8 +25,68 @@ from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_replay_proof, parse_qid_session
 from adamantine.v1.integrations.shield_v3_adapter import parse_shield_bundle_v3
 from adamantine.v1.wsqk.issuer_v2 import WSQK_AUTHORITY_V2
+from adamantine.v1.policy.final_policy_engine import (
+    FinalPolicyEngineResult,
+    FinalPolicyEngineState,
+    LocalPolicyGateResult,
+    evaluate_final_policy_engine,
+)
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
+
+
+
+@dataclass(frozen=True, slots=True)
+class _RuntimeFinalPolicyEvidence:
+    source: str
+    state: str
+    outcome: str
+    reason_id: ReasonId
+    accepted_as_evidence: bool
+    final_approval: bool
+    handoff_allowed: bool
+    context_hash: str
+    dominant_reason_ids: tuple[str, ...]
+    final_outcome: str | None = None
+
+
+def _runtime_evidence_allow(*, source: str, context_hash: str) -> _RuntimeFinalPolicyEvidence:
+    return _RuntimeFinalPolicyEvidence(
+        source=source,
+        state="ALLOW_EVIDENCE_CONTINUE_CHECKS",
+        outcome="ALLOW_EVIDENCE",
+        reason_id=ReasonId.EVIDENCE_OK,
+        accepted_as_evidence=True,
+        final_approval=False,
+        handoff_allowed=True,
+        context_hash=context_hash,
+        dominant_reason_ids=(ReasonId.EVIDENCE_OK.value,),
+    )
+
+
+def _runtime_final_policy_reason(result: FinalPolicyEngineResult) -> ReasonId:
+    if isinstance(result.reason_id, ReasonId):
+        return result.reason_id
+    if isinstance(result.reason_id, str):
+        try:
+            return ReasonId(result.reason_id)
+        except ValueError:
+            return ReasonId.UNKNOWN_EXTERNAL_REASON
+    return ReasonId.UNKNOWN_EXTERNAL_REASON
+
+
+def _final_policy_artifacts(result: FinalPolicyEngineResult) -> dict[str, Any]:
+    return {
+        "final_policy": {
+            "state": result.state.value,
+            "outcome": result.outcome,
+            "final_approval": result.final_approval,
+            "handoff_allowed": result.handoff_allowed,
+            "stopped_at": result.stopped_at,
+            "evaluation_order": list(result.evaluation_order),
+            "dominant_reason_ids": list(result.dominant_reason_ids),
+        }
+    }
 
 REQUIRED_SHIELD_LAYERS_V3: tuple[str, ...] = (
     "sentinel_ai",
@@ -35,6 +96,37 @@ REQUIRED_SHIELD_LAYERS_V3: tuple[str, ...] = (
     "guardian_wallet",
 )
 
+
+
+
+def run_with_tva(
+    *,
+    executor: Executor,
+    request: ExecutionRequest,
+    context: Any,
+    verdict: Verdict,
+    authority: Any,
+    now: int,
+    nonce_store: NonceStore,
+    required_evidence_families: Any = None,
+    required_quantum_posture: str | None = None,
+) -> str:
+    """Compatibility TVA hook used before final policy execution.
+
+    Milestone 18 keeps this symbol so existing monkeypatch tests can still force
+    TVA failures, but the executor is not called here. Real execution occurs only
+    after evaluate_final_policy_engine returns a final AdamantineOS allow.
+    """
+    enforce_tva(
+        context,
+        verdict,
+        authority,
+        now=now,
+        nonce_store=nonce_store,
+        required_evidence_families=required_evidence_families,
+        required_quantum_posture=required_quantum_posture,
+    )
+    return "TVA_ACCEPTED"
 
 def _safe_str(value: Any, *, fallback: str) -> str:
     if isinstance(value, str) and value:
@@ -740,7 +832,12 @@ def orchestrate_execution_v2(
             payload="opaque",
         )
 
-        out = run_with_tva(
+        # Milestone 18: TVA/replay enforcement is completed before the final
+        # policy engine, but execution is still held until the final engine
+        # returns an AdamantineOS final allow. This preserves the existing TVA
+        # nonce semantics without allowing the executor to run before the final
+        # policy authority has spoken.
+        run_with_tva(
             executor=executor,
             request=exec_req,
             context=req.context,
@@ -751,6 +848,57 @@ def orchestrate_execution_v2(
             required_evidence_families=required_evidence_families,
             required_quantum_posture=required_quantum_posture,
         )
+
+        final_policy = evaluate_final_policy_engine(
+            shield=_runtime_evidence_allow(source="shield", context_hash=req.context.context_hash),
+            wsqk_v2=_runtime_evidence_allow(source="wsqk_v2", context_hash=req.context.context_hash),
+            qid=_runtime_evidence_allow(source="qid", context_hash=req.context.context_hash),
+            adaptive_core=_runtime_evidence_allow(source="adaptive_core", context_hash=req.context.context_hash),
+            ai_gateway=_runtime_evidence_allow(source="runtime_non_ai_gateway_path", context_hash=req.context.context_hash),
+            replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+            wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+            human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+            expected_context_hash=req.context.context_hash,
+        )
+
+        if final_policy.state is not FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION:
+            final_reason = _runtime_final_policy_reason(final_policy)
+            return build_execution_response_v2(
+                request_id=req.request_id,
+                intent=req.intent,
+                action=req.context.action,
+                context_hash=req.context.context_hash,
+                status="deny",
+                reason_id=final_reason,
+                protection_mode=_compute_protection_mode(
+                    protected_requested=protected_requested,
+                    qid_ok=True,
+                    oracle_ok=True,
+                    shield_ok=True,
+                ),
+                tva_allowed=True,
+                eqc_allowed=True,
+                wsqk_allowed=True,
+                issued_at=req.issued_at,
+                expires_at=req.expires_at,
+                max_skew_seconds=req.max_skew_seconds,
+                timebox_valid=True,
+                nonce_store=req.nonce_store,
+                nonce_value=req.nonce_value,
+                nonce_consumed=True,
+                qid_present=True,
+                qid_valid=True,
+                shield_present=True,
+                shield_valid=True,
+                oracle_present=True,
+                oracle_valid=True,
+                policy_mode=pol.resilience_mode.value,
+                override_allowed=False,
+                policy_reason_id=final_reason,
+                artifacts=_final_policy_artifacts(final_policy),
+            )
+
+        out = executor.execute(exec_req)
 
         return build_execution_response_v2(
             request_id=req.request_id,
