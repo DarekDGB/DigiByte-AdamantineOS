@@ -64,3 +64,16 @@ Every major feature is supported by:
 -   deterministic tests
 -   contract schemas
 -   documentation alignment
+
+
+------------------------------------------------------------------------
+
+## Release Gate
+
+Final gate documents before any AdamantineOS version bump or tag decision.
+
+-   [Milestone 19 Final Release Gate](ADAMANTINEOS_MILESTONE_19_FINAL_RELEASE_GATE.md)
+-   [Milestone 19 Tag Decision](ADAMANTINEOS_MILESTONE_19_TAG_DECISION.md)
+-   [Final Proof Pack Index](ADAMANTINEOS_FINAL_PROOF_PACK_INDEX.md)
+
+Milestone 19 does not approve a tag by itself. AdamantineOS remains `v2.2.0` and untagged until the final gate passes after fresh ZIP inspection, repeated tests, 100.00% coverage, and explicit maintainer approval.
