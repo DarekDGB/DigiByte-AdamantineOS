@@ -9,23 +9,23 @@ Scope: Foundation Releases and Contract History
 
 ## Unreleased — Milestone 19: Final Release Gate, Tag Readiness, and Evidence Lock
 
-**Status:** Started — final release gate prepared, not complete  
+**Status:** Final gate passed — approval update prepared, awaiting final copied-repo verification before tag command  
 **Type:** Release-gate evidence, tag-readiness decision, and proof-pack indexing  
 **Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
 
-Milestone 19 is the final gate before any AdamantineOS tag decision. It prepares the release-gate document, tag-decision boundary, and final proof-pack index for the candidate `v3.0.0` release.
+Milestone 19 is the final gate before any AdamantineOS tag decision. It verifies the release-gate document, tag-decision boundary, and final proof-pack index for the candidate `v3.0.0` release.
 
 Current decision state:
 
 ```text
 Candidate tag: v3.0.0
-Tag approved: no
-Release approved: no
+Tag approved: yes, after final copied-repo verification
+Release approved: yes, after final copied-repo verification
 Version bump applied: no
-AdamantineOS remains: v2.2.0 and untagged
+AdamantineOS remains: untagged until final copied-repo verification
 ```
 
-Verification before gate package:
+Final verification after Milestone 19 gate package copy-back:
 
 ```text
 PYTHONPATH=src python -m pytest -q
@@ -34,7 +34,7 @@ PYTHONPATH=src python -m pytest -q
 TOTAL 4097 statements, 0 missed
 ```
 
-Milestone 19 is not complete until maintainer copy-back, fresh post-copy ZIP inspection, repeated tests, 100.00% coverage, and explicit tag approval.
+Milestone 19 final gate passed after maintainer copy-back, fresh post-copy ZIP inspection, repeated tests, 100.00% coverage, and explicit tag approval. This approval update must be copied back and verified from one final fresh ZIP before the tag command is run.
 
 ------------------------------------------------------------------------
 
