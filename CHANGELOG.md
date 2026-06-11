@@ -7,25 +7,17 @@ Scope: Foundation Releases and Contract History
 
 ------------------------------------------------------------------------
 
-## Unreleased — Milestone 19: Final Release Gate, Tag Readiness, and Evidence Lock
+## v3.0.0 — Final Policy Runtime Authority Release
 
-**Status:** Final gate passed — approval update prepared, awaiting final copied-repo verification before tag command  
-**Type:** Release-gate evidence, tag-readiness decision, and proof-pack indexing  
-**Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
+**Status:** Release-stamped and approved for tag after final fresh-ZIP verification  
+**Type:** Major release boundary, final-policy runtime authority, Shield integration closure, and evidence lock  
+**Compatibility:** No package distribution rename and no Python import-path change
 
-Milestone 19 is the final gate before any AdamantineOS tag decision. It verifies the release-gate document, tag-decision boundary, and final proof-pack index for the candidate `v3.0.0` release.
+DigiByte AdamantineOS `v3.0.0` is the first major release boundary after approximately seven months of design, integration, documentation, proof-pack building, fail-closed hardening, and authorized AI red-team review.
 
-Current decision state:
+This release marks the point where AdamantineOS is no longer only a locked WSQK v2 / integration-preparation boundary. It now records the completed connection of the major protection layers into one deterministic final-policy authority path.
 
-```text
-Candidate tag: v3.0.0
-Tag approved: yes, after final copied-repo verification
-Release approved: yes, after final copied-repo verification
-Version bump applied: no
-AdamantineOS remains: untagged until final copied-repo verification
-```
-
-Final verification after Milestone 19 gate package copy-back:
+### Release proof
 
 ```text
 PYTHONPATH=src python -m pytest -q
@@ -34,7 +26,59 @@ PYTHONPATH=src python -m pytest -q
 TOTAL 4097 statements, 0 missed
 ```
 
-Milestone 19 final gate passed after maintainer copy-back, fresh post-copy ZIP inspection, repeated tests, 100.00% coverage, and explicit tag approval. This approval update must be copied back and verified from one final fresh ZIP before the tag command is run.
+### What v3.0.0 locks
+
+1. **Final-policy runtime authority**
+   - The live runtime path invokes the final AdamantineOS policy engine before executor execution.
+   - Executor execution is allowed only after `ALLOW_FINAL_ADAMANTINEOS_DECISION`.
+   - Hard DENY dominates human review and all lower-priority review outcomes.
+
+2. **Layer-connected evidence routing**
+   - Q-ID rejects reach the final policy engine and stop at the Q-ID gate.
+   - Shield rejects reach the final policy engine and stop at the Shield gate.
+   - WSQK v2 rejects reach the final policy engine and stop at the WSQK gate.
+   - Adaptive/Core wallet-policy and EQC rejects reach the final policy engine and stop at the wallet-policy gate.
+   - Replay/nonce rejects reach the final policy engine and stop at the replay gate.
+   - Human-gate rejects reach the final policy engine and stop at the human gate.
+
+3. **Shield v3.2.0 integration boundary**
+   - Shield component evidence is accepted only through the Shield Orchestrator receipt boundary.
+   - Raw component bypasses remain rejected fail-closed.
+   - Unknown or drifted registry/component evidence remains fail-closed.
+
+4. **Legacy executor hardening**
+   - The legacy `orchestrate_execution_v1` path is gated through the final policy engine before execution.
+   - v1 remains compatible but cannot bypass final AdamantineOS authority.
+
+5. **No-debt authorized red-team closure**
+   - Claude AI red-team findings F1-F8 were accepted where valid and fixed.
+   - Second-review N1/N2 were fixed.
+   - Residual N7/N8 were closed/fixed instead of carried as debt.
+   - Final closure report records PASS with no HIGH / MEDIUM / LOW / NOTE findings left open.
+
+6. **Release-gate evidence lock**
+   - Milestone 17 public rebrand and proof-pack alignment is complete.
+   - Milestone 18 runtime authority wiring and red-team closure is complete.
+   - Milestone 19 final release gate, tag decision, proof-pack index, README, changelog, docs index, and ledger are aligned for `v3.0.0`.
+
+### Boundaries preserved
+
+```text
+Public project name: DigiByte AdamantineOS
+Repository: DigiByte-AdamantineOS
+Internal package distribution name: adamantine-wallet-os
+Python import paths: unchanged
+DigiByte consensus change: no
+Wallet UI/key custody/transaction broadcasting: out of scope
+```
+
+### Tag decision
+
+```text
+Candidate tag: v3.0.0
+Tag decision: APPROVED after release-stamp copy-back, CI green, and final fresh-ZIP inspection
+Package version: 3.0.0
+```
 
 ------------------------------------------------------------------------
 
