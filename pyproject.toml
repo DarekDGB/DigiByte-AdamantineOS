@@ -3,7 +3,7 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "adamantine-wallet-os"
+name = "DigiByte-AdamantineOS"
 version = "2.2.0"
 description = "DigiByte AdamantineOS deterministic security boundary"
 readme = "README.md"
