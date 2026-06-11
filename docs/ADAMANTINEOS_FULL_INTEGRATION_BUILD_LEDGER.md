@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 16G tracker - Full Level 4 negative-test matrix complete**  
+Status: **Milestone 17 tracker - rebrand, proof pack, and docs alignment in progress**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -41,7 +41,7 @@ AI Gateway authority: evidence only, never execution authority
 
 ### 3.1 Repository currently modified
 
-The current Milestone 16 work primarily modifies AdamantineOS. Milestone 16E required the smallest safe external Adaptive Core exporter patch because the two-sided connection rule proved an external handoff gap. Milestone 16F required the smallest safe external AI Gateway exporter patch because the two-sided connection rule proved an external handoff gap.
+The current Level 4 integration work primarily modifies AdamantineOS. Milestone 16E required the smallest safe external Adaptive Core exporter patch because the two-sided connection rule proved an external handoff gap. Milestone 16F required the smallest safe external AI Gateway exporter patch because the two-sided connection rule proved an external handoff gap.
 
 ```text
 DigiByte-Adamantine-Wallet-OS
@@ -129,6 +129,7 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only; post-audit freshness and context-hash hardening complete | AdamantineOS + Adaptive Core exporter patch | Complete |
 | 16F | AI Gateway external baseline compatibility | External adamantine-ai-gateway AdamantineOS handoff / receipt evidence exporter is added and proven compatible with the existing AdamantineOS AI Gateway policy evidence boundary; AI Gateway remains evidence only and raw AI output authority is rejected | AdamantineOS + AI Gateway exporter patch | Complete |
 | 16G | Full Level 4 negative-test matrix | Full connected evidence path is attacked with negative tests across Shield, WSQK v2, Q-ID, Adaptive Core, AI Gateway, replay, wallet policy, human gate, and final AdamantineOS policy; hidden final authority signals now fail closed at the final engine boundary | AdamantineOS | Complete |
+| 17 | Rebrand, proof pack, and docs alignment | Public identity aligned to DigiByte AdamantineOS; Level 4 proof pack created; docs and ledger alignment regression-locked before authorized red-team review | AdamantineOS docs and tests | In progress |
 
 ## 6. Files added so far
 
@@ -147,6 +148,8 @@ docs/ADAMANTINEOS_MILESTONE_16D_Q_ID_EXTERNAL_BASELINE_COMPATIBILITY.md
 docs/ADAMANTINEOS_MILESTONE_16E_ADAPTIVE_CORE_EXTERNAL_BASELINE_COMPATIBILITY.md
 docs/ADAMANTINEOS_MILESTONE_16F_AI_GATEWAY_EXTERNAL_BASELINE_COMPATIBILITY.md
 docs/ADAMANTINEOS_MILESTONE_16G_FULL_LEVEL4_NEGATIVE_TEST_MATRIX.md
+docs/ADAMANTINEOS_MILESTONE_17_REBRAND_PROOF_PACK_AND_DOCS_ALIGNMENT.md
+docs/PROOF_PACKS/ADAMANTINEOS_LEVEL4_INTEGRATION_PROOF_PACK.md
 ```
 
 ### 6.2 Fixture files
@@ -678,7 +681,7 @@ Only after those gates pass should the project move into carefully scoped multi-
 | Future milestone | Work | Repository touched | Full integration? |
 |---:|---|---|---|
 | 16 | Carefully scoped multi-repo integration | AdamantineOS plus selected external baselines | Yes, begins here |
-| 17 | Proof pack and docs alignment | AdamantineOS and docs across touched repos only if needed | After integration |
+| 17 | Rebrand, proof pack, and docs alignment | AdamantineOS docs and tests | After integration |
 | 18 | Authorized red-team review | All relevant final ZIPs | After integration |
 | 19 | Final release gate | AdamantineOS | Release decision |
 
@@ -929,10 +932,31 @@ All evidence ALLOW still requires final AdamantineOS local gates before final ap
 
 Milestone 16 is now complete, but AdamantineOS is not release-ready and must not be tagged.
 
-The next safe step is Build Strategy Milestone 17:
+The current safe step is Build Strategy Milestone 17:
 
 ```text
-Milestone 17 - Proof pack and docs alignment
+Milestone 17 - Rebrand, proof pack, and docs alignment
 ```
 
+Milestone 17 performs a controlled public identity alignment from the previous **DigiByte Adamantine Wallet OS** wording to **DigiByte AdamantineOS**. This is a documentation and project-identity update only. It does not rename packages, import paths, repository paths, contracts, or release versions.
+
 Milestone 17 must verify that docs, contracts, fixtures, reason IDs, invariants, CI evidence, two-sided adapter / handoff proof, and tests all match before any red-team or release-gate work begins.
+
+Milestone 17 evidence added or updated:
+
+```text
+docs/ADAMANTINEOS_MILESTONE_17_REBRAND_PROOF_PACK_AND_DOCS_ALIGNMENT.md
+docs/PROOF_PACKS/ADAMANTINEOS_LEVEL4_INTEGRATION_PROOF_PACK.md
+tests/test_milestone_17_rebrand_and_proof_pack_alignment.py
+```
+
+Milestone 17 pending verification:
+
+```text
+Fresh updated ZIP must be uploaded back after copy.
+Fresh ZIP must be inspected before declaring Milestone 17 complete.
+Full tests must pass.
+Required coverage must remain 100.00%.
+Docs and ledger alignment must match the applied files.
+AdamantineOS must remain v2.2.0 and untagged.
+```
