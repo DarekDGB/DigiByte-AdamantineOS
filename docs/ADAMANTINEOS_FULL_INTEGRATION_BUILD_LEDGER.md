@@ -1138,7 +1138,7 @@ PYTHONPATH=src python -m pytest -q
 Option 2 closure conditions were completed: fresh ZIP inspected, tests green, coverage 100.00%, and fourth Claude AI confirmation returned `PASS WITH NOTES - Milestone 18 can be closed`. N8/N7 were then closed with no technical debt carried forward.
 
 
-### Milestone 18 N7 closure ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ EQC / wallet_policy gate semantics
+### Milestone 18 N7 closure ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ EQC / wallet_policy gate semantics
 
 EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate. This is a contract-preserving audit note: the final policy engine keeps the stable `wallet_policy` local gate name, while docs explicitly define that live EQC aggregate policy failures are represented there.
 
@@ -1362,7 +1362,7 @@ Milestone 19 does not create the tag by itself. The tag command must only be run
 
 ---
 
-## Milestone 19 Release Stamp â v3.0.0
+## Milestone 19 Release Stamp - v3.0.0
 
 Status: **release-stamp package prepared / awaiting copy-back, CI, and final fresh-ZIP verification**.
 
