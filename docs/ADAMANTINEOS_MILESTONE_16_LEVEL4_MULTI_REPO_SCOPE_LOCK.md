@@ -1,7 +1,7 @@
 # AdamantineOS Milestone 16A - Level 4 Multi-Repo Scope Lock
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 Status: Milestone 16A scope-lock document  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
 External Shield baseline: Shield v3.2.0 remains external and unchanged  
@@ -80,7 +80,7 @@ Milestone 16 begins only after these local boundaries are locked.
 Only this repository may be modified at the start of Milestone 16:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 Purpose:
@@ -368,7 +368,7 @@ Milestone 16 must be split into bounded sub-phases.
 Repository touched:
 
 ```text
-DigiByte-Adamantine-Wallet-OS docs only
+DigiByte-AdamantineOS docs only
 ```
 
 Purpose:
@@ -388,7 +388,7 @@ This document.
 Repository modified:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 External repository inspected / optionally imported in tests:
@@ -456,7 +456,7 @@ No raw verdict bypass.
 Repositories involved:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 DigiByte-Q-ID
 ```
 
@@ -484,7 +484,7 @@ No bypass around WSQK or replay gates.
 Repositories involved:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 DigiByte-Adaptive-Core
 ```
 
@@ -512,7 +512,7 @@ No override of earlier DENY.
 Repositories involved:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 adamantine-ai-gateway
 ```
 
@@ -541,7 +541,7 @@ No hidden authority fields.
 Repositories involved:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 external baselines through scoped harnesses only
 ```
 
