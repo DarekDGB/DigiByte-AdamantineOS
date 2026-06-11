@@ -2,7 +2,7 @@
 
 ## Current Version
 
-**v2.2.0 --- WSQK v2 Quantum-Aware Upgrade**
+**v3.0.0 --- Final Policy Runtime Authority Release**
 
 ------------------------------------------------------------------------
 
@@ -75,5 +75,6 @@ Final gate documents before any AdamantineOS version bump or tag decision.
 -   [Milestone 19 Final Release Gate](ADAMANTINEOS_MILESTONE_19_FINAL_RELEASE_GATE.md)
 -   [Milestone 19 Tag Decision](ADAMANTINEOS_MILESTONE_19_TAG_DECISION.md)
 -   [Final Proof Pack Index](ADAMANTINEOS_FINAL_PROOF_PACK_INDEX.md)
+-   [v3.0.0 Release Notes](ADAMANTINEOS_V3_0_0_RELEASE_NOTES.md)
 
-Milestone 19 records the final release-gate proof set for the approved `v3.0.0` tag candidate. AdamantineOS remains untagged until the approval update is copied back, CI remains green, and the final copied-repo ZIP is inspected.
+Milestone 19 records the final release-gate proof set and release-stamped state for the approved `v3.0.0` tag. AdamantineOS must only be tagged after this release-stamp update is copied back, CI remains green, and the final copied-repo ZIP is inspected.
