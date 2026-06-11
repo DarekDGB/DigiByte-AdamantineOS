@@ -1,7 +1,7 @@
 # AdamantineOS Remaining Boundary Integration Plan
 
 Author attribution: DarekDGB  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 Status: Milestone 10 planning document  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
 Shield baseline: Shield v3.2.0 remains external and unchanged  
@@ -399,7 +399,7 @@ The remaining implementation sequence should be:
 Repository touched:
 
 ```text
-DigiByte-Adamantine-Wallet-OS only
+DigiByte-AdamantineOS only
 ```
 
 Purpose:
@@ -416,7 +416,7 @@ No Q-ID / Adaptive / AI Gateway implementation in this milestone.
 Repository touched:
 
 ```text
-DigiByte-Adamantine-Wallet-OS only
+DigiByte-AdamantineOS only
 ```
 
 Purpose:
@@ -433,7 +433,7 @@ No full multi-repo harness yet.
 Repositories:
 
 ```text
-DigiByte-Adamantine-Wallet-OS modified
+DigiByte-AdamantineOS modified
 DigiByte-Adaptive-Core inspected only if needed
 ```
 
@@ -452,7 +452,7 @@ No Adaptive Core repository change unless a real defect is found.
 Repositories:
 
 ```text
-DigiByte-Adamantine-Wallet-OS modified
+DigiByte-AdamantineOS modified
 adamantine-ai-gateway inspected only
 ```
 
@@ -472,7 +472,7 @@ No AI Gateway repository change unless a real defect is found.
 Repository touched:
 
 ```text
-DigiByte-Adamantine-Wallet-OS only
+DigiByte-AdamantineOS only
 ```
 
 Purpose:
@@ -487,7 +487,7 @@ Purpose:
 Repositories inspected / potentially used:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 DGB-Quantum-Shield-Orchestrator
 DGB-Wallet-Guardian
 DigiByte-ADN
