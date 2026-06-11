@@ -3,7 +3,7 @@
 Author attribution: **DarekDGB**
 
 This document defines the canonical, deterministic computation of `context_hash`
-used by Adamantine Wallet OS v1.
+used by AdamantineOS v1.
 
 The `context_hash` MUST be stable across platforms and implementations.
 
