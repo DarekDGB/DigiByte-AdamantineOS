@@ -1,4 +1,4 @@
-# Adamantine Wallet OS — Invariants
+# AdamantineOS — Invariants
 
 **License:** MIT License — DarekDGB
 
@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-This document defines the **non-negotiable invariants** of Adamantine Wallet OS.
+This document defines the **non-negotiable invariants** of AdamantineOS.
 
 Invariants are permanent rules that must remain true across all versions,
 refactors, optimizations, and integrations.
@@ -293,7 +293,7 @@ TVA MUST recompute `proof_bindings_hash` from canonical WSQK v2 fields and deny 
 
 ## 13. Summary
 
-Invariants define the identity of Adamantine Wallet OS.
+Invariants define the identity of AdamantineOS.
 
 They are not guidelines.
 
