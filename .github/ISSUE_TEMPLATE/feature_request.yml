@@ -9,7 +9,7 @@ body:
       value: |
         This repository is contract-first.
         Many features belong in downstream wallets or companion repos.
-        Explain clearly why this belongs in Adamantine Wallet OS.
+        Explain clearly why this belongs in AdamantineOS.
 
   - type: input
     id: motivation
