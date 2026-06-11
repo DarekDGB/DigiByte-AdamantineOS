@@ -19,9 +19,9 @@ def test_milestone_17_public_name_and_package_boundary_are_locked() -> None:
     assert "Milestone 17: Rebrand, Proof Pack, and Docs Alignment" in changelog
     assert 'description = "DigiByte AdamantineOS deterministic security boundary"' in pyproject
 
-    # Milestone 17 is a public identity alignment only. Package/import names stay stable.
+    # Package/import names stay stable after Milestone 17; Milestone 19 stamps the release version.
     assert 'name = "adamantine-wallet-os"' in pyproject
-    assert "version = \"2.2.0\"" in pyproject
+    assert 'version = "3.0.0"' in pyproject
 
 
 def test_milestone_17_proof_pack_maps_completed_level4_milestones() -> None:
@@ -47,7 +47,7 @@ def test_milestone_17_proof_pack_maps_completed_level4_milestones() -> None:
     assert "DigiByte AdamantineOS" in milestone_doc
     assert "no AdamantineOS tag yet" in milestone_doc
     assert "| 17 | Rebrand, proof pack, and docs alignment |" in ledger
-    assert "AdamantineOS must remain v2.2.0 and untagged" in ledger
+    assert "Milestone 19 Release Stamp — v3.0.0" in ledger
 
 
 def test_milestone_17_repository_identity_uses_new_github_slug() -> None:
@@ -65,4 +65,4 @@ def test_milestone_17_repository_identity_uses_new_github_slug() -> None:
 
     pyproject = read("pyproject.toml")
     assert 'name = "adamantine-wallet-os"' in pyproject
-    assert 'version = "2.2.0"' in pyproject
+    assert 'version = "3.0.0"' in pyproject
