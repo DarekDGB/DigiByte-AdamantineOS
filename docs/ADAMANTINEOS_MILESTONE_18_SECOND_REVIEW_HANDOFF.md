@@ -9,7 +9,7 @@ Tag status: AdamantineOS remains untagged
 
 ## Purpose
 
-After the Milestone 18 hardening patch is applied and tests pass, this document should be given to Claude AI for a second red-team confirmation.
+After the Milestone 18 hardening is applied and tests pass, this document should be given to Claude AI for a second red-team confirmation.
 
 The requested review is not a general compliment pass. It should specifically try to falsify whether F1-F7 were really fixed and whether the new runtime wiring introduced any new bypass.
 
@@ -27,7 +27,7 @@ F5 hidden authority scan over __slots__ and nested containers
 F6 exact human-review detection
 F7 reason-ID sanitization at engine/runtime boundary
 
-Also check whether the Milestone 18 patch introduced any new fail-open behavior, fake authority, executor-before-final-policy path, docs-vs-tests mismatch, or release-gate overclaim.
+Also check whether the Milestone 18 hardening introduced any new fail-open behavior, fake authority, executor-before-final-policy path, docs-vs-tests mismatch, or release-gate overclaim.
 
 AdamantineOS must remain v2.2.0 and untagged.
 Milestone 19 must remain blocked until this second red-team confirmation is clean or all new findings are fixed.
@@ -56,9 +56,9 @@ PYTHONPATH=src python -m pytest -q
 
 A clean local test run does not automatically close Milestone 18. Milestone 18 closes only after fresh ZIP inspection and second red-team confirmation.
 
-## Third confirmation request after N1/N2 second patch
+## Third confirmation request after N1/N2 second hardening pass
 
-Claude's second review found N1 and N2. The second Milestone 18 patch claims to fix them.
+Claude's second review found N1 and N2. The second Milestone 18 hardening claims to fix them.
 
 Ask Claude to verify specifically:
 
@@ -136,7 +136,7 @@ PYTHONPATH=src python -m pytest -q
 ```
 
 
-## Fourth-review result and no-debt closure patch
+## Fourth-review result and no-debt closure hardening
 
 Fourth Claude confirmation result: `PASS WITH NOTES — Milestone 18 can be closed`.
 
@@ -147,7 +147,7 @@ N8 - fixed by adding reject-branch final-policy divergence hardening.
 N7 - closed by explicitly documenting EQC aggregate policy verdicts through the stable wallet_policy local gate.
 ```
 
-Latest closure-patch proof:
+Latest closure-hardening proof:
 
 ```text
 PYTHONPATH=src python -m pytest -q
@@ -155,4 +155,36 @@ PYTHONPATH=src python -m pytest -q
 100.00% coverage
 ```
 
-AdamantineOS remains untagged and Milestone 19 remains blocked until the closure patch is copied, the fresh ZIP is inspected, and CI evidence is verified.
+The closure hardening was copied, the fresh ZIP was inspected, and CI evidence was verified. Milestone 18 is complete. AdamantineOS remains untagged and Milestone 19 remains pending as the final release gate.
+
+
+## Final no-debt closure confirmation
+
+Status: **complete**.
+
+After the fourth Claude confirmation, the maintainer chose no-debt closure for N8 and N7. The closure hardening was copied, the fresh ZIP was inspected, and tests remained green:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+```
+
+Milestone 18 is complete. AdamantineOS remains v2.2.0 and untagged until Milestone 19.
+
+## Final Claude AI closure review archived
+
+The final Milestone 18 closure review has been archived in the repository:
+
+```text
+docs/RED_TEAM/ADAMANTINEOS_MILESTONE_18_FINAL_CLOSURE_REVIEW.docx
+```
+
+Closure verdict:
+
+```text
+PASS - Milestone 18 can be closed
+```
+
+This closes Milestone 18 without known red-team technical debt. AdamantineOS remains v2.2.0 and untagged. Milestone 19 remains pending as the final release gate.
+
