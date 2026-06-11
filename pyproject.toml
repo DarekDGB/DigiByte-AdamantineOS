@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "adamantine-wallet-os"
 version = "2.2.0"
-description = "DigiByte Adamantine Wallet OS (foundation)"
+description = "DigiByte AdamantineOS deterministic security boundary"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
