@@ -119,7 +119,7 @@ The integration harness scope contract must define the test levels before any mu
 Most early implementation should happen inside:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 The Shield repositories are already tagged `v3.2.0`.
@@ -719,7 +719,7 @@ For every stage, send fresh ZIPs.
 Minimum:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 When needed:
