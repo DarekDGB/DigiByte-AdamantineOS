@@ -2,7 +2,7 @@
 
 **License:** MIT — **Author:** DarekDGB  
 **Stability level:** **FROZEN** (breaking change requires `mobile_execution_call_v3`)  
-**Scope:** Mobile (iOS/Android) → Adamantine Wallet OS execution boundary call contract.
+**Scope:** Mobile (iOS/Android) → AdamantineOS execution boundary call contract.
 
 This document freezes the **mobile → Adamantine** call interface.
 
