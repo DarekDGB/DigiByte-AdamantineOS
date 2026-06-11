@@ -3,15 +3,15 @@
 Author attribution: **DarekDGB**  
 Repository: `DigiByte-AdamantineOS`  
 Public project name: **DigiByte AdamantineOS**  
-Current package version: `v2.2.0`  
-Tag status: **approved candidate v3.0.0 after final copied-repo verification**  
+Current package version: `v3.0.0`  
+Tag status: **approved v3.0.0 after release-stamp copy-back, CI green, and final fresh-ZIP verification**  
 Milestone: **19 final release gate**
 
 ---
 
 ## 1. Purpose
 
-This index maps the final AdamantineOS release-gate evidence set for the approved `v3.0.0` tag candidate.
+This index maps the final AdamantineOS release-gate evidence set for the approved `v3.0.0` release tag.
 
 It is a proof index for the final gate and must be verified again after copy-back before the tag command is run.
 
@@ -35,6 +35,7 @@ It is a proof index for the final gate and must be verified again after copy-bac
 | Milestone 18 final closure report Markdown | `docs/RED_TEAM/ADAMANTINEOS_MILESTONE_18_FINAL_CLOSURE_REVIEW.md` |
 | Milestone 19 final release gate | `docs/ADAMANTINEOS_MILESTONE_19_FINAL_RELEASE_GATE.md` |
 | Milestone 19 tag decision | `docs/ADAMANTINEOS_MILESTONE_19_TAG_DECISION.md` |
+| v3.0.0 release notes | `docs/ADAMANTINEOS_V3_0_0_RELEASE_NOTES.md` |
 
 ---
 
@@ -59,7 +60,7 @@ Milestone 19 relies on the following runtime authority evidence being present an
 
 ## 4. Test evidence
 
-Latest inspected source evidence after Milestone 19 gate package copy-back:
+Latest inspected source evidence before release-stamp package copy-back:
 
 ```text
 PYTHONPATH=src python -m pytest -q
@@ -68,7 +69,7 @@ PYTHONPATH=src python -m pytest -q
 TOTAL 4097 statements, 0 missed
 ```
 
-This proof was repeated after maintainer copy-back and fresh ZIP inspection. It must remain true after this approval update is copied back before the tag command is run.
+This proof was repeated after maintainer copy-back and fresh ZIP inspection. It must remain true after this release-stamp package is copied back before the tag command is run.
 
 ---
 
@@ -86,4 +87,4 @@ The final proof pack is valid only if:
 [x] Maintainer explicitly approves tag creation after final copied-repo verification
 ```
 
-AdamantineOS remains untagged until this approval update is copied into the repository, CI remains green, and the final copied-repo ZIP is inspected. The approved candidate tag is `v3.0.0`.
+AdamantineOS remains untagged until this release-stamp update is copied into the repository, CI remains green, and the final copied-repo ZIP is inspected. The approved tag is `v3.0.0`.
