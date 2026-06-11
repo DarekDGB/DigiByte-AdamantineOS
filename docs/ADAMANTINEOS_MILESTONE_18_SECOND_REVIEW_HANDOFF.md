@@ -134,3 +134,25 @@ PYTHONPATH=src python -m pytest -q
 923 passed
 100.00% coverage
 ```
+
+
+## Fourth-review result and no-debt closure patch
+
+Fourth Claude confirmation result: `PASS WITH NOTES — Milestone 18 can be closed`.
+
+The maintainer selected no-debt closure for the two remaining notes:
+
+```text
+N8 - fixed by adding reject-branch final-policy divergence hardening.
+N7 - closed by explicitly documenting EQC aggregate policy verdicts through the stable wallet_policy local gate.
+```
+
+Latest closure-patch proof:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+```
+
+AdamantineOS remains untagged and Milestone 19 remains blocked until the closure patch is copied, the fresh ZIP is inspected, and CI evidence is verified.
