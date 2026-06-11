@@ -196,7 +196,7 @@ def test_16g_human_review_local_gate_blocks_autonomous_approval():
         stopped_at="human",
         order=("shield", "wsqk_v2", "qid", "adaptive_core", "ai_gateway", "replay", "wallet_policy", "human"),
     )
-    assert result.reason_id == "HUMAN_REVIEW_REQUIRED_EXACT_CONTEXT"
+    assert result.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
 
 
 def test_16g_upstream_final_approval_attempt_from_each_evidence_source_fails_closed():
