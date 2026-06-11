@@ -1,4 +1,4 @@
-# Adamantine Wallet OS — Device Loss & Recovery Model
+# AdamantineOS — Device Loss & Recovery Model
 
 MIT License  
 Author attribution: **DarekDGB**
@@ -7,9 +7,9 @@ Author attribution: **DarekDGB**
 
 ## Purpose
 
-This document defines the **device loss and recovery model** for wallets that use Adamantine Wallet OS.
+This document defines the **device loss and recovery model** for wallets that use AdamantineOS.
 
-Adamantine Wallet OS enforces execution safety. It does **not** provide recovery services, backups, or key exports.
+AdamantineOS enforces execution safety. It does **not** provide recovery services, backups, or key exports.
 
 ---
 
@@ -19,7 +19,7 @@ Adamantine Wallet OS enforces execution safety. It does **not** provide recovery
 
 This is an intentional security posture, not an accident.
 
-Adamantine Wallet OS will not introduce recovery shortcuts that weaken custody invariants.
+AdamantineOS will not introduce recovery shortcuts that weaken custody invariants.
 
 ---
 
@@ -36,7 +36,7 @@ If the phone is lost, stolen, wiped, or permanently damaged:
 
 ## What Recovery Is NOT
 
-Adamantine Wallet OS will never provide:
+AdamantineOS will never provide:
 
 - iCloud / Google Drive key backups
 - seed phrase export from Adamantine
