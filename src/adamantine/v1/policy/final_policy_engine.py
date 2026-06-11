@@ -25,6 +25,8 @@ class FinalPolicyEngineState(str, Enum):
     DENY_WALLET_POLICY_GATE = "DENY_WALLET_POLICY_GATE"
     DENY_HUMAN_GATE = "DENY_HUMAN_GATE"
     DENY_GATE_SHAPE_INVALID = "DENY_GATE_SHAPE_INVALID"
+    DENY_CONTEXT_MISMATCH = "DENY_CONTEXT_MISMATCH"
+    DENY_REASON_ID_INVALID = "DENY_REASON_ID_INVALID"
 
 
 @dataclass(frozen=True)
@@ -112,9 +114,28 @@ def _contains_forbidden_authority_mapping(value: Any) -> bool:
                 return True
             if _contains_forbidden_authority_mapping(child):
                 return True
-    elif isinstance(value, list):
+    elif isinstance(value, (list, tuple)):
+        return any(_contains_forbidden_authority_mapping(item) for item in value)
+    elif isinstance(value, set):
         return any(_contains_forbidden_authority_mapping(item) for item in value)
     return False
+
+
+def _object_authority_items(evidence: Any) -> Mapping[str, Any]:
+    data: dict[str, Any] = {}
+    dict_data = getattr(evidence, "__dict__", None)
+    if isinstance(dict_data, Mapping):
+        for key, value in dict_data.items():
+            if isinstance(key, str):
+                data[key] = value
+
+    slots = getattr(type(evidence), "__slots__", ())
+    if isinstance(slots, str):
+        slots = (slots,)
+    for key in slots:
+        if isinstance(key, str) and hasattr(evidence, key):
+            data[key] = getattr(evidence, key)
+    return data
 
 
 def _contains_forbidden_authority_signal(evidence: Any) -> bool:
@@ -130,18 +151,16 @@ def _contains_forbidden_authority_signal(evidence: Any) -> bool:
     if isinstance(evidence, Mapping):
         return _contains_forbidden_authority_mapping(evidence)
 
-    data = getattr(evidence, "__dict__", None)
-    if not isinstance(data, Mapping):
+    data = _object_authority_items(evidence)
+    if not data:
         return False
 
     for key, value in data.items():
-        if not isinstance(key, str):
-            continue
         if key in _ALLOWED_NORMALIZED_AUTHORITY_FIELDS:
             continue
         if key in _FORBIDDEN_AUTHORITY_KEYS and _truthy_authority_value(value):
             return True
-        if key in _NESTED_AUTHORITY_CONTAINERS and _contains_forbidden_authority_mapping(value):
+        if isinstance(value, (Mapping, list, tuple, set)) and _contains_forbidden_authority_mapping(value):
             return True
     return False
 
@@ -150,22 +169,37 @@ def _reason_text(reason_id: ReasonId | str) -> str:
     return reason_id.value if isinstance(reason_id, ReasonId) else str(reason_id)
 
 
+def _valid_reason(reason_id: Any) -> ReasonId | None:
+    if isinstance(reason_id, ReasonId):
+        return reason_id
+    if isinstance(reason_id, str) and reason_id.strip():
+        try:
+            return ReasonId(reason_id)
+        except ValueError:
+            return None
+    return None
+
+
+def _safe_reason(reason_id: ReasonId | str, fallback: ReasonId = ReasonId.UNKNOWN_EXTERNAL_REASON) -> ReasonId:
+    return _valid_reason(reason_id) or fallback
+
+
 def _first_reason(value: Any, fallback: ReasonId | str) -> ReasonId | str:
     reasons = getattr(value, "dominant_reason_ids", None)
     if isinstance(reasons, Iterable) and not isinstance(reasons, (str, bytes)):
         for reason in reasons:
             if isinstance(reason, str) and reason.strip():
-                return reason
+                return _safe_reason(reason)
     reason_id = getattr(value, "reason_id", None)
     if isinstance(reason_id, (ReasonId, str)):
-        return reason_id
+        return _safe_reason(reason_id)
     return fallback
 
 
 def _dominant_reasons(value: Any, fallback: ReasonId | str) -> tuple[str, ...]:
     reasons = getattr(value, "dominant_reason_ids", None)
     if isinstance(reasons, Iterable) and not isinstance(reasons, (str, bytes)):
-        collected = tuple(str(reason) for reason in reasons if isinstance(reason, str) and reason.strip())
+        collected = tuple(_safe_reason(reason).value for reason in reasons if isinstance(reason, str) and reason.strip())
         if collected:
             return collected
     return (_reason_text(_first_reason(value, fallback)),)
@@ -194,12 +228,16 @@ def _result(
     )
 
 
+def _field_equals_human_review(value: Any) -> bool:
+    raw = value.value if isinstance(value, Enum) else value
+    return raw == FinalPolicyEngineState.HUMAN_REVIEW_REQUIRED.value
+
+
 def _evidence_indicates_human_review(evidence: Any) -> bool:
-    state = getattr(evidence, "state", "")
-    outcome = getattr(evidence, "outcome", "")
-    final_outcome = getattr(evidence, "final_outcome", "")
-    values = f"{state} {outcome} {final_outcome}"
-    return "HUMAN_REVIEW_REQUIRED" in values
+    return any(
+        _field_equals_human_review(getattr(evidence, field, None))
+        for field in ("state", "outcome", "final_outcome")
+    )
 
 
 def _evaluate_evidence_gate(
@@ -207,6 +245,7 @@ def _evaluate_evidence_gate(
     gate: str,
     evidence: Any,
     evaluation_order: tuple[str, ...],
+    expected_context_hash: str | None = None,
 ) -> FinalPolicyEngineResult | None:
     if evidence is None:
         return _result(
@@ -218,7 +257,7 @@ def _evaluate_evidence_gate(
             dominant_reason_ids=(f"MISSING_EVIDENCE:{gate}",),
         )
 
-    if getattr(evidence, "final_approval", False) is True:
+    if _truthy_authority_value(getattr(evidence, "final_approval", False)):
         return _result(
             state=FinalPolicyEngineState.DENY_AUTHORITY_BYPASS,
             outcome="DENY",
@@ -238,17 +277,18 @@ def _evaluate_evidence_gate(
             dominant_reason_ids=(f"HIDDEN_AUTHORITY_BYPASS:{gate}",),
         )
 
-    if _evidence_indicates_human_review(evidence):
-        return _result(
-            state=FinalPolicyEngineState.HUMAN_REVIEW_REQUIRED,
-            outcome="HUMAN_REVIEW_REQUIRED",
-            reason_id=_first_reason(evidence, ReasonId.DENY_AUTHORITY_INSUFFICIENT),
-            stopped_at=gate,
-            evaluation_order=evaluation_order,
-            dominant_reason_ids=_dominant_reasons(evidence, ReasonId.DENY_AUTHORITY_INSUFFICIENT),
-            final_approval=False,
-            handoff_allowed=False,
-        )
+    if expected_context_hash is not None:
+        evidence_context_hash = getattr(evidence, "context_hash", None)
+        if evidence_context_hash != expected_context_hash:
+            return _result(
+                state=FinalPolicyEngineState.DENY_CONTEXT_MISMATCH,
+                outcome="DENY",
+                reason_id=ReasonId.EQC_CONFLICTING_EVIDENCE,
+                stopped_at=gate,
+                evaluation_order=evaluation_order,
+                dominant_reason_ids=(f"CONTEXT_MISMATCH:{gate}",),
+            )
+
 
     if getattr(evidence, "accepted_as_evidence", False) is not True:
         return _result(
@@ -270,6 +310,19 @@ def _evaluate_evidence_gate(
             dominant_reason_ids=_dominant_reasons(evidence, ReasonId.DENY_POLICY),
         )
 
+    if _evidence_indicates_human_review(evidence):
+        return _result(
+            state=FinalPolicyEngineState.HUMAN_REVIEW_REQUIRED,
+            outcome="HUMAN_REVIEW_REQUIRED",
+            reason_id=_first_reason(evidence, ReasonId.DENY_AUTHORITY_INSUFFICIENT),
+            stopped_at=gate,
+            evaluation_order=evaluation_order,
+            dominant_reason_ids=_dominant_reasons(evidence, ReasonId.DENY_AUTHORITY_INSUFFICIENT),
+            final_approval=False,
+            handoff_allowed=False,
+        )
+
+
     return None
 
 
@@ -289,16 +342,6 @@ def _evaluate_local_gate(
             dominant_reason_ids=(f"INVALID_LOCAL_GATE:{gate}",),
         )
 
-    if gate_result.requires_human_review:
-        return _result(
-            state=FinalPolicyEngineState.HUMAN_REVIEW_REQUIRED,
-            outcome="HUMAN_REVIEW_REQUIRED",
-            reason_id=gate_result.reason_id,
-            stopped_at=gate,
-            evaluation_order=evaluation_order,
-            dominant_reason_ids=(_reason_text(gate_result.reason_id),),
-        )
-
     if not gate_result.passed:
         return _result(
             state=_GATE_DENY_STATES[gate],
@@ -306,7 +349,17 @@ def _evaluate_local_gate(
             reason_id=gate_result.reason_id,
             stopped_at=gate,
             evaluation_order=evaluation_order,
-            dominant_reason_ids=(_reason_text(gate_result.reason_id),),
+            dominant_reason_ids=(_reason_text(_safe_reason(gate_result.reason_id)),),
+        )
+
+    if gate_result.requires_human_review:
+        return _result(
+            state=FinalPolicyEngineState.HUMAN_REVIEW_REQUIRED,
+            outcome="HUMAN_REVIEW_REQUIRED",
+            reason_id=_safe_reason(gate_result.reason_id),
+            stopped_at=gate,
+            evaluation_order=evaluation_order,
+            dominant_reason_ids=(_reason_text(_safe_reason(gate_result.reason_id)),),
         )
 
     return None
@@ -322,6 +375,7 @@ def evaluate_final_policy_engine(
     replay: LocalPolicyGateResult,
     wallet_policy: LocalPolicyGateResult,
     human: LocalPolicyGateResult,
+    expected_context_hash: str | None = None,
 ) -> FinalPolicyEngineResult:
     """Evaluate the locked local AdamantineOS final policy order.
 
@@ -348,6 +402,7 @@ def evaluate_final_policy_engine(
             gate=gate,
             evidence=evidence_by_gate[gate],
             evaluation_order=visited,
+            expected_context_hash=expected_context_hash,
         )
         if failure is not None:
             return failure
