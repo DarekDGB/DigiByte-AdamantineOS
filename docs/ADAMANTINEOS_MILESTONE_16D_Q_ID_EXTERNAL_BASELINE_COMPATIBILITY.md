@@ -1,7 +1,7 @@
 # AdamantineOS Milestone 16D - Q-ID External Baseline Compatibility
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 Status: Milestone 16D compatibility harness  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
 External Q-ID baseline: `DigiByte-Q-ID` v1.1.0 remains external and unchanged  
@@ -78,7 +78,7 @@ No duplicate adapter is introduced.
 Modified repository:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 Inspected external baseline:
