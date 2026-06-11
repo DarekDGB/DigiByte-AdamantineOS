@@ -1,7 +1,7 @@
 # 📘 FOUNDATIONS — EQC, WSQK, TVA
 
 ## Purpose of this document
-This document defines the **three foundational primitives** of Adamantine Wallet OS.
+This document defines the **three foundational primitives** of AdamantineOS.
 
 It explains **what they are**, **what they are not**, and **how they relate**.
 
