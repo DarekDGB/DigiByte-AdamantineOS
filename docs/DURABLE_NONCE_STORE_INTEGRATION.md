@@ -1,13 +1,13 @@
 # Durable Nonce Store Integration (Clock-Free) — v1.4.0
 
 **License:** MIT — **Author:** DarekDGB  
-**Scope:** Normative integration contract for replay protection evidence used by Adamantine Wallet OS.
+**Scope:** Normative integration contract for replay protection evidence used by AdamantineOS.
 
 ---
 
 ## 1. Purpose
 
-Adamantine Wallet OS is **pure and deterministic**. It does **not** store mutable state.
+AdamantineOS is **pure and deterministic**. It does **not** store mutable state.
 
 Replay protection is enforced via a **Durable Nonce Store** owned by the untrusted runtime/host.
 Adamantine **verifies** replay evidence deterministically and **fails closed** when required evidence is missing or invalid.
