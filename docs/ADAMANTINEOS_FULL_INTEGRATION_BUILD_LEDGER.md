@@ -129,7 +129,7 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only; post-audit freshness and context-hash hardening complete | AdamantineOS + Adaptive Core exporter patch | Complete |
 | 16F | AI Gateway external baseline compatibility | External adamantine-ai-gateway AdamantineOS handoff / receipt evidence exporter is added and proven compatible with the existing AdamantineOS AI Gateway policy evidence boundary; AI Gateway remains evidence only and raw AI output authority is rejected | AdamantineOS + AI Gateway exporter patch | Complete |
 | 16G | Full Level 4 negative-test matrix | Full connected evidence path is attacked with negative tests across Shield, WSQK v2, Q-ID, Adaptive Core, AI Gateway, replay, wallet policy, human gate, and final AdamantineOS policy; hidden final authority signals now fail closed at the final engine boundary | AdamantineOS | Complete |
-| 17 | Rebrand, proof pack, and docs alignment | Public identity aligned to DigiByte AdamantineOS; Level 4 proof pack created; docs and ledger alignment regression-locked before authorized red-team review | AdamantineOS docs and tests | In progress |
+| 17 | Rebrand, proof pack, and docs alignment | Public identity aligned to DigiByte AdamantineOS; Level 4 proof pack created; docs and ledger alignment regression-locked before authorized red-team review | AdamantineOS docs and tests | Complete |
 
 ## 6. Files added so far
 
@@ -674,16 +674,16 @@ Full integration starts only after the following local AdamantineOS gates are lo
 [x] CI remains green with required coverage
 ```
 
-Only after those gates pass should the project move into carefully scoped multi-repo integration.
+Milestones 16G and 17 have now passed those gates. The project is currently in Milestone 18 closure hardening after authorized red-team confirmation.
 
 ## 11. Remaining roadmap sequence
 
-| Future milestone | Work | Repository touched | Full integration? |
+| Milestone | Work | Repository touched | Status |
 |---:|---|---|---|
-| 16 | Carefully scoped multi-repo integration | AdamantineOS plus selected external baselines | Yes, begins here |
-| 17 | Rebrand, proof pack, and docs alignment | AdamantineOS docs and tests | After integration |
-| 18 | Authorized red-team review | All relevant final ZIPs | After integration |
-| 19 | Final release gate | AdamantineOS | Release decision |
+| 16 | Carefully scoped multi-repo integration | AdamantineOS plus selected external baselines | Complete through 16G |
+| 17 | Rebrand, proof pack, and docs alignment | AdamantineOS docs and tests | Complete |
+| 18 | Authorized red-team review and no-debt closure hardening | All relevant final ZIPs | Current closure step |
+| 19 | Final release gate | AdamantineOS | Blocked until Milestone 18 is formally closed |
 
 ## 12. Full multi-repo integration boundary
 
