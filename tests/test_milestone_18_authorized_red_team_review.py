@@ -737,3 +737,56 @@ def test_milestone_18_option2_human_gate_reject_reaches_final_policy_engine(monk
     assert observed["stopped_at"] == "human"
     assert observed["inputs"]["human"].passed is False
     assert executor.called is False
+
+
+def test_milestone_18_n8_reject_branch_unexpected_engine_allow_fails_closed(monkeypatch) -> None:
+    now = 1706990400
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    payload = _envelope_v2(
+        now=now,
+        context_hash=ctx_hash,
+        shield_required_layers=list(orch.REQUIRED_SHIELD_LAYERS_V3),
+        oracle_score=99,
+        with_wsqk=True,
+    )
+    payload["payload"]["evidence"]["qid"]["proof_hash"] = ""
+
+    def unexpected_allow(**kwargs):
+        return FinalPolicyEngineResult(
+            state=FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION,
+            outcome="ALLOW",
+            reason_id=ReasonId.OK_ALLOW,
+            final_approval=True,
+            handoff_allowed=True,
+            stopped_at="final_adamantineos_decision",
+            evaluation_order=("shield", "wsqk_v2", "qid", "adaptive_core", "ai_gateway", "replay", "wallet_policy", "human"),
+            dominant_reason_ids=(ReasonId.OK_ALLOW.value,),
+        )
+
+    monkeypatch.setattr(orch, "evaluate_final_policy_engine", unexpected_allow)
+    executor = RecordingExecutor()
+    resp = orch.orchestrate_execution_v2(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(min_score=85),
+    )
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.DENY_POLICY.value
+    assert resp["artifacts"]["final_policy_invariant"]["status"] == "fail_closed"
+    assert resp["artifacts"]["final_policy_invariant"]["original_state"] == FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION.value
+    assert executor.called is False
+
+
+def test_milestone_18_n7_eqc_wallet_policy_mapping_is_explicit_in_docs() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    findings = (root / "docs/ADAMANTINEOS_MILESTONE_18_AUTHORIZED_RED_TEAM_FINDINGS.md").read_text(encoding="utf-8")
+    ledger = (root / "docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md").read_text(encoding="utf-8")
+
+    required = "EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate"
+    assert required in findings
+    assert required in ledger
