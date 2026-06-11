@@ -1,4 +1,4 @@
-# Adamantine Wallet OS Documentation Index
+# AdamantineOS Documentation Index
 
 ## Current Version
 
