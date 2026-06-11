@@ -7,9 +7,39 @@ Scope: Foundation Releases and Contract History
 
 ------------------------------------------------------------------------
 
-## Unreleased — Milestone 17: Rebrand, Proof Pack, and Docs Alignment
+## Unreleased — Milestone 18: Authorized Red-Team Review, Runtime Authority Wiring, and Fail-Closed Hardening
 
-**Status:** In progress  
+**Status:** In progress — hardening patch prepared, second red-team confirmation pending
+**Type:** Runtime authority wiring, red-team fixes, and fail-closed hardening
+**Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
+
+Milestone 18 accepts and fixes the validated Claude AI red-team findings F1-F7, then requires a second Claude AI red-team confirmation before Milestone 18 can close.
+
+Hardening added in the Milestone 18 patch:
+
+1. The live runtime path now invokes the final AdamantineOS policy engine before executor execution.
+2. Cross-evidence context binding is enforced at the final policy engine when an expected context hash is supplied.
+3. Truthy upstream `final_approval` attempts fail closed as authority bypass.
+4. Hard DENY dominates human-review signals.
+5. Hidden-authority scanning covers mapping, list, tuple, set, `__dict__`, and `__slots__` evidence.
+6. Human-review detection requires exact status equality rather than substring matching.
+7. Unknown evidence-supplied reason IDs are sanitized to `UNKNOWN_EXTERNAL_REASON` at the engine/runtime boundary.
+
+Verification before maintainer copy-back:
+
+```text
+PYTHONPATH=src python -m pytest -q
+914 passing
+100.00% coverage
+```
+
+Milestone 18 remains open until the fresh patched ZIP is inspected and a second Claude AI red-team confirmation is clean or all new findings are fixed.
+
+------------------------------------------------------------------------
+
+## Milestone 17: Rebrand, Proof Pack, and Docs Alignment
+
+**Status:** Complete  
 **Type:** Documentation, release evidence, and public identity alignment  
 **Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
 
