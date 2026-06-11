@@ -1091,3 +1091,72 @@ all new findings are fixed or explicitly accepted with rationale
 AdamantineOS remains untagged
 Milestone 19 remains blocked until Milestone 18 closes cleanly
 ```
+
+
+## 18B. Milestone 18 Option 2 full evidence-level runtime wiring pass
+
+Status: **Option 2 fix prepared, pending maintainer copy-back, fresh ZIP inspection, and Claude fourth confirmation review**.
+
+Claude AI's third red-team confirmation returned `PASS WITH NOTES`. It verified:
+
+```text
+N2 fixed - legacy v1 execution is gated by final policy before executor execution.
+F2-F7 no regression.
+A real EQC deny reaches evaluate_final_policy_engine and the engine itself produces the deny.
+```
+
+The third review also found residual N1 scope:
+
+```text
+N1 partially fixed - Shield / Q-ID / WSQK failures could still deny upstream before reaching the engine, and replay / human gates were not fully runtime-fed.
+N6 note - ledger wording overclaimed full evidence wiring.
+N7 note - EQC failure surfaced through wallet_policy label.
+```
+
+Maintainer decision: **Option 2 selected**. Milestone 18 remains open until full evidence-level wiring is re-reviewed.
+
+Option 2 fix decisions:
+
+```text
+Q-ID adapter/verifier rejects are represented as rejected qid evidence inside evaluate_final_policy_engine.
+Q-ID replay proof rejects are represented as rejected qid evidence and a failed replay local gate.
+Adaptive Core oracle rejects are represented as rejected adaptive_core evidence.
+Shield adapter / structural / required-layer rejects are represented as rejected shield evidence.
+WSQK authority rejects are represented as rejected wsqk_v2 evidence.
+TVA / nonce replay rejects are represented as a failed replay local gate.
+Human confirmation rejects are represented as a failed human local gate.
+Executor execution remains impossible unless evaluate_final_policy_engine returns ALLOW_FINAL_ADAMANTINEOS_DECISION.
+```
+
+Option 2 regression proof added:
+
+```text
+test_milestone_18_option2_qid_reject_reaches_final_policy_engine
+test_milestone_18_option2_shield_reject_reaches_final_policy_engine
+test_milestone_18_option2_wsqk_reject_reaches_final_policy_engine
+test_milestone_18_option2_replay_gate_reject_reaches_final_policy_engine
+test_milestone_18_option2_human_gate_reject_reaches_final_policy_engine
+test_milestone_18_outer_tva_error_path_remains_fail_closed_for_bad_wsqk_v2_scope
+```
+
+Option 2 local verification:
+
+```text
+PYTHONPATH=src python -m pytest -q
+923 passed
+100.00% coverage
+```
+
+Milestone 18 closure remains blocked until:
+
+```text
+maintainer copies Option 2 patch into DigiByte-AdamantineOS
+fresh updated ZIP is uploaded back
+fresh ZIP is inspected
+full tests remain green
+coverage remains 100.00%
+Claude AI performs fourth confirmation review of full evidence-level wiring
+all new findings are fixed or explicitly accepted with rationale
+AdamantineOS remains untagged
+Milestone 19 remains blocked until Milestone 18 closes cleanly
+```
