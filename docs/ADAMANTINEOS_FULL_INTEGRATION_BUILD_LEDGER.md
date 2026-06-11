@@ -1138,7 +1138,7 @@ PYTHONPATH=src python -m pytest -q
 Option 2 closure conditions were completed: fresh ZIP inspected, tests green, coverage 100.00%, and fourth Claude AI confirmation returned `PASS WITH NOTES - Milestone 18 can be closed`. N8/N7 were then closed with no technical debt carried forward.
 
 
-### Milestone 18 N7 closure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ EQC / wallet_policy gate semantics
+### Milestone 18 N7 closure ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ EQC / wallet_policy gate semantics
 
 EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate. This is a contract-preserving audit note: the final policy engine keeps the stable `wallet_policy` local gate name, while docs explicitly define that live EQC aggregate policy failures are represented there.
 
