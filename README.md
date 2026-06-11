@@ -6,7 +6,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-v2.2.0-brightgreen.svg)
-![CI](https://github.com/DarekDGB/DigiByte-Adamantine-Wallet-OS/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/DarekDGB/DigiByte-AdamantineOS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 ![Q-ID](https://img.shields.io/badge/Q--ID-runtime--verified-0A66C2.svg)
