@@ -1040,3 +1040,54 @@ Any second-pass findings are fixed or explicitly accepted with rationale.
 AdamantineOS remains v2.2.0 and untagged.
 Milestone 19 remains blocked until Milestone 18 closes cleanly.
 ```
+
+## 18A. Milestone 18 second-review findings N1/N2 and second fix pass
+
+Status: **second fix pass prepared, pending maintainer copy-back, fresh ZIP inspection, and Claude re-review**.
+
+Claude AI's second red-team confirmation returned `PASS WITH NOTES`, not a Milestone 18 close. The review confirmed F2-F8 were fixed and F1 was structurally wired, but found two new blockers:
+
+```text
+N1 MEDIUM - final policy engine was fed synthetic always-ALLOW evidence at runtime
+N2 MEDIUM - legacy orchestrate_execution_v1 remained an executor-running path with no final policy engine
+```
+
+Milestone 18 remains open. Milestone 19 remains blocked. AdamantineOS remains v2.2.0 and untagged.
+
+Second fix pass decisions:
+
+```text
+N1 fixed by replacing unconditional runtime evidence constants on the v2 allow/deny path with normalized evidence produced only after real runtime boundaries accept Shield, Q-ID, Adaptive Core oracle, WSQK authority, EQC, and TVA/replay checks.
+N2 fixed by routing legacy orchestrate_execution_v1 through TVA enforcement -> evaluate_final_policy_engine -> executor.execute only after final ALLOW.
+runtime_adapter documentation updated to prevent integrators from routing live execution around the final policy engine.
+```
+
+Second fix pass tests:
+
+```text
+test_claude_n1_eqc_deny_reaches_final_policy_engine
+test_claude_n2_legacy_v1_executes_only_after_final_policy
+test_claude_n2_v1_final_policy_reason_sanitizes_bad_values
+```
+
+Second fix pass local verification:
+
+```text
+PYTHONPATH=src python -m pytest -q
+917 passed
+100.00% coverage
+```
+
+Milestone 18 closure remains blocked until:
+
+```text
+maintainer copies second patch into DigiByte-AdamantineOS
+fresh updated ZIP is uploaded back
+fresh ZIP is inspected
+full tests remain green
+coverage remains 100.00%
+Claude AI performs third confirmation review of N1/N2
+all new findings are fixed or explicitly accepted with rationale
+AdamantineOS remains untagged
+Milestone 19 remains blocked until Milestone 18 closes cleanly
+```
