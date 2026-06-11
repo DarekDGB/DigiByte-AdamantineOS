@@ -1,12 +1,12 @@
 # Contributing
 
 **License:** MIT — **Author:** DarekDGB  
-**Repository:** DigiByte Adamantine Wallet OS  
+**Repository:** DigiByte AdamantineOS  
 **Scope:** Contract-first, deterministic foundation
 
 Thanks for your interest in contributing.
 
-Adamantine Wallet OS is a **decision engine** and a **contract-first foundation**.  
+AdamantineOS is a **decision engine** and a **contract-first foundation**.  
 Most “feature requests” belong in *downstream wallets* or in companion repos. This repo prioritizes:
 
 - Deterministic behavior (same inputs → same outputs)
