@@ -3,7 +3,7 @@
 Author attribution: **DarekDGB**  
 Repository: `DigiByte-AdamantineOS`  
 Milestone: 18  
-Status: hardening patch prepared, second red-team confirmation pending  
+Status: hardening prepared, second red-team confirmation pending  
 Version boundary: `v2.2.0` remains unchanged  
 Tag status: AdamantineOS remains untagged
 
@@ -23,11 +23,11 @@ destructive testing
 exploit deployment
 ```
 
-## Findings fixed in this patch
+## Findings fixed in this hardening
 
 ### M18-F1 — Final policy engine was not live runtime authority
 
-Status: **fixed in patch**
+Status: **fixed in hardening**
 
 The live runtime path now invokes `evaluate_final_policy_engine` before executor execution. The executor is called only after final AdamantineOS allow.
 
@@ -39,7 +39,7 @@ test_claude_f1_live_runtime_invokes_final_policy_before_executor
 
 ### M18-F2 — Cross-evidence context splice defense needed at final engine
 
-Status: **fixed in patch**
+Status: **fixed in hardening**
 
 The final policy engine now accepts an `expected_context_hash` and denies mismatched/missing evidence context when supplied.
 
@@ -51,7 +51,7 @@ test_claude_f2_cross_context_splice_denies_at_engine
 
 ### M18-F3 — Truthy upstream final approval bypass signal
 
-Status: **fixed in patch**
+Status: **fixed in hardening**
 
 Any truthy upstream `final_approval` fails closed as authority bypass.
 
@@ -63,7 +63,7 @@ test_claude_f3_truthy_final_approval_and_slots_are_authority_bypass
 
 ### M18-F4 — DENY must dominate human review
 
-Status: **fixed in patch**
+Status: **fixed in hardening**
 
 Rejected evidence and failed local gates are evaluated before human-review handling. A hard DENY cannot be softened into `HUMAN_REVIEW_REQUIRED`.
 
@@ -75,7 +75,7 @@ test_claude_f4_deny_dominates_over_human_review_signal
 
 ### M18-F5 — Hidden authority scan coverage
 
-Status: **fixed in patch**
+Status: **fixed in hardening**
 
 The final engine scans mapping/list/tuple/set structures and object `__dict__` / `__slots__` values for forbidden authority signals.
 
@@ -89,7 +89,7 @@ test_string_slots_hidden_authority_branch_is_locked
 
 ### M18-F6 — Human-review detection must be exact
 
-Status: **fixed in patch**
+Status: **fixed in hardening**
 
 Human review is detected only by exact status equality, not substring search.
 
@@ -101,7 +101,7 @@ test_claude_f6_human_review_requires_exact_status_not_substring
 
 ### M18-F7 — Reason ID sanitization
 
-Status: **fixed in patch**
+Status: **fixed in hardening**
 
 Unknown evidence-supplied reason IDs are sanitized to `UNKNOWN_EXTERNAL_REASON` at the engine/runtime boundary.
 
@@ -158,7 +158,7 @@ Result:
 Milestone 18 must not close until:
 
 ```text
-fresh patched ZIP is uploaded back
+fresh hardened ZIP is uploaded back
 fresh ZIP is inspected
 all tests remain green
 coverage remains 100.00%
@@ -176,11 +176,11 @@ N1 MEDIUM - final policy engine was fed synthetic always-ALLOW runtime evidence
 N2 MEDIUM - legacy orchestrate_execution_v1 remained an executor-running path without final policy engine gating
 ```
 
-Milestone 18 remains open until these are fixed and re-reviewed.
+At this stage, Milestone 18 remained open until these were fixed and re-reviewed. Both were later resolved through the second fix pass, Option 2 full evidence-level wiring, and final no-debt closure hardening.
 
 ### M18-N1 — Semantic runtime evidence wiring
 
-Status: **fixed in second patch**
+Status: **fixed in second hardening pass**
 
 The v2 runtime path no longer feeds `_runtime_evidence_allow()` constants into the final policy engine. The final policy inputs are now built only after the corresponding live runtime evidence boundary has accepted the request:
 
@@ -205,7 +205,7 @@ test_claude_n1_eqc_deny_reaches_final_policy_engine
 
 ### M18-N2 — Legacy v1 executor path fenced by final policy
 
-Status: **fixed in second patch**
+Status: **fixed in second hardening pass**
 
 `orchestrate_execution_v1` no longer calls the executor through `boundary.run_with_tva`. It enforces TVA first, then calls `evaluate_final_policy_engine()`, and only then calls `executor.execute()` if the final AdamantineOS decision is ALLOW.
 
@@ -222,11 +222,11 @@ test_claude_n2_v1_final_policy_reason_sanitizes_bad_values
 
 Status: **updated / tracked**
 
-- Docs now record that the second review found N1/N2 and that the second patch removes the unconditional synthetic runtime evidence pattern.
+- Docs now record that the second review found N1/N2 and that the second hardening pass removes the unconditional synthetic runtime evidence pattern.
 - The `ai_gateway:not_required_for_runtime_path` marker is intentionally not an approval source. It means the live wallet runtime path is not AI Gateway ingress. It is still evidence-only and cannot grant final approval by itself.
 - Local gates are no longer all merely decorative: EQC deny flows into the `wallet_policy` gate and TVA success feeds the `replay` gate before executor execution.
 
-## Second-patch verification
+## Second-hardening verification
 
 ```text
 PYTHONPATH=src python -m pytest -q
@@ -234,7 +234,7 @@ PYTHONPATH=src python -m pytest -q
 100.00% coverage
 ```
 
-Milestone 18 still must not be closed until a fresh patched ZIP is inspected and Claude AI performs another confirmation review.
+Milestone 18 still must not be closed until a fresh hardened ZIP is inspected and Claude AI performs another confirmation review.
  
 
 ## Third-review residual N1 and Option 2 decision
@@ -287,4 +287,51 @@ Regression proof:
 test_milestone_18_n7_eqc_wallet_policy_mapping_is_explicit_in_docs
 ```
 
-Milestone 18 remains pending only until this closure patch is copied, CI stays green, and the fresh ZIP is inspected. AdamantineOS remains v2.2.0 and untagged.
+Milestone 18 closure hardening was copied, CI stayed green, and the fresh ZIP was inspected. Milestone 18 is complete. AdamantineOS remains v2.2.0 and untagged until Milestone 19.
+
+
+## Final Milestone 18 closure verification
+
+Status: **complete**.
+
+Final proof after no-debt N8/N7 closure:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+TOTAL 4097 statements, 0 missed
+```
+
+Closure result:
+
+```text
+F1-F8 resolved.
+N1 fixed by full per-source evidence-level runtime wiring.
+N2 fixed by final-policy gating of v1 execution.
+N7 closed with explicit EQC -> wallet_policy audit semantics.
+N8 fixed with reject-branch final-policy divergence hardening.
+No HIGH/MEDIUM/LOW red-team finding remains open.
+No known red-team note is carried forward as technical debt.
+Milestone 18 complete.
+AdamantineOS remains v2.2.0 and untagged.
+Milestone 19 remains pending.
+```
+
+## Final external closure report
+
+The final Claude AI closure review is preserved as:
+
+```text
+docs/RED_TEAM/ADAMANTINEOS_MILESTONE_18_FINAL_CLOSURE_REVIEW.docx
+```
+
+Final verdict:
+
+```text
+PASS - Milestone 18 can be closed
+```
+
+The final closure review verified that N1 remains fixed, N2 remains fixed, N7 is closed, N8 is fixed, and no HIGH/MEDIUM/LOW/NOTE finding remains open. No known red-team note is carried forward as technical debt.
+
+This final closure report does not authorize release or tagging. AdamantineOS remains v2.2.0 and untagged until Milestone 19.
