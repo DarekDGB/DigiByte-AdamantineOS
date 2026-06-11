@@ -5,17 +5,16 @@
 # 🔷 DigiByte AdamantineOS
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/status-v2.2.0-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v3.0.0-brightgreen.svg)
 ![CI](https://github.com/DarekDGB/DigiByte-AdamantineOS/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 ![Q-ID](https://img.shields.io/badge/Q--ID-runtime--verified-0A66C2.svg)
-![Adaptive Core
-v3](https://img.shields.io/badge/Adaptive%20Core-v3%20governance--compatible-0052CC.svg)
-![Shield
-v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
+![Adaptive Core v3](https://img.shields.io/badge/Adaptive%20Core-v3%20evidence--only-0052CC.svg)
+![Shield v3.2](https://img.shields.io/badge/Shield-v3.2%20orchestrator--receipt-003366.svg)
 ![Governance](https://img.shields.io/badge/Governance-AC%20v3%20verified-6f42c1.svg)
 ![WSQK v2](https://img.shields.io/badge/WSQK-v2%20quantum--aware-8A2BE2.svg)
+![AI Gateway](https://img.shields.io/badge/AI%20Gateway-evidence--only%20never%20authority-111111.svg)
 
 ------------------------------------------------------------------------
 
@@ -24,19 +23,27 @@ v3](https://img.shields.io/badge/Shield-v3%20strict%20schema-003366.svg)
 DigiByte AdamantineOS is a **deterministic security decision engine for
 digital wallets and autonomous systems**.
 
-It verifies execution requests using:
+It is **not a wallet UI** and it does **not** change DigiByte consensus,
+block rules, mining, supply, or protocol security.
 
-• **Q-ID identity proofs**\
-• **Adaptive Core oracle intelligence**\
-• **Shield v3 security layers**\
-• **Deterministic governance review**\
-• **WSQK v2 quantum-aware authority proofs**
+AdamantineOS sits before execution and connects external evidence layers
+into one final fail-closed decision path. External systems provide evidence;
+AdamantineOS makes the final allow, deny, or human-review decision.
 
-Only after all layers pass verification can execution occur.
+The `v3.0.0` release connects:
 
-AdamantineOS is **not a wallet UI**.
+• **Shield v3.2 component evidence** through the Shield Orchestrator receipt\
+• **WSQK v2 posture / policy evidence**\
+• **Q-ID identity / session evidence**\
+• **Adaptive Core advisory policy evidence**\
+• **AI Gateway evidence-only input, never final authority**\
+• **Replay / nonce freshness enforcement**\
+• **Wallet policy / EQC evidence**\
+• **Human review bound to exact context**\
+• **Final AdamantineOS fail-closed decision authority**
 
-It is the **trust enforcement engine** behind secure wallet systems.
+Only after the final AdamantineOS decision engine returns an allow verdict
+can execution continue.
 
 ------------------------------------------------------------------------
 
@@ -75,23 +82,28 @@ execution**.
 
 ------------------------------------------------------------------------
 
-## Milestone 19 --- Final Release Gate
+## v3.0.0 --- Connected Evidence Architecture Release
 
-Milestone 19 is the final release gate before any AdamantineOS version bump or tag decision.
+**Status:** Release-stamped, CI green, and ready for final tag review after final ZIP inspection\
+**Type:** Major release boundary\
+**Tests:** 925 passed\
+**Coverage:** 100.00%\
+**Package distribution name:** `adamantine-wallet-os` unchanged\
+**Python import paths:** unchanged
 
-Current state:
+DigiByte AdamantineOS `v3.0.0` marks the first major release boundary after
+approximately seven months of building, integration, proof-pack alignment,
+red-team hardening, and final release-gate review.
 
-```text
-Current version: v2.2.0
-Candidate tag under review: v3.0.0
-Tag approved: yes, after final copied-repo verification
-Release approved: yes, after final copied-repo verification
-Package/import names: unchanged
-```
+This release is about the full connected system: Shield, WSQK, Q-ID, Adaptive
+Core, AI Gateway, replay/nonce checks, wallet policy, human review, and the
+final AdamantineOS fail-closed decision engine.
 
-The candidate `v3.0.0` tag has passed the Milestone 19 release gate after fresh ZIP inspection, repeated tests, 100.00% coverage, proof-pack alignment, and explicit maintainer approval. The tag command must only be run after this approval update is copied into the repository and verified from one final fresh ZIP.
+Claude AI is documented only as part of the authorized red-team evidence. The
+release itself is the connected deterministic architecture, not the red-team tool.
 
-AdamantineOS does not change DigiByte consensus. It remains an external deterministic fail-closed execution protection boundary.
+AdamantineOS does not change DigiByte consensus. It remains an external
+deterministic fail-closed execution protection boundary.
 
 ------------------------------------------------------------------------
 
@@ -168,43 +180,81 @@ handling requires a new versioned compatibility lock.
 
 ------------------------------------------------------------------------
 
-# 🧱 Architecture Overview
+# 🧱 Connected Evidence Architecture
 
-``` mermaid
+```mermaid
 flowchart LR
-    A[Mobile Wallet Request] --> B[Q-ID Session Proof]
-    B --> C[Adaptive Core v3 Oracle]
-    C --> D[Shield v3 Bundle]
+    subgraph SC[Shield Components]
+        GW[Guardian Wallet]
+        ADN[ADN]
+        SAI[Sentinel AI]
+        DQSN[DQSN]
+        QWG[QWG]
+    end
 
-    D --> D1[Sentinel AI]
-    D --> D2[ADN]
-    D --> D3[DQSN]
-    D --> D4[QWG]
-    D --> D5[Guardian Wallet]
+    SO[Shield Orchestrator]
+    SR[Shield Orchestrator v3.2 Receipt]
 
-    D1 --> E[EQC Evaluator]
-    D2 --> E
-    D3 --> E
-    D4 --> E
-    D5 --> E
-    C --> E
-    B --> E
+    GW --> SO
+    ADN --> SO
+    SAI --> SO
+    DQSN --> SO
+    QWG --> SO
+    SO --> SR
 
-    C --> G1[Governance Proposal Review]
-    G1 --> G2[Proposal Hash Lock]
-    G2 --> G3[Receipt Artifact]
+    WSQK[WSQK v2<br/>Posture / policy evidence]
+    QID[Q-ID<br/>Identity / session evidence]
+    AC[Adaptive Core<br/>Advisory policy evidence]
+    AIG[AI Gateway<br/>Evidence only / never final authority]
 
-    E -->|ALLOW| F[WSQK Authority Check]
-    F -->|VALID| G[TVA Gate]
-    G -->|EXECUTE| H[Executor]
+    subgraph FE[AdamantineOS Final Fail-Closed Decision Engine]
+        G1[1. Shield receipt gate]
+        G2[2. WSQK gate]
+        G3[3. Q-ID gate]
+        G4[4. Adaptive Core gate]
+        G5[5. AI Gateway gate]
+        G6[6. Replay / nonce gate]
+        G7[7. Wallet policy gate]
+        G8[8. Human gate]
+        G9[9. Final AdamantineOS decision]
 
-    E -->|DENY| X[Deterministic Denial]
+        G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7 --> G8 --> G9
+    end
+
+    SR --> G1
+    WSQK --> G2
+    QID --> G3
+    AC --> G4
+    AIG --> G5
+
+    G9 --> ALLOW[FINAL ALLOW]
+    G9 --> DENY[FINAL DENY]
+    G9 --> REVIEW[HUMAN REVIEW REQUIRED]
 ```
 
-Adamantine enforces layered validation before any execution is
-permitted, seals deterministic compatibility with Adaptive Core v3
-governance proposal artifacts, and now enforces WSQK v2 quantum-aware
-authority through Q-ID posture binding and TVA.
+## Architecture rules
+
+- No raw component bypass.
+- Shield `ALLOW` is not final approval.
+- `DENY` dominates.
+- No AI final authority.
+- External systems provide evidence only.
+- AdamantineOS makes the final decision.
+- Deterministic boundaries define behavior.
+- Tests define truth.
+
+## What v3.0.0 connects
+
+- Guardian Wallet, ADN, Sentinel AI, DQSN, and QWG evidence through Shield Orchestrator.
+- Shield Orchestrator v3.2 receipt verification.
+- WSQK v2 posture and policy evidence.
+- Q-ID identity and session evidence.
+- Adaptive Core advisory policy evidence.
+- AI Gateway evidence-only input with no final authority.
+- Replay / nonce freshness enforcement.
+- Wallet policy / EQC evidence.
+- Human review exact-context gate.
+- Final AdamantineOS allow / deny / review decision.
 
 ------------------------------------------------------------------------
 
