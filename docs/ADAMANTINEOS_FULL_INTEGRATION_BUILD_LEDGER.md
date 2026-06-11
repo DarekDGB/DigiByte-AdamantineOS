@@ -1138,7 +1138,7 @@ PYTHONPATH=src python -m pytest -q
 Option 2 closure conditions were completed: fresh ZIP inspected, tests green, coverage 100.00%, and fourth Claude AI confirmation returned `PASS WITH NOTES - Milestone 18 can be closed`. N8/N7 were then closed with no technical debt carried forward.
 
 
-### Milestone 18 N7 closure â EQC / wallet_policy gate semantics
+### Milestone 18 N7 closure Ã¢ÂÂ EQC / wallet_policy gate semantics
 
 EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate. This is a contract-preserving audit note: the final policy engine keeps the stable `wallet_policy` local gate name, while docs explicitly define that live EQC aggregate policy failures are represented there.
 
@@ -1236,6 +1236,7 @@ The final Claude AI closure review is preserved in the repository as:
 
 ```text
 docs/RED_TEAM/ADAMANTINEOS_MILESTONE_18_FINAL_CLOSURE_REVIEW.docx
+docs/RED_TEAM/ADAMANTINEOS_MILESTONE_18_FINAL_CLOSURE_REVIEW.md
 ```
 
 Final external review verdict:
@@ -1261,3 +1262,52 @@ Milestone 19 remains the only final release gate
 
 The final review does **not** authorize release or tagging. AdamantineOS remains untagged until Milestone 19 is completed and verified.
 
+
+
+## 19A. Milestone 19 final release gate start
+
+Status: **started / gate prepared / not complete**.
+
+Milestone 19 is the final release gate before any AdamantineOS version bump or tag decision.
+
+Incoming source audit for this gate:
+
+```text
+Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(10).zip
+Milestone 17: complete
+Milestone 18: complete / closed
+Final red-team .docx report: present
+Final red-team .md report: present and corrected
+pyproject package name: adamantine-wallet-os
+pyproject version: 2.2.0
+AdamantineOS tag status: untagged
+```
+
+Verification before Milestone 19 gate package:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+TOTAL 4097 statements, 0 missed
+```
+
+Milestone 19 gate artifacts prepared:
+
+```text
+docs/ADAMANTINEOS_MILESTONE_19_FINAL_RELEASE_GATE.md
+docs/ADAMANTINEOS_MILESTONE_19_TAG_DECISION.md
+docs/ADAMANTINEOS_FINAL_PROOF_PACK_INDEX.md
+```
+
+Tag decision remains blocked:
+
+```text
+Candidate tag: v3.0.0
+Tag approved: no
+Release approved: no
+Version bump applied: no
+AdamantineOS remains: v2.2.0 and untagged
+```
+
+Milestone 19 is not complete until maintainer copy-back is done, a fresh post-copy repository ZIP is inspected, tests pass again, coverage remains 100.00%, and the maintainer explicitly approves the final tag decision.
