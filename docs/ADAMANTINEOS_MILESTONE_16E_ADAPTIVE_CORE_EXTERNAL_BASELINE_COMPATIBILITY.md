@@ -1,7 +1,7 @@
 # AdamantineOS Milestone 16E - Adaptive Core External Baseline Compatibility
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 External baseline repository: `DigiByte-Adaptive-Core`  
 Status: Milestone 16E compatibility harness  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
@@ -41,7 +41,7 @@ Adaptive Core remains advisory evidence only.
 ### Repository modified in AdamantineOS
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 ### External repository gap identified and patched separately
