@@ -235,3 +235,24 @@ PYTHONPATH=src python -m pytest -q
 ```
 
 Milestone 18 still must not be closed until a fresh patched ZIP is inspected and Claude AI performs another confirmation review.
+ 
+
+## Third-review residual N1 and Option 2 decision
+
+Claude AI's third confirmation review verified N2 as fixed and found no new HIGH/MEDIUM issues, but kept N1 only partially fixed because Shield / Q-ID / WSQK failures could still deny upstream before reaching the final policy engine, while replay and human gates were still not fully runtime-fed.
+
+Maintainer decision: **do not close Milestone 18 on accepted residual scope**. Option 2 is selected.
+
+Option 2 fix expands runtime evidence-level wiring so each relevant live failure can be represented inside `evaluate_final_policy_engine`:
+
+```text
+qid rejected          -> stopped_at=qid
+shield rejected       -> stopped_at=shield
+wsqk_v2 rejected      -> stopped_at=wsqk_v2
+adaptive_core rejected-> stopped_at=adaptive_core
+replay rejected       -> stopped_at=replay
+human rejected        -> stopped_at=human
+EQC rejected          -> stopped_at=wallet_policy
+```
+
+This corrects the earlier N6 wording issue by no longer claiming only aggregate EQC wiring as full evidence wiring. Milestone 18 remains open pending fourth Claude confirmation review.
