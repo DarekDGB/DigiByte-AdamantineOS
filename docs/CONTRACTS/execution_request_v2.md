@@ -1,7 +1,7 @@
 # Execution Request v2 (Contract) — v1.x
 
 **License:** MIT — **Author:** DarekDGB  
-**Scope:** Normative request envelope shape for Mobile/Runtime → Adamantine Wallet OS.
+**Scope:** Normative request envelope shape for Mobile/Runtime → AdamantineOS.
 
 ---
 
