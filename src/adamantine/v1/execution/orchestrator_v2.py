@@ -50,25 +50,39 @@ class _RuntimeFinalPolicyEvidence:
     final_outcome: str | None = None
 
 
-def _runtime_evidence_from_validated(*, source: str, context_hash: str, reason_id: ReasonId = ReasonId.EVIDENCE_OK) -> _RuntimeFinalPolicyEvidence:
-    """Normalize a real runtime result into final-policy evidence.
+def _runtime_evidence_from_boundary(
+    *,
+    source: str,
+    context_hash: str,
+    reason_id: ReasonId = ReasonId.EVIDENCE_OK,
+    accepted: bool,
+) -> _RuntimeFinalPolicyEvidence:
+    """Normalize a real runtime boundary result into final-policy evidence.
 
-    This helper is intentionally called only after the corresponding runtime
-    parser/gate has accepted real request evidence. It is not an unconditional
-    placeholder ALLOW; it records that the named upstream result reached an
-    accepted evidence boundary for the same request context.
+    Milestone 18 Option 2 deliberately feeds the final policy engine real
+    accept/reject outcomes from each live runtime boundary. A source that fails
+    parsing, binding, posture, or structural checks is represented as rejected
+    evidence at its own gate instead of being hidden behind an upstream return.
     """
     return _RuntimeFinalPolicyEvidence(
         source=source,
-        state="ALLOW_EVIDENCE_CONTINUE_CHECKS",
-        outcome="ALLOW_EVIDENCE",
+        state="ALLOW_EVIDENCE_CONTINUE_CHECKS" if accepted else "DENY_EVIDENCE_REJECTED",
+        outcome="ALLOW_EVIDENCE" if accepted else "DENY",
         reason_id=reason_id,
-        accepted_as_evidence=True,
+        accepted_as_evidence=accepted,
         final_approval=False,
-        handoff_allowed=True,
+        handoff_allowed=accepted,
         context_hash=context_hash,
         dominant_reason_ids=(reason_id.value,),
     )
+
+
+def _runtime_evidence_accepted(*, source: str, context_hash: str, reason_id: ReasonId = ReasonId.EVIDENCE_OK) -> _RuntimeFinalPolicyEvidence:
+    return _runtime_evidence_from_boundary(source=source, context_hash=context_hash, reason_id=reason_id, accepted=True)
+
+
+def _runtime_evidence_rejected(*, source: str, context_hash: str, reason_id: ReasonId) -> _RuntimeFinalPolicyEvidence:
+    return _runtime_evidence_from_boundary(source=source, context_hash=context_hash, reason_id=reason_id, accepted=False)
 
 
 
@@ -95,6 +109,64 @@ def _final_policy_artifacts(result: FinalPolicyEngineResult) -> dict[str, Any]:
             "dominant_reason_ids": list(result.dominant_reason_ids),
         }
     }
+
+
+
+def _final_policy_denied_response_v2(
+    *,
+    req: Any,
+    pol: RiskPolicy,
+    final_policy: FinalPolicyEngineResult,
+    protected_requested: bool,
+    qid_ok: bool,
+    oracle_ok: bool,
+    shield_ok: bool,
+    tva_allowed: bool = False,
+    eqc_allowed: bool = False,
+    wsqk_allowed: bool = False,
+    nonce_consumed: bool = False,
+    artifacts: dict[str, Any] | None = None,
+    include_final_policy_artifact: bool = True,
+) -> dict[str, Any]:
+    final_reason = _runtime_final_policy_reason(final_policy)
+    merged_artifacts = _final_policy_artifacts(final_policy) if include_final_policy_artifact else {}
+    if artifacts:
+        merged_artifacts.update(artifacts)
+    return build_execution_response_v2(
+        request_id=req.request_id,
+        intent=req.intent,
+        action=req.context.action,
+        context_hash=req.context.context_hash,
+        status="deny",
+        reason_id=final_reason,
+        protection_mode=_compute_protection_mode(
+            protected_requested=protected_requested,
+            qid_ok=qid_ok,
+            oracle_ok=oracle_ok,
+            shield_ok=shield_ok,
+        ),
+        tva_allowed=tva_allowed,
+        eqc_allowed=eqc_allowed,
+        wsqk_allowed=wsqk_allowed,
+        issued_at=req.issued_at,
+        expires_at=req.expires_at,
+        max_skew_seconds=req.max_skew_seconds,
+        timebox_valid=True,
+        nonce_store=req.nonce_store,
+        nonce_value=req.nonce_value,
+        nonce_consumed=nonce_consumed,
+        qid_present=True,
+        qid_valid=qid_ok,
+        shield_present=True,
+        shield_valid=shield_ok,
+        oracle_present=True,
+        oracle_valid=oracle_ok,
+        policy_mode=pol.resilience_mode.value,
+        override_allowed=False,
+        policy_reason_id=final_reason,
+        artifacts=merged_artifacts,
+    )
+
 
 REQUIRED_SHIELD_LAYERS_V3: tuple[str, ...] = (
     "sentinel_ai",
@@ -503,9 +575,8 @@ def orchestrate_execution_v2(
                 artifacts={"error": f"reason registry build failed: {e}"},
             )
 
-        # Q-ID must validate first (legacy if invalid).
-        # If runtime provides qid_verifier (crypto verification hook), it MUST succeed
-        # before we accept/parse any Q-ID session representation.
+        # Q-ID must validate first. If Q-ID rejects, the final policy engine
+        # now receives that real rejected source instead of being bypassed.
         try:
             if qid_verifier is not None:
                 try:
@@ -517,39 +588,27 @@ def orchestrate_execution_v2(
 
             session = parse_qid_session(payload=req.evidence_qid, now=now)
         except AdapterError as e:
-            return build_execution_response_v2(
-                request_id=req.request_id,
-                intent=req.intent,
-                action=req.context.action,
-                context_hash=req.context.context_hash,
-                status="deny",
-                reason_id=e.reason_id,
-                protection_mode=_compute_protection_mode(
-                    protected_requested=protected_requested,
-                    qid_ok=False,
-                    oracle_ok=False,
-                    shield_ok=False,
-                ),
-                tva_allowed=False,
-                eqc_allowed=False,
-                wsqk_allowed=False,
-                issued_at=req.issued_at,
-                expires_at=req.expires_at,
-                max_skew_seconds=req.max_skew_seconds,
-                timebox_valid=True,
-                nonce_store=req.nonce_store,
-                nonce_value=req.nonce_value,
-                nonce_consumed=False,
-                qid_present=True,
-                qid_valid=False,
-                shield_present=True,
-                shield_valid=False,
-                oracle_present=True,
-                oracle_valid=False,
-                policy_mode=pol.resilience_mode.value,
-                override_allowed=False,
-                policy_reason_id=e.reason_id,
+            final_policy = evaluate_final_policy_engine(
+                shield=_runtime_evidence_accepted(source="shield:not_reached_before_qid_reject", context_hash=req.context.context_hash),
+                wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_qid_reject", context_hash=req.context.context_hash),
+                qid=_runtime_evidence_rejected(source="qid:rejected", context_hash=req.context.context_hash, reason_id=e.reason_id),
+                adaptive_core=_runtime_evidence_accepted(source="adaptive_core:not_reached_before_qid_reject", context_hash=req.context.context_hash),
+                ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+                human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                expected_context_hash=req.context.context_hash,
+            )
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=False,
+                oracle_ok=False,
+                shield_ok=False,
                 artifacts={"error": e.message},
+                include_final_policy_artifact=False,
             )
 
         # v1.4.0: Q-ID linkage hardening (clock-free replay gate).
@@ -566,42 +625,30 @@ def orchestrate_execution_v2(
                     require_fresh=True,
                 )
             except AdapterError as e:
-                return build_execution_response_v2(
-                    request_id=req.request_id,
-                    intent=req.intent,
-                    action=req.context.action,
-                    context_hash=req.context.context_hash,
-                    status="deny",
-                    reason_id=e.reason_id,
-                    protection_mode=_compute_protection_mode(
-                        protected_requested=protected_requested,
-                        qid_ok=False,
-                        oracle_ok=False,
-                        shield_ok=False,
-                    ),
-                    tva_allowed=False,
-                    eqc_allowed=False,
-                    wsqk_allowed=False,
-                    issued_at=req.issued_at,
-                    expires_at=req.expires_at,
-                    max_skew_seconds=req.max_skew_seconds,
-                    timebox_valid=True,
-                    nonce_store=req.nonce_store,
-                    nonce_value=req.nonce_value,
-                    nonce_consumed=False,
-                    qid_present=True,
-                    qid_valid=False,
-                    shield_present=True,
-                    shield_valid=False,
-                    oracle_present=True,
-                    oracle_valid=False,
-                    policy_mode=pol.resilience_mode.value,
-                    override_allowed=False,
-                    policy_reason_id=e.reason_id,
+                final_policy = evaluate_final_policy_engine(
+                    shield=_runtime_evidence_accepted(source="shield:not_reached_before_qid_replay_reject", context_hash=req.context.context_hash),
+                    wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_qid_replay_reject", context_hash=req.context.context_hash),
+                    qid=_runtime_evidence_rejected(source="qid:replay_rejected", context_hash=req.context.context_hash, reason_id=e.reason_id),
+                    adaptive_core=_runtime_evidence_accepted(source="adaptive_core:not_reached_before_qid_replay_reject", context_hash=req.context.context_hash),
+                    ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                    replay=LocalPolicyGateResult("replay", False, e.reason_id),
+                    wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+                    human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                    expected_context_hash=req.context.context_hash,
+                )
+                return _final_policy_denied_response_v2(
+                    req=req,
+                    pol=pol,
+                    final_policy=final_policy,
+                    protected_requested=protected_requested,
+                    qid_ok=False,
+                    oracle_ok=False,
+                    shield_ok=False,
                     artifacts={"error": e.message},
                 )
 
-        # Oracle (minimal if invalid).
+        # Oracle / Adaptive Core evidence. Rejections are now passed through
+        # the final policy engine as adaptive_core evidence failures.
         try:
             oracle = parse_adaptive_core_oracle_v3(
                 payload=req.evidence_oracle,
@@ -612,39 +659,27 @@ def orchestrate_execution_v2(
                 policy=pol,
             )
         except AdapterError as e:
-            return build_execution_response_v2(
-                request_id=req.request_id,
-                intent=req.intent,
-                action=req.context.action,
-                context_hash=req.context.context_hash,
-                status="deny",
-                reason_id=e.reason_id,
-                protection_mode=_compute_protection_mode(
-                    protected_requested=protected_requested,
-                    qid_ok=True,
-                    oracle_ok=False,
-                    shield_ok=False,
-                ),
-                tva_allowed=False,
-                eqc_allowed=False,
-                wsqk_allowed=False,
-                issued_at=req.issued_at,
-                expires_at=req.expires_at,
-                max_skew_seconds=req.max_skew_seconds,
-                timebox_valid=True,
-                nonce_store=req.nonce_store,
-                nonce_value=req.nonce_value,
-                nonce_consumed=False,
-                qid_present=True,
-                qid_valid=True,
-                shield_present=True,
-                shield_valid=False,
-                oracle_present=True,
-                oracle_valid=False,
-                policy_mode=pol.resilience_mode.value,
-                override_allowed=False,
-                policy_reason_id=e.reason_id,
+            final_policy = evaluate_final_policy_engine(
+                shield=_runtime_evidence_accepted(source="shield:not_reached_before_oracle_reject", context_hash=req.context.context_hash),
+                wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_oracle_reject", context_hash=req.context.context_hash),
+                qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                adaptive_core=_runtime_evidence_rejected(source="adaptive_core:oracle_v3_rejected", context_hash=req.context.context_hash, reason_id=e.reason_id),
+                ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+                human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                expected_context_hash=req.context.context_hash,
+            )
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=True,
+                oracle_ok=False,
+                shield_ok=False,
                 artifacts={"error": e.message},
+                include_final_policy_artifact=False,
             )
 
         # Governance: map shield adapter failures to stable EQC-facing reasons.
@@ -659,42 +694,30 @@ def orchestrate_execution_v2(
             )
         except AdapterError as e:
             mapped = _map_shield_adapter_reason(e.reason_id)
-            return build_execution_response_v2(
-                request_id=req.request_id,
-                intent=req.intent,
-                action=req.context.action,
-                context_hash=req.context.context_hash,
-                status="deny",
-                reason_id=mapped,
-                protection_mode=_compute_protection_mode(
-                    protected_requested=protected_requested,
-                    qid_ok=True,
-                    oracle_ok=True,
-                    shield_ok=False,
-                ),
-                tva_allowed=False,
-                eqc_allowed=False,
-                wsqk_allowed=False,
-                issued_at=req.issued_at,
-                expires_at=req.expires_at,
-                max_skew_seconds=req.max_skew_seconds,
-                timebox_valid=True,
-                nonce_store=req.nonce_store,
-                nonce_value=req.nonce_value,
-                nonce_consumed=False,
-                qid_present=True,
-                qid_valid=True,
-                shield_present=True,
-                shield_valid=False,
-                oracle_present=True,
-                oracle_valid=True,
-                policy_mode=pol.resilience_mode.value,
-                override_allowed=False,
-                policy_reason_id=mapped,
+            final_policy = evaluate_final_policy_engine(
+                shield=_runtime_evidence_rejected(source="shield:bundle_rejected", context_hash=req.context.context_hash, reason_id=mapped),
+                wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_shield_reject", context_hash=req.context.context_hash),
+                qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                adaptive_core=_runtime_evidence_accepted(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+                ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+                human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                expected_context_hash=req.context.context_hash,
+            )
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=True,
+                oracle_ok=True,
+                shield_ok=False,
                 artifacts={
                     "shield_adapter_reason": e.reason_id.value,
                     "shield_adapter_message": e.message,
                 },
+                include_final_policy_artifact=False,
             )
 
         if tuple(shield.required_layers) != REQUIRED_SHIELD_LAYERS_V3:
@@ -702,44 +725,32 @@ def orchestrate_execution_v2(
             got = list(shield.required_layers)
             missing = [x for x in expected if x not in got]
             extra = [x for x in got if x not in expected]
-            return build_execution_response_v2(
-                request_id=req.request_id,
-                intent=req.intent,
-                action=req.context.action,
-                context_hash=req.context.context_hash,
-                status="deny",
-                reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
-                protection_mode=_compute_protection_mode(
-                    protected_requested=protected_requested,
-                    qid_ok=True,
-                    oracle_ok=True,
-                    shield_ok=False,
-                ),
-                tva_allowed=False,
-                eqc_allowed=False,
-                wsqk_allowed=False,
-                issued_at=req.issued_at,
-                expires_at=req.expires_at,
-                max_skew_seconds=req.max_skew_seconds,
-                timebox_valid=True,
-                nonce_store=req.nonce_store,
-                nonce_value=req.nonce_value,
-                nonce_consumed=False,
-                qid_present=True,
-                qid_valid=True,
-                shield_present=True,
-                shield_valid=False,
-                oracle_present=True,
-                oracle_valid=True,
-                policy_mode=pol.resilience_mode.value,
-                override_allowed=False,
-                policy_reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            final_policy = evaluate_final_policy_engine(
+                shield=_runtime_evidence_rejected(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}:required_layers", context_hash=getattr(shield, "context_hash", req.context.context_hash), reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE),
+                wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_shield_layer_reject", context_hash=req.context.context_hash),
+                qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                adaptive_core=_runtime_evidence_accepted(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+                ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+                human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                expected_context_hash=req.context.context_hash,
+            )
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=True,
+                oracle_ok=True,
+                shield_ok=False,
                 artifacts={
                     "shield_required_layers_expected": expected,
                     "shield_required_layers_got": got,
                     "shield_required_layers_missing": missing,
                     "shield_required_layers_extra": extra,
                 },
+                include_final_policy_artifact=False,
             )
 
         eqc = evaluate_eqc_v2(
@@ -756,11 +767,11 @@ def orchestrate_execution_v2(
         if eqc.verdict is not Verdict.ALLOW:
             rid = _coerce_reason_id(eqc.reason_ids[0] if eqc.reason_ids else ReasonId.DENY_SCHEMA_INVALID.value)
             final_policy = evaluate_final_policy_engine(
-                shield=_runtime_evidence_from_validated(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}", context_hash=getattr(shield, "context_hash", req.context.context_hash)),
-                wsqk_v2=_runtime_evidence_from_validated(source="wsqk_v2:not_reached_before_eqc_deny", context_hash=req.context.context_hash),
-                qid=_runtime_evidence_from_validated(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
-                adaptive_core=_runtime_evidence_from_validated(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
-                ai_gateway=_runtime_evidence_from_validated(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                shield=_runtime_evidence_accepted(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}", context_hash=getattr(shield, "context_hash", req.context.context_hash)),
+                wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_eqc_deny", context_hash=req.context.context_hash),
+                qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                adaptive_core=_runtime_evidence_accepted(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+                ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
                 replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
                 wallet_policy=LocalPolicyGateResult("wallet_policy", False, rid),
                 human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
@@ -812,38 +823,28 @@ def orchestrate_execution_v2(
             authority_proofs=req.authority_proofs,
         )
         if wsqk is None:
-            return build_execution_response_v2(
-                request_id=req.request_id,
-                intent=req.intent,
-                action=req.context.action,
-                context_hash=req.context.context_hash,
-                status="deny",
-                reason_id=ReasonId.DENY_AUTHORITY_INVALID,
-                protection_mode=_compute_protection_mode(
-                    protected_requested=protected_requested,
-                    qid_ok=True,
-                    oracle_ok=True,
-                    shield_ok=True,
-                ),
-                tva_allowed=False,
+            final_policy = evaluate_final_policy_engine(
+                shield=_runtime_evidence_accepted(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}", context_hash=getattr(shield, "context_hash", req.context.context_hash)),
+                wsqk_v2=_runtime_evidence_rejected(source="wsqk_v2:authority_proof_rejected", context_hash=req.context.context_hash, reason_id=ReasonId.DENY_AUTHORITY_INVALID),
+                qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                adaptive_core=_runtime_evidence_accepted(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+                ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+                human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                expected_context_hash=req.context.context_hash,
+            )
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=True,
+                oracle_ok=True,
+                shield_ok=True,
                 eqc_allowed=True,
-                wsqk_allowed=False,
-                issued_at=req.issued_at,
-                expires_at=req.expires_at,
-                max_skew_seconds=req.max_skew_seconds,
-                timebox_valid=True,
-                nonce_store=req.nonce_store,
-                nonce_value=req.nonce_value,
-                nonce_consumed=False,
-                qid_present=True,
-                qid_valid=True,
-                shield_present=True,
-                shield_valid=True,
-                oracle_present=True,
-                oracle_valid=True,
-                policy_mode=pol.resilience_mode.value,
-                override_allowed=False,
-                policy_reason_id=ReasonId.DENY_AUTHORITY_INVALID,
+                artifacts={"error": "wsqk authority rejected"},
+                include_final_policy_artifact=False,
             )
 
         exec_req = ExecutionRequest(
@@ -852,70 +853,62 @@ def orchestrate_execution_v2(
             payload="opaque",
         )
 
-        # Milestone 18: TVA/replay enforcement is completed before the final
-        # policy engine, but execution is still held until the final engine
-        # returns an AdamantineOS final allow. This preserves the existing TVA
-        # nonce semantics without allowing the executor to run before the final
-        # policy authority has spoken.
-        run_with_tva(
-            executor=executor,
-            request=exec_req,
-            context=req.context,
-            verdict=eqc.verdict,
-            authority=wsqk,
-            now=now,
-            nonce_store=nonce_store,
-            required_evidence_families=required_evidence_families,
-            required_quantum_posture=required_quantum_posture,
+        payload_body = _require_mapping((_require_mapping(p.get("payload")) or {}).get("body")) or {}
+        human_gate = LocalPolicyGateResult(
+            "human",
+            payload_body.get("ui_confirmed") is True,
+            ReasonId.EVIDENCE_OK if payload_body.get("ui_confirmed") is True else ReasonId.DENY_AUTHORITY_INSUFFICIENT,
         )
 
+        # Milestone 18 Option 2: TVA/replay is a real local gate into the
+        # final policy engine. A replay/TVA failure is represented as replay
+        # gate failure and denied by the engine before execution.
+        try:
+            run_with_tva(
+                executor=executor,
+                request=exec_req,
+                context=req.context,
+                verdict=eqc.verdict,
+                authority=wsqk,
+                now=now,
+                nonce_store=nonce_store,
+                required_evidence_families=required_evidence_families,
+                required_quantum_posture=required_quantum_posture,
+            )
+            replay_gate = LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK)
+            tva_ok = True
+            nonce_was_consumed = True
+        except TVAError as e:
+            replay_reason = _reason_from_message(str(e))
+            replay_gate = LocalPolicyGateResult("replay", False, replay_reason)
+            tva_ok = False
+            nonce_was_consumed = False
+
         final_policy = evaluate_final_policy_engine(
-            shield=_runtime_evidence_from_validated(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}", context_hash=getattr(shield, "context_hash", req.context.context_hash)),
-            wsqk_v2=_runtime_evidence_from_validated(source="wsqk_v2:authority_proof", context_hash=wsqk.context_hash),
-            qid=_runtime_evidence_from_validated(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
-            adaptive_core=_runtime_evidence_from_validated(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
-            ai_gateway=_runtime_evidence_from_validated(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
-            replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+            shield=_runtime_evidence_accepted(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}", context_hash=getattr(shield, "context_hash", req.context.context_hash)),
+            wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:authority_proof", context_hash=wsqk.context_hash),
+            qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+            adaptive_core=_runtime_evidence_accepted(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+            ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+            replay=replay_gate,
             wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
-            human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+            human=human_gate,
             expected_context_hash=req.context.context_hash,
         )
 
         if final_policy.state is not FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION:
-            final_reason = _runtime_final_policy_reason(final_policy)
-            return build_execution_response_v2(
-                request_id=req.request_id,
-                intent=req.intent,
-                action=req.context.action,
-                context_hash=req.context.context_hash,
-                status="deny",
-                reason_id=final_reason,
-                protection_mode=_compute_protection_mode(
-                    protected_requested=protected_requested,
-                    qid_ok=True,
-                    oracle_ok=True,
-                    shield_ok=True,
-                ),
-                tva_allowed=True,
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=tva_ok,
+                oracle_ok=tva_ok,
+                shield_ok=tva_ok,
+                tva_allowed=tva_ok,
                 eqc_allowed=True,
                 wsqk_allowed=True,
-                issued_at=req.issued_at,
-                expires_at=req.expires_at,
-                max_skew_seconds=req.max_skew_seconds,
-                timebox_valid=True,
-                nonce_store=req.nonce_store,
-                nonce_value=req.nonce_value,
-                nonce_consumed=True,
-                qid_present=True,
-                qid_valid=True,
-                shield_present=True,
-                shield_valid=True,
-                oracle_present=True,
-                oracle_valid=True,
-                policy_mode=pol.resilience_mode.value,
-                override_allowed=False,
-                policy_reason_id=final_reason,
-                artifacts=_final_policy_artifacts(final_policy),
+                nonce_consumed=nonce_was_consumed,
             )
 
         out = executor.execute(exec_req)
