@@ -9,13 +9,13 @@ Scope: Foundation Releases and Contract History
 
 ## Unreleased — Milestone 18: Authorized Red-Team Review, Runtime Authority Wiring, and Fail-Closed Hardening
 
-**Status:** In progress — fourth red-team passed with notes; N8/N7 no-debt closure patch prepared
+**Status:** Complete — fourth red-team passed; N8/N7 no-debt closure verified
 **Type:** Runtime authority wiring, red-team fixes, and fail-closed hardening
 **Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
 
-Milestone 18 accepts and fixes the validated Claude AI red-team findings F1-F7, then requires a second Claude AI red-team confirmation before Milestone 18 can close.
+Milestone 18 accepts and fixes the validated Claude AI red-team findings F1-F8, second-review findings N1/N2, third-review residual N1/N7/N8 notes, and closes with no known red-team technical debt carried forward.
 
-Hardening added in the Milestone 18 patch:
+Hardening added in the Milestone 18 hardening:
 
 1. The live runtime path now invokes the final AdamantineOS policy engine before executor execution.
 2. Cross-evidence context binding is enforced at the final policy engine when an expected context hash is supplied.
@@ -39,7 +39,16 @@ Additional no-debt closure hardening after Claude's fourth review:
 8. N8 fixed: reject branches now fail closed if the final policy engine unexpectedly returns ALLOW inside an already-rejected runtime branch.
 9. N7 closed: EQC aggregate runtime policy verdicts are explicitly documented as flowing through the stable `wallet_policy` local gate.
 
-Milestone 18 remains open until the fresh patched ZIP is inspected and a second Claude AI red-team confirmation is clean or all new findings are fixed.
+Milestone 18 is complete after fresh ZIP inspection and CI verification. AdamantineOS remains v2.2.0 and untagged; Milestone 19 remains pending as the final release gate.
+
+
+Final external closure report archived:
+
+```text
+docs/RED_TEAM/ADAMANTINEOS_MILESTONE_18_FINAL_CLOSURE_REVIEW.docx
+```
+
+Claude AI final closure verdict: `PASS - Milestone 18 can be closed`. No known red-team note is carried forward as technical debt. This does not authorize release or tagging; Milestone 19 remains the final release gate.
 
 ------------------------------------------------------------------------
 
@@ -67,7 +76,7 @@ Locked rules:
 - Fixed second-review N2 by routing the legacy v1 executor path through final policy engine gating before executor execution.
 - Updated runtime adapter guidance so integrators do not route live execution around the final policy engine.
 - Added regression tests proving a live EQC deny reaches the final policy engine and that v1 execution is blocked when final policy denies.
-- AdamantineOS remains v2.2.0 and untagged; Milestone 19 remains blocked pending third confirmation review.
+- AdamantineOS remained v2.2.0 and untagged; this pass was superseded by fourth-review Option 2 closure.
 
 ## v2.2.0 — WSQK v2 Quantum-Aware Upgrade
 
