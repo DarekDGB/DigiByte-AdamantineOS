@@ -1,7 +1,7 @@
 # AdamantineOS Milestone 16G - Full Level 4 Negative-Test Matrix
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 Status: Milestone 16G complete  
 AdamantineOS version boundary: `v2.2.0` remains unchanged  
 Tag status: no AdamantineOS tag created  
@@ -47,7 +47,7 @@ It tests the full local decision order:
 Repository modified:
 
 ```text
-DigiByte-Adamantine-Wallet-OS
+DigiByte-AdamantineOS
 ```
 
 External repositories were not modified by Milestone 16G.
