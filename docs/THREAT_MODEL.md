@@ -1,4 +1,4 @@
-# Adamantine Wallet OS — Threat Model
+# AdamantineOS — Threat Model
 
 **License:** MIT License — DarekDGB
 
@@ -6,7 +6,7 @@
 
 ## 1. Purpose
 
-This document defines the **explicit threat model** for Adamantine Wallet OS.
+This document defines the **explicit threat model** for AdamantineOS.
 
 Adamantine is a deterministic execution boundary.  
 This threat model exists to clearly state:
@@ -192,7 +192,7 @@ Threat model changes must precede implementation.
 
 ## 8. Summary
 
-Adamantine Wallet OS is secure by **restriction, determinism, and explicitness**.
+AdamantineOS is secure by **restriction, determinism, and explicitness**.
 
 Anything not explicitly allowed is denied.
 Anything not explicitly mitigated is out-of-scope.
