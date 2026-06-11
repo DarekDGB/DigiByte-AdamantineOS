@@ -932,7 +932,7 @@ All evidence ALLOW still requires final AdamantineOS local gates before final ap
 
 Milestone 16 is now complete, but AdamantineOS is not release-ready and must not be tagged.
 
-The current safe step is Build Strategy Milestone 17:
+Milestone 17 is complete. The current safe step is Milestone 18 closure hardening:
 
 ```text
 Milestone 17 - Rebrand, proof pack, and docs alignment
@@ -940,7 +940,7 @@ Milestone 17 - Rebrand, proof pack, and docs alignment
 
 Milestone 17 performs a controlled public identity alignment from the previous **DigiByte Adamantine Wallet OS** wording to **DigiByte AdamantineOS**. The GitHub repository was renamed to `DigiByte-AdamantineOS` during this milestone. This is a public identity and repository-path alignment only. It does not rename packages, import paths, contracts, or release versions.
 
-Milestone 17 must verify that docs, contracts, fixtures, reason IDs, invariants, CI evidence, two-sided adapter / handoff proof, and tests all match before any red-team or release-gate work begins.
+Milestone 17 verified that docs, contracts, fixtures, reason IDs, invariants, CI evidence, two-sided adapter / handoff proof, and tests matched before Milestone 18 red-team work began.
 
 Milestone 17 evidence added or updated:
 
@@ -964,7 +964,7 @@ AdamantineOS must remain v2.2.0 and untagged.
 
 ## 17. Milestone 18 - Authorized red-team review, runtime authority wiring, and fail-closed hardening
 
-Status: **patch prepared, pending maintainer copy-back, fresh ZIP inspection, and second Claude AI red-team confirmation**.
+Status: **closure hardening prepared after fourth Claude AI confirmation; pending maintainer copy-back, fresh ZIP inspection, and CI verification**.
 
 Milestone 18 began after Milestone 17 was completed and verified. The external Claude AI red-team report was treated as authorized review input and validated against the fresh `DigiByte-AdamantineOS` repository.
 
@@ -1095,7 +1095,7 @@ Milestone 19 remains blocked until Milestone 18 closes cleanly
 
 ## 18B. Milestone 18 Option 2 full evidence-level runtime wiring pass
 
-Status: **Option 2 fix prepared, pending maintainer copy-back, fresh ZIP inspection, and Claude fourth confirmation review**.
+Status: **Option 2 verified by fourth Claude confirmation; N8/N7 closure hardening prepared and pending maintainer copy-back**.
 
 Claude AI's third red-team confirmation returned `PASS WITH NOTES`. It verified:
 
@@ -1160,3 +1160,58 @@ all new findings are fixed or explicitly accepted with rationale
 AdamantineOS remains untagged
 Milestone 19 remains blocked until Milestone 18 closes cleanly
 ```
+
+
+### Milestone 18 N7 closure â EQC / wallet_policy gate semantics
+
+EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate. This is a contract-preserving audit note: the final policy engine keeps the stable `wallet_policy` local gate name, while docs explicitly define that live EQC aggregate policy failures are represented there.
+
+
+## 18C. Milestone 18 final no-debt closure hardening for N8/N7
+
+Status: **prepared, pending maintainer copy-back, fresh ZIP inspection, and CI verification**.
+
+Claude AI's fourth confirmation returned `PASS WITH NOTES` and stated Milestone 18 can be closed, with only two non-blocking notes remaining:
+
+```text
+N8 NOTE - reject branches are denied by both control flow and engine-produced deny.
+N7 NOTE - EQC failure is surfaced through the wallet_policy gate label.
+```
+
+Maintainer decision: **no technical debt carried forward**.
+
+N8 closure decision:
+
+```text
+Reject branches now fail closed if a future refactor ever makes evaluate_final_policy_engine return ALLOW inside a branch that is already handling a rejected source.
+The response remains deny, reason_id becomes DENY_POLICY, and artifacts record final_policy_invariant.status=fail_closed.
+```
+
+N8 regression proof:
+
+```text
+test_milestone_18_n8_reject_branch_unexpected_engine_allow_fails_closed
+```
+
+N7 closure decision:
+
+```text
+EQC aggregate runtime policy verdict is intentionally surfaced through the stable wallet_policy local gate.
+This preserves the existing final policy engine local-gate contract while making the audit meaning explicit in docs and regression tests.
+```
+
+N7 regression proof:
+
+```text
+test_milestone_18_n7_eqc_wallet_policy_mapping_is_explicit_in_docs
+```
+
+Closure-patch local verification:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+```
+
+AdamantineOS remains v2.2.0 and untagged. Milestone 19 remains blocked until this closure patch is copied, a fresh ZIP is inspected, and CI evidence is verified.
