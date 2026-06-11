@@ -1,7 +1,7 @@
 {
   "contract": "adamantineos.shield_v3_fixture_negative_test_plan",
   "version": 1,
-  "adamantineos_boundary": "v2.2.0",
+  "adamantineos_boundary": "v3.0.0",
   "external_shield_baseline": "v3.2.0",
   "level": 1,
   "fixtures": [
