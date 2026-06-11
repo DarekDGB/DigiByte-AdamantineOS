@@ -2,7 +2,7 @@
 
 Author attribution: **DarekDGB**
 
-This document defines the frozen foundation baseline of **Adamantine Wallet OS**.
+This document defines the frozen foundation baseline of **AdamantineOS**.
 
 The foundation baseline consists of the minimal, deterministic, fail-closed execution pipeline:
 
