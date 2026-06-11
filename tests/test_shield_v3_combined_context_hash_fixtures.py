@@ -30,7 +30,7 @@ def test_manifest_is_level_1_fixture_only_contract() -> None:
 
     assert manifest["contract"] == "adamantineos.shield_v3_fixture_negative_test_plan"
     assert manifest["version"] == 1
-    assert manifest["adamantineos_boundary"] == "v2.2.0"
+    assert manifest["adamantineos_boundary"] == "v3.0.0"
     assert manifest["external_shield_baseline"] == "v3.2.0"
     assert manifest["level"] == 1
     assert manifest["fixtures"]
