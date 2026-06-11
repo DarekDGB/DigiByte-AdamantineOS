@@ -77,7 +77,7 @@ class RuntimeServices(
 
 class AdamantineRuntimeAdapter(Protocol):
     """
-    Runtime ↔ Adamantine adapter (interface only).
+    Runtime â Adamantine adapter (interface only).
 
     Purpose:
     - Provide a single embedding surface for wallet runtimes
@@ -90,13 +90,14 @@ class AdamantineRuntimeAdapter(Protocol):
     Implementations MUST:
     - validate inputs deny-by-default
     - supply explicit `now`
-    - wire nonce store + executor through orchestrator_v1
+    - prefer RuntimeHostV2/orchestrator_v2 for live execution
+    - never route live execution around the final policy engine
     - never raise (return execution_response_v1 fail-closed instead)
     """
 
     def evaluate_mobile_execution_call_v1(self, *, payload: Any) -> dict[str, Any]:  # pragma: no cover
         """
-        Evaluate `mobile_execution_call_v1` envelope and return `execution_response_v1`.
+        Evaluate legacy `mobile_execution_call_v1` envelope and return `execution_response_v1`.
 
         - `payload` is untrusted input from runtime/mobile boundary.
         - Output must be deterministic for identical inputs (incl. injected now).
