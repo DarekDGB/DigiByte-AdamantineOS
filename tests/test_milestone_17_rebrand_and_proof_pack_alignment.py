@@ -47,7 +47,7 @@ def test_milestone_17_proof_pack_maps_completed_level4_milestones() -> None:
     assert "DigiByte AdamantineOS" in milestone_doc
     assert "no AdamantineOS tag yet" in milestone_doc
     assert "| 17 | Rebrand, proof pack, and docs alignment |" in ledger
-    assert "Milestone 19 Release Stamp — v3.0.0" in ledger
+    assert "Milestone 19 Release Stamp - v3.0.0" in ledger
 
 
 def test_milestone_17_repository_identity_uses_new_github_slug() -> None:
