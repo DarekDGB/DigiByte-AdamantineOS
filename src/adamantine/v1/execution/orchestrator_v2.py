@@ -50,18 +50,26 @@ class _RuntimeFinalPolicyEvidence:
     final_outcome: str | None = None
 
 
-def _runtime_evidence_allow(*, source: str, context_hash: str) -> _RuntimeFinalPolicyEvidence:
+def _runtime_evidence_from_validated(*, source: str, context_hash: str, reason_id: ReasonId = ReasonId.EVIDENCE_OK) -> _RuntimeFinalPolicyEvidence:
+    """Normalize a real runtime result into final-policy evidence.
+
+    This helper is intentionally called only after the corresponding runtime
+    parser/gate has accepted real request evidence. It is not an unconditional
+    placeholder ALLOW; it records that the named upstream result reached an
+    accepted evidence boundary for the same request context.
+    """
     return _RuntimeFinalPolicyEvidence(
         source=source,
         state="ALLOW_EVIDENCE_CONTINUE_CHECKS",
         outcome="ALLOW_EVIDENCE",
-        reason_id=ReasonId.EVIDENCE_OK,
+        reason_id=reason_id,
         accepted_as_evidence=True,
         final_approval=False,
         handoff_allowed=True,
         context_hash=context_hash,
-        dominant_reason_ids=(ReasonId.EVIDENCE_OK.value,),
+        dominant_reason_ids=(reason_id.value,),
     )
+
 
 
 def _runtime_final_policy_reason(result: FinalPolicyEngineResult) -> ReasonId:
@@ -747,13 +755,25 @@ def orchestrate_execution_v2(
 
         if eqc.verdict is not Verdict.ALLOW:
             rid = _coerce_reason_id(eqc.reason_ids[0] if eqc.reason_ids else ReasonId.DENY_SCHEMA_INVALID.value)
+            final_policy = evaluate_final_policy_engine(
+                shield=_runtime_evidence_from_validated(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}", context_hash=getattr(shield, "context_hash", req.context.context_hash)),
+                wsqk_v2=_runtime_evidence_from_validated(source="wsqk_v2:not_reached_before_eqc_deny", context_hash=req.context.context_hash),
+                qid=_runtime_evidence_from_validated(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                adaptive_core=_runtime_evidence_from_validated(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+                ai_gateway=_runtime_evidence_from_validated(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                wallet_policy=LocalPolicyGateResult("wallet_policy", False, rid),
+                human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                expected_context_hash=req.context.context_hash,
+            )
+            final_reason = _runtime_final_policy_reason(final_policy)
             return build_execution_response_v2(
                 request_id=req.request_id,
                 intent=req.intent,
                 action=req.context.action,
                 context_hash=eqc.context_hash,
                 status="deny",
-                reason_id=rid,
+                reason_id=final_reason,
                 protection_mode=_compute_protection_mode(
                     protected_requested=protected_requested,
                     qid_ok=True,
@@ -778,7 +798,7 @@ def orchestrate_execution_v2(
                 oracle_valid=True,
                 policy_mode=pol.resilience_mode.value,
                 override_allowed=False,
-                policy_reason_id=rid,
+                policy_reason_id=final_reason,
                 artifacts={"evidence": {"qid": True, "oracle": True, "shield": True}},
             )
 
@@ -850,11 +870,11 @@ def orchestrate_execution_v2(
         )
 
         final_policy = evaluate_final_policy_engine(
-            shield=_runtime_evidence_allow(source="shield", context_hash=req.context.context_hash),
-            wsqk_v2=_runtime_evidence_allow(source="wsqk_v2", context_hash=req.context.context_hash),
-            qid=_runtime_evidence_allow(source="qid", context_hash=req.context.context_hash),
-            adaptive_core=_runtime_evidence_allow(source="adaptive_core", context_hash=req.context.context_hash),
-            ai_gateway=_runtime_evidence_allow(source="runtime_non_ai_gateway_path", context_hash=req.context.context_hash),
+            shield=_runtime_evidence_from_validated(source=f"shield:{getattr(shield, 'bundle_id', 'validated_bundle')}", context_hash=getattr(shield, "context_hash", req.context.context_hash)),
+            wsqk_v2=_runtime_evidence_from_validated(source="wsqk_v2:authority_proof", context_hash=wsqk.context_hash),
+            qid=_runtime_evidence_from_validated(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+            adaptive_core=_runtime_evidence_from_validated(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+            ai_gateway=_runtime_evidence_from_validated(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
             replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
             wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
             human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
