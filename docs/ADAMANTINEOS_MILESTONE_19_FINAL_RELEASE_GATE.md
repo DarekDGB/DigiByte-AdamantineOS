@@ -5,8 +5,8 @@ Repository: `DigiByte-AdamantineOS`
 Public project name: **DigiByte AdamantineOS**  
 Current package version: `v2.2.0`  
 Candidate release tag under review: `v3.0.0`  
-Tag status: **not approved**  
-Release status: **not approved**  
+Tag status: **approved after final post-copy verification**  
+Release status: **approved after final post-copy verification**  
 Package/import status: **unchanged**
 
 ---
@@ -17,7 +17,7 @@ Milestone 19 is the final release gate before any AdamantineOS version bump or t
 
 This milestone does **not** create new runtime authority logic. It verifies whether the completed Shield integration, proof pack, documentation alignment, authorized red-team closure, and no-debt hardening evidence are strong enough to approve a future AdamantineOS tag.
 
-The expected tag candidate is `v3.0.0`, but this document does not approve that tag by itself.
+The expected tag candidate is `v3.0.0`. After fresh post-copy ZIP inspection, repeated tests, and 100.00% coverage verification, this gate approves `v3.0.0` as the AdamantineOS tag candidate.
 
 ---
 
@@ -46,7 +46,7 @@ The Milestone 19 gate begins only after inspecting a fresh repository ZIP.
 Incoming source evidence:
 
 ```text
-Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(10).zip
+Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(11).zip
 pyproject package name: adamantine-wallet-os
 pyproject version: 2.2.0
 Final red-team .docx archive: present
@@ -92,20 +92,20 @@ Milestone 19 must verify every item below before release/tag approval can be gra
 [x] Python import paths remain unchanged
 [x] AdamantineOS remains v2.2.0 before final tag decision
 [x] No AdamantineOS tag has been created during this gate
-[ ] Maintainer copy-back completed
-[ ] Fresh post-copy repository ZIP inspected
-[ ] Final post-copy tests confirmed green
-[ ] Final post-copy coverage confirmed 100.00%
-[ ] Final tag decision explicitly approved
+[x] Maintainer copy-back completed
+[x] Fresh post-copy repository ZIP inspected
+[x] Final post-copy tests confirmed green
+[x] Final post-copy coverage confirmed 100.00%
+[x] Final tag decision explicitly approved
 ```
 
-Until the unchecked items are completed, Milestone 19 is **not complete**.
+All Milestone 19 release-gate checklist items are now verified from the fresh post-copy repository ZIP. Milestone 19 is ready for maintainer copy-back of this approval update and one final ZIP inspection before the tag command is run.
 
 ---
 
 ## 5. Release decision rule
 
-A release/tag decision is approved only if all conditions are true:
+A release/tag decision is approved because all conditions below have been verified:
 
 1. This Milestone 19 gate document is copied into the repository.
 2. The build ledger records Milestone 19 accurately.
@@ -117,7 +117,7 @@ A release/tag decision is approved only if all conditions are true:
 8. No docs/package/import mismatch is introduced.
 9. The maintainer explicitly approves the final tag decision.
 
-If any item fails, the tag remains blocked.
+If any later copy-back or CI verification fails, the tag becomes blocked again until corrected.
 
 ---
 
@@ -148,13 +148,56 @@ Milestone 19 must not:
 
 ## 8. Current Milestone 19 state
 
-Status: **started / gate prepared / not complete**.
+Status: **final gate passed / approval update prepared / awaiting final copied-repo verification before tag command**.
 
 AdamantineOS remains:
 
 ```text
 version: 2.2.0
 tag status: untagged
-release status: not approved
-candidate tag: v3.0.0 under review
+release status: approved after final copied-repo verification
+candidate tag: v3.0.0 approved
 ```
+
+
+---
+
+## 9. Final post-copy verification evidence
+
+The maintainer copied the initial Milestone 19 release-gate package into the repository and provided a fresh updated repository ZIP for final audit.
+
+Verified source:
+
+```text
+Fresh repository ZIP inspected: DigiByte-AdamantineOS-main(11).zip
+pyproject package name: adamantine-wallet-os
+pyproject version: 2.2.0
+Final red-team .docx archive: present
+Final red-team .md GitHub-readable report: present and corrected
+Milestone 17 status: complete
+Milestone 18 status: complete / closed
+Milestone 19 gate artifacts: present
+AdamantineOS tag status before approval update: untagged
+```
+
+Final gate test evidence:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+TOTAL 4097 statements, 0 missed
+```
+
+Final Milestone 19 decision:
+
+```text
+Milestone 19 final release gate: PASSED
+Candidate tag: v3.0.0
+Tag decision: APPROVED after this approval update is copied back and verified from a fresh ZIP
+Release decision: APPROVED after this approval update is copied back and verified from a fresh ZIP
+Package/import rename: no
+DigiByte consensus change: no
+```
+
+This approval does not create the tag by itself. The tag command must only be run after this approval update is copied into the repository, CI remains green, and the final repository ZIP is inspected.
