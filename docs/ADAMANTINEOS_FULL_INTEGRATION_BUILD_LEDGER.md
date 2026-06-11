@@ -859,11 +859,11 @@ AdamantineOS must not be tagged until all of the following are true:
 [x] Adaptive Core post-audit hardening complete
 [x] AI Gateway external adapter / handoff completion rule satisfied
 [x] External connection proof table complete for Milestone 16 evidence boundaries
-[ ] All fixtures reviewed in Milestone 17 proof pack
+[x] All fixtures reviewed in Milestone 17 proof pack
 [x] Milestone 16G negative tests pass
 [x] CI green for Milestone 16G package
 [x] Required coverage maintained for Milestone 16G package
-[ ] Proof pack complete
+[x] Proof pack complete
 [ ] Authorized red-team review complete
 [ ] Red-team findings fixed or explicitly accepted with rationale
 [ ] Final release gate checklist approved
@@ -959,4 +959,84 @@ Full tests passed: 901 passed.
 Required coverage remained 100.00%.
 Docs, repository-name alignment, proof pack, and ledger alignment verified.
 AdamantineOS must remain v2.2.0 and untagged.
+```
+
+
+## 17. Milestone 18 - Authorized red-team review, runtime authority wiring, and fail-closed hardening
+
+Status: **patch prepared, pending maintainer copy-back, fresh ZIP inspection, and second Claude AI red-team confirmation**.
+
+Milestone 18 began after Milestone 17 was completed and verified. The external Claude AI red-team report was treated as authorized review input and validated against the fresh `DigiByte-AdamantineOS` repository.
+
+Validated Claude findings accepted for Milestone 18 hardening:
+
+```text
+F1 HIGH   - final policy engine was not on the live runtime path
+F2 MEDIUM - no cross-evidence context binding inside final policy engine
+F3 LOW    - truthy final_approval bypass guard gap
+F4 LOW    - hard DENY could be reported as HUMAN_REVIEW_REQUIRED
+F5 LOW    - hidden-authority scan missed __slots__ / nested containers
+F6 NOTE   - human-review detection used substring matching
+F7 NOTE   - evidence reason IDs flowed into output unvalidated
+F8 NOTE   - sequencing issue, resolved because Milestone 17 is now complete
+```
+
+Milestone 18 selected **Option A**:
+
+```text
+Wire the final policy engine into the live runtime path.
+```
+
+Runtime authority path after this patch:
+
+```text
+RuntimeHostV2
+-> run_mobile_execution_call_v2
+-> orchestrate_execution_v2
+-> parse / adapters / EQC
+-> TVA nonce/replay enforcement
+-> evaluate_final_policy_engine
+-> executor.execute only after final AdamantineOS allow
+```
+
+Files added for Milestone 18 evidence:
+
+```text
+docs/ADAMANTINEOS_MILESTONE_18_CLAUDE_REVIEW_TRIAGE.md
+docs/ADAMANTINEOS_MILESTONE_18_AUTHORIZED_RED_TEAM_FINDINGS.md
+docs/ADAMANTINEOS_MILESTONE_18_SECOND_REVIEW_HANDOFF.md
+tests/test_milestone_18_authorized_red_team_review.py
+```
+
+Files updated for Milestone 18 hardening:
+
+```text
+src/adamantine/v1/policy/final_policy_engine.py
+src/adamantine/v1/execution/orchestrator_v2.py
+tests/policy/test_final_policy_engine.py
+tests/integrations/test_milestone_16g_full_level4_negative_matrix.py
+CHANGELOG.md
+docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
+```
+
+Milestone 18 local verification before maintainer copy-back:
+
+```text
+PYTHONPATH=src python -m pytest -q
+914 passing
+100.00% coverage
+```
+
+Milestone 18 is **not closed** yet. Required before closure:
+
+```text
+Maintainer copies the patch into DigiByte-AdamantineOS.
+Fresh updated ZIP is uploaded back.
+Fresh ZIP is inspected.
+Full tests remain green.
+Coverage remains 100.00%.
+Claude AI performs a second red-team confirmation.
+Any second-pass findings are fixed or explicitly accepted with rationale.
+AdamantineOS remains v2.2.0 and untagged.
+Milestone 19 remains blocked until Milestone 18 closes cleanly.
 ```
