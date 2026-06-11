@@ -1,4 +1,4 @@
-# Adamantine Wallet OS — Key Generation & Onboarding
+# AdamantineOS — Key Generation & Onboarding
 
 MIT License  
 Author attribution: **DarekDGB**
@@ -8,7 +8,7 @@ Author attribution: **DarekDGB**
 ## Purpose
 
 This document defines **where, when, and how cryptographic keys are generated**
-for wallets that use Adamantine Wallet OS.
+for wallets that use AdamantineOS.
 
 Adamantine itself **never generates, imports, stores, exports, or backs up keys**.
 This is intentional and non-negotiable.
@@ -19,7 +19,7 @@ This is intentional and non-negotiable.
 
 **Keys are generated exclusively by the platform-native Key Custody Module.**
 
-Adamantine Wallet OS is **not involved** in key generation.
+AdamantineOS is **not involved** in key generation.
 
 This occurs during **wallet onboarding**, before Adamantine is ever invoked.
 
@@ -65,7 +65,7 @@ Properties:
 2. Custody module generates keypair
 3. Custody module stores key securely
 4. Wallet registers a logical wallet_id
-5. Adamantine Wallet OS becomes active **after onboarding completes**
+5. AdamantineOS becomes active **after onboarding completes**
 
 Adamantine does **not** participate in steps 1–3.
 
@@ -73,7 +73,7 @@ Adamantine does **not** participate in steps 1–3.
 
 ## Explicit Non-Goals
 
-Adamantine Wallet OS will never:
+AdamantineOS will never:
 - Generate keys
 - Import seed phrases
 - Export private keys
