@@ -1,151 +1,131 @@
-# AdamantineOS — Key Custody Options
+# AdamantineOS — Key Custody Model
 
-MIT License  
-© 2026 DarekDGB
+Author attribution: **DarekDGB**
 
----
-
-## Purpose
-
-This document explains **key custody choices available to users** of systems built with
-AdamantineOS, including the **risks, benefits, and guarantees** associated with each.
-
-Adamantine **does not enforce how keys are stored**.  
-Adamantine enforces **how and when actions are allowed to execute**.
-
-Key custody is a **user decision**. Execution safety is **Adamantine’s responsibility**.
+MIT License © 2025 DarekDGB
 
 ---
 
-## Core Principle
+This document freezes the **Key Custody Model** for AdamantineOS.
 
-> **Adamantine enforces execution safety, not custody purity.**
-
-This means:
-- Users are free to choose how they manage keys.
-- Adamantine does not block execution based on key origin.
-- Security guarantees vary depending on the custody model chosen.
+Adamantine is an **execution boundary**. It enforces deterministic, fail‑closed rules that decide whether an action is allowed to proceed. Adamantine is **not** a wallet runtime and **never** becomes a key manager.
 
 ---
 
-## Option A — Device‑Only Keys (Highest Assurance)
+## Non‑negotiable statement
 
-### Description
-Keys are generated and stored on a single device using platform‑native secure storage
-(e.g. iOS Secure Enclave, Android Keystore).
+**AdamantineOS will never manage private keys directly.**
 
-Keys are:
-- non‑exportable
-- never written down
-- never copied to another device
+Meaning:
+- Adamantine does **not** generate seed phrases.
+- Adamantine does **not** store seed phrases.
+- Adamantine does **not** export seed phrases.
+- Adamantine does **not** sign transactions.
+- Adamantine does **not** broadcast transactions.
 
-### Benefits
-- Maximum resistance to theft and malware
-- Minimal trusted computing base (TCB)
-- No key duplication
-- Strong protection against social engineering
-
-### Risks / Trade‑offs
-- Loss of device = loss of funds
-- No recovery without on‑chain transfer beforehand
-- Single‑device usability
-
-### Adamantine Guarantee Level
-**Maximum**  
-Adamantine can offer its strongest execution guarantees under this model.
+Adamantine only controls **whether** an external request may execute.
 
 ---
 
-## Option B — Paper Backup / Reusable Keys
+## Where keys live
 
-### Description
-Keys are generated once and written down or otherwise recorded by the user.
-The same keys may be imported into multiple devices.
+Keys belong to a **separate key custody module** (platform‑native, minimal TCB) that is outside Adamantine’s core.
 
-### Benefits
-- Recovery possible after device loss
-- Multi‑device access
-- Familiar model for many crypto users
+### iOS key custody (strict device‑only model)
 
-### Risks / Trade‑offs
-- Keys exist outside secure hardware
-- Increased exposure to theft, copying, or coercion
-- Impossible to prove keys were not duplicated
+On iOS, keys must be stored in the **Keychain**, and when available protected by the **Secure Enclave**.
 
-### Adamantine Guarantee Level
-**Reduced (Execution‑only)**  
-Adamantine still enforces execution safety, but **cannot guarantee key secrecy**.
+Security posture:
+- **Device‑only keys**: private key material remains on the device.
+- **Biometric / passcode gating**: Face ID, Touch ID, or device passcode required for signing.
+- **Non‑exportable keys**: Secure Enclave‑backed keys where possible.
+- **No cloud synchronization**: keys are never synced, backed up, or mirrored externally.
 
----
+Adamantine assumes **local‑only custody**. Any form of key replication or syncing is explicitly out of scope.
 
-## Option C — Shared / Family Wallets (Same Keys on Multiple Devices)
+### Android key custody (strict device‑only model)
 
-### Description
-Multiple trusted parties (e.g. spouses) intentionally share the same keys
-across multiple devices.
+On Android, keys must be stored using the **Android Keystore System**, backed by hardware security (TEE / StrongBox) where available.
 
-### Benefits
-- Shared control and convenience
-- Redundancy across devices
-
-### Risks / Trade‑offs
-- Larger attack surface
-- Trust assumptions between parties
-- Compromise of one device affects all
-
-### Adamantine Guarantee Level
-**Execution‑safe per device**  
-Each device must still pass EQC, WSQK, and TVA checks independently.
+Security posture:
+- **Hardware‑backed keys only when possible**.
+- **User authentication required** for signing.
+- **Non‑exportable keys** enforced.
+- **No cloud or cross‑device replication**.
 
 ---
 
-## Option D — External Custody / Hardware Wallets
+## What Adamantine receives
 
-### Description
-Keys are stored in an external device or system (hardware wallet, multisig, external signer).
-Adamantine only gates execution requests.
+Adamantine never receives raw private keys.
 
-### Benefits
-- Strong physical separation
-- Flexible custody strategies
-- Advanced setups (multisig, air‑gapped)
+It receives only:
+- A **signing request intent** (what must be signed),
+- **Context** (wallet_id, action, context_hash, fields),
+- **Authority** (WSQK) and decision (EQC verdict),
+- A **reference/handle** to the platform custody module (never the key).
 
-### Risks / Trade‑offs
-- Additional complexity
-- External device trust assumptions
-- UX friction
+Adamantine can decide:
+> “This exact operation may execute right now.”
 
-### Adamantine Guarantee Level
-**Boundary‑enforced**  
-Adamantine ensures only approved execution requests reach the signer.
+The custody module performs signing independently.
 
 ---
 
-## Important Clarifications
+## Why this separation exists
 
-- Adamantine **never blocks execution** because keys exist elsewhere.
-- Adamantine **never imports, exports, or validates private keys**.
-- Adamantine **never automates recovery or migration**.
-- Users may step outside Adamantine’s guarantee envelope by choice.
+This separation enforces **Minimal Trusted Computing Base (TCB)**:
 
----
+- Key custody is the highest‑risk component.
+- Adamantine must remain small, deterministic, and auditable.
+- Enforcement and execution must never collapse into one unit.
 
-## Summary Table
-
-| Custody Model | Recovery | Key Duplication | Security Level | Adamantine Role |
-|--------------|---------|-----------------|----------------|-----------------|
-| Device‑only | ❌ | ❌ | Highest | Full execution guarantee |
-| Paper backup | ✅ | ⚠️ | Medium | Execution‑only |
-| Shared keys | ✅ | ⚠️ | Medium | Per‑device enforcement |
-| External custody | Depends | Depends | High | Boundary enforcement |
+Core law enforced:
+> **Decision, authority, and execution are never combined.**
 
 ---
 
-## Final Note
+## Failure rules
 
-AdamantineOS is designed to be **honest about guarantees**.
+If key custody cannot comply (device locked, biometric failure, keystore unavailable, user cancellation):
+- Execution **fails closed**.
+- Only **Reason IDs** are recorded.
+- No retries, no fallbacks, no partial signing.
 
-> **Inside the envelope, guarantees are strong.  
-> Outside the envelope, users retain freedom — and responsibility.**
+---
 
-This is intentional.
+## Threat model notes
+
+This custody model mitigates:
+- malware‑triggered signing attempts
+- UI deception and social engineering
+- compromised application state
+- replay and timing attacks
+- background or silent execution
+
+Adamantine blocks execution **before** custody is invoked unless all proofs and gates pass.
+
+---
+
+## Explicit non‑goals
+
+AdamantineOS will never:
+- manage private keys directly
+- perform signing internally
+- broadcast transactions
+- act as an intelligence engine
+- make autonomous decisions
+
+---
+
+## Compatibility with Shield layers
+
+Shield layers (Sentinel, DQSN, ADN, Adaptive Core, QWG, Guardian Wallet) may generate evidence.
+
+Adamantine consumes evidence via strict adapters and enforces:
+- deterministic context hashing
+- deny‑by‑default execution
+- time‑bound authority (WSQK)
+- replay protection
+
+Key custody remains isolated regardless of future integrations.
