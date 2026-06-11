@@ -10,7 +10,7 @@ License: MIT
 ## Purpose
 
 v1.2.0 introduces the first sealed deterministic proof pack for
-Adamantine Wallet OS.
+AdamantineOS.
 
 This release locks the execution boundary using canonical JSON fixtures,
 strict manifest enforcement, and deterministic end-to-end verification.
@@ -105,5 +105,5 @@ If you modify any fixture:
 
 ------------------------------------------------------------------------
 
-Adamantine Wallet OS v1.2.0 is the first release where the execution
+AdamantineOS v1.2.0 is the first release where the execution
 contract is cryptographically sealed.
