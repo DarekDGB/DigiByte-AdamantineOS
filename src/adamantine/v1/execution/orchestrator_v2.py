@@ -98,18 +98,38 @@ def _runtime_final_policy_reason(result: FinalPolicyEngineResult) -> ReasonId:
 
 
 def _final_policy_artifacts(result: FinalPolicyEngineResult) -> dict[str, Any]:
-    return {
-        "final_policy": {
-            "state": result.state.value,
-            "outcome": result.outcome,
-            "final_approval": result.final_approval,
-            "handoff_allowed": result.handoff_allowed,
-            "stopped_at": result.stopped_at,
-            "evaluation_order": list(result.evaluation_order),
-            "dominant_reason_ids": list(result.dominant_reason_ids),
-        }
+    artifact = {
+        "state": result.state.value,
+        "outcome": result.outcome,
+        "final_approval": result.final_approval,
+        "handoff_allowed": result.handoff_allowed,
+        "stopped_at": result.stopped_at,
+        "evaluation_order": list(result.evaluation_order),
+        "dominant_reason_ids": list(result.dominant_reason_ids),
     }
+    return {"final_policy": artifact}
 
+
+def _reject_branch_invariant_result(result: FinalPolicyEngineResult) -> FinalPolicyEngineResult:
+    """Fail closed if a reject branch ever receives an unexpected engine ALLOW.
+
+    Milestone 18 N8 hardening: reject branches must not silently diverge from
+    the final policy engine. If future refactors accidentally feed data that
+    makes the engine return ALLOW while the branch is already handling a reject,
+    the runtime response is coerced to an explicit DENY invariant violation.
+    """
+    if result.state is not FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION:
+        return result
+    return FinalPolicyEngineResult(
+        state=FinalPolicyEngineState.DENY_GATE_SHAPE_INVALID,
+        outcome="DENY",
+        reason_id=ReasonId.DENY_POLICY,
+        final_approval=False,
+        handoff_allowed=False,
+        stopped_at="reject_branch_final_policy_invariant",
+        evaluation_order=result.evaluation_order,
+        dominant_reason_ids=("FINAL_POLICY_UNEXPECTED_ALLOW_ON_REJECT_BRANCH",),
+    )
 
 
 def _final_policy_denied_response_v2(
@@ -128,8 +148,16 @@ def _final_policy_denied_response_v2(
     artifacts: dict[str, Any] | None = None,
     include_final_policy_artifact: bool = True,
 ) -> dict[str, Any]:
+    original_state = final_policy.state
+    final_policy = _reject_branch_invariant_result(final_policy)
     final_reason = _runtime_final_policy_reason(final_policy)
     merged_artifacts = _final_policy_artifacts(final_policy) if include_final_policy_artifact else {}
+    if original_state is FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION:
+        merged_artifacts["final_policy_invariant"] = {
+            "status": "fail_closed",
+            "reason": "reject_branch_received_unexpected_allow",
+            "original_state": original_state.value,
+        }
     if artifacts:
         merged_artifacts.update(artifacts)
     return build_execution_response_v2(
@@ -777,40 +805,17 @@ def orchestrate_execution_v2(
                 human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
                 expected_context_hash=req.context.context_hash,
             )
-            final_reason = _runtime_final_policy_reason(final_policy)
-            return build_execution_response_v2(
-                request_id=req.request_id,
-                intent=req.intent,
-                action=req.context.action,
-                context_hash=eqc.context_hash,
-                status="deny",
-                reason_id=final_reason,
-                protection_mode=_compute_protection_mode(
-                    protected_requested=protected_requested,
-                    qid_ok=True,
-                    oracle_ok=True,
-                    shield_ok=True,
-                ),
-                tva_allowed=False,
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=True,
+                oracle_ok=True,
+                shield_ok=True,
                 eqc_allowed=False,
-                wsqk_allowed=False,
-                issued_at=req.issued_at,
-                expires_at=req.expires_at,
-                max_skew_seconds=req.max_skew_seconds,
-                timebox_valid=True,
-                nonce_store=req.nonce_store,
-                nonce_value=req.nonce_value,
-                nonce_consumed=False,
-                qid_present=True,
-                qid_valid=True,
-                shield_present=True,
-                shield_valid=True,
-                oracle_present=True,
-                oracle_valid=True,
-                policy_mode=pol.resilience_mode.value,
-                override_allowed=False,
-                policy_reason_id=final_reason,
                 artifacts={"evidence": {"qid": True, "oracle": True, "shield": True}},
+                include_final_policy_artifact=False,
             )
 
         wsqk = _extract_wsqk_authority(
