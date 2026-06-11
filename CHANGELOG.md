@@ -17,6 +17,36 @@ DigiByte AdamantineOS `v3.0.0` is the first major release boundary after approxi
 
 This release marks the point where AdamantineOS is no longer only a locked WSQK v2 / integration-preparation boundary. It now records the completed connection of the major protection layers into one deterministic final-policy authority path.
 
+The headline of this release is the connected evidence architecture. Claude AI is recorded as authorized red-team evidence only; it is not the system story and it is not final authority.
+
+### Connected system layers
+
+`v3.0.0` aligns the public release record with the full connected architecture:
+
+1. **Shield components**
+   - Guardian Wallet
+   - ADN
+   - Sentinel AI
+   - DQSN
+   - QWG
+   - Shield Orchestrator
+
+2. **Evidence and policy layers**
+   - Shield Orchestrator v3.2 receipt
+   - WSQK v2 posture and policy evidence
+   - Q-ID identity and session evidence
+   - Adaptive Core advisory policy evidence
+   - AI Gateway evidence-only path with no final authority
+   - EQC / wallet-policy evidence
+   - Replay / nonce freshness gate
+   - Human review exact-context gate
+
+3. **Final authority**
+   - AdamantineOS final fail-closed decision engine
+   - `FINAL ALLOW`
+   - `FINAL DENY`
+   - `HUMAN REVIEW REQUIRED`
+
 ### Release proof
 
 ```text
