@@ -9,7 +9,7 @@ Scope: Foundation Releases and Contract History
 
 ## Unreleased — Milestone 18: Authorized Red-Team Review, Runtime Authority Wiring, and Fail-Closed Hardening
 
-**Status:** In progress — hardening patch prepared, second red-team confirmation pending
+**Status:** In progress — Option 2 full evidence-level wiring prepared, fourth red-team confirmation pending
 **Type:** Runtime authority wiring, red-team fixes, and fail-closed hardening
 **Compatibility:** No package rename, no import-path change, no version bump, and no AdamantineOS tag
 
@@ -29,7 +29,7 @@ Verification before maintainer copy-back:
 
 ```text
 PYTHONPATH=src python -m pytest -q
-914 passing
+923 passed
 100.00% coverage
 ```
 
@@ -317,3 +317,22 @@ As of v1.2.0, the execution integration layer is cryptographically reproducible 
 This release seals the AdamantineOS foundation.
 
 Breaking changes require a new major version.
+
+
+------------------------------------------------------------------------
+
+## Unreleased - Milestone 18 Option 2 full evidence-level wiring pass
+
+- Kept Milestone 18 open after Claude AI third confirmation found residual N1 scope.
+- Selected Option 2 instead of accepting residual synthetic/aggregate-only evidence scope.
+- Routed Q-ID, Q-ID replay, Adaptive Core oracle, Shield, WSQK, TVA/replay, human gate, and EQC denial classes into `evaluate_final_policy_engine` before executor execution.
+- Added regression tests proving Q-ID, Shield, WSQK, replay, and human gate failures reach the final policy engine and do not execute.
+- Preserved `v2.2.0`, package/import names, and untagged status.
+
+Verification:
+
+```text
+PYTHONPATH=src python -m pytest -q
+923 passed
+100.00% coverage
+```
