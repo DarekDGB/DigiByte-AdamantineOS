@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Adamantine Wallet OS,  
+If you discover a security vulnerability in AdamantineOS,  
 please report it **responsibly and privately**.
 
 📧 **Security Contact Email:**  
@@ -56,7 +56,7 @@ Valid reports will receive:
 
 ## Philosophy
 
-Security in Adamantine Wallet OS is based on:
+Security in AdamantineOS is based on:
 - Explicit authority
 - Deterministic behavior
 - Fail-closed execution
