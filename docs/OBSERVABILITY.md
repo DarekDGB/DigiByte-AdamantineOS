@@ -1,6 +1,6 @@
 # Observability Invariants
 
-This document defines **strict, fail-closed observability rules** for Adamantine Wallet OS.
+This document defines **strict, fail-closed observability rules** for AdamantineOS.
 
 ## Core Rule (No-Leak)
 - Metrics **MUST ONLY** record **ReasonId counters**.
