@@ -84,12 +84,12 @@ Current state:
 ```text
 Current version: v2.2.0
 Candidate tag under review: v3.0.0
-Tag approved: no
-Release approved: no
+Tag approved: yes, after final copied-repo verification
+Release approved: yes, after final copied-repo verification
 Package/import names: unchanged
 ```
 
-The candidate `v3.0.0` tag is not approved until the Milestone 19 gate passes after fresh ZIP inspection, repeated tests, 100.00% coverage, proof-pack alignment, and explicit maintainer approval.
+The candidate `v3.0.0` tag has passed the Milestone 19 release gate after fresh ZIP inspection, repeated tests, 100.00% coverage, proof-pack alignment, and explicit maintainer approval. The tag command must only be run after this approval update is copied into the repository and verified from one final fresh ZIP.
 
 AdamantineOS does not change DigiByte consensus. It remains an external deterministic fail-closed execution protection boundary.
 
