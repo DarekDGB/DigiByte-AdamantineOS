@@ -3,7 +3,7 @@
 ## Purpose
 
 This document describes the governance interaction between **Adaptive
-Core v3** and **Adamantine Wallet OS**.
+Core v3** and **AdamantineOS**.
 
 Adaptive Core can propose system upgrades through a deterministic
 artifact called an **upgrade proposal**.\
