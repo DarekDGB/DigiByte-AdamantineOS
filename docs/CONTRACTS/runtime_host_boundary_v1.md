@@ -4,7 +4,7 @@
 **Stability level:** **FROZEN** (breaking change requires `runtime_host_boundary_v2`)  
 **Scope:** Reference runtime host responsibilities for executing **MobileExecutionCall v2** safely.
 
-This contract freezes what “**runtime separation + production envelope**” means for Adamantine Wallet OS v2.0.0+.
+This contract freezes what “**runtime separation + production envelope**” means for AdamantineOS v2.0.0+.
 
 Adamantine core remains **pure and deterministic**.
 The runtime host is **untrusted**.
