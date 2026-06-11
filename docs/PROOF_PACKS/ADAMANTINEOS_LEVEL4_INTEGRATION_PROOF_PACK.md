@@ -1,7 +1,7 @@
 # DigiByte AdamantineOS Level 4 Integration Proof Pack
 
 Author attribution: **DarekDGB**  
-Repository: `DigiByte-Adamantine-Wallet-OS`  
+Repository: `DigiByte-AdamantineOS`  
 Status: **Milestone 17 proof pack - in progress**  
 AdamantineOS version boundary: **v2.2.0 remains unchanged**  
 Tag status: **no AdamantineOS tag yet**
