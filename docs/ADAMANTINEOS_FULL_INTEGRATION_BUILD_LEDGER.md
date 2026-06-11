@@ -1,7 +1,7 @@
 # AdamantineOS Full Shield v3 Integration Build Ledger
 
 Author attribution: **DarekDGB**  
-Status: **Milestone 17 verified - rebrand, proof pack, and docs alignment complete**  
+Status: **Milestones 17 and 18 verified complete; Milestone 19 pending; AdamantineOS remains v2.2.0 and untagged**  
 AdamantineOS release boundary: **v2.2.0 - WSQK v2 Quantum-Aware Upgrade**  
 External Shield baseline: **Shield v3.2.0 tagged across the six Shield repositories**
 
@@ -41,12 +41,12 @@ AI Gateway authority: evidence only, never execution authority
 
 ### 3.1 Repository currently modified
 
-The current Level 4 integration work primarily modifies AdamantineOS. Milestone 16E required the smallest safe external Adaptive Core exporter patch because the two-sided connection rule proved an external handoff gap. Milestone 16F required the smallest safe external AI Gateway exporter patch because the two-sided connection rule proved an external handoff gap.
+The current Level 4 integration work primarily modifies AdamantineOS. Milestone 16E required the smallest safe external Adaptive Core exporter hardening because the two-sided connection rule proved an external handoff gap. Milestone 16F required the smallest safe external AI Gateway exporter hardening because the two-sided connection rule proved an external handoff gap.
 
 ```text
 DigiByte-AdamantineOS
-DigiByte-Adaptive-Core  # 16E external exporter patch only
-adamantine-ai-gateway  # 16F external exporter patch only
+DigiByte-Adaptive-Core  # 16E external exporter hardening only
+adamantine-ai-gateway  # 16F external exporter hardening only
 ```
 
 ### 3.2 Repositories inspected or treated as external baselines
@@ -126,8 +126,8 @@ The local chat milestone numbers are more granular than the build strategy miles
 | 16B | Shield Orchestrator v3.2 receipt contract harness | AdamantineOS consumes Shield Orchestrator `shield_orchestrator.v3.contracts.v3_2_receipt` output through the existing verifier and final policy engine | AdamantineOS | Complete |
 | 16C | Shield component baseline compatibility through Orchestrator only | Five Shield v3.2 component baseline verdicts are represented only inside the Shield Orchestrator receipt; raw component verdict bypasses and post-audit component registry gaps reject fail-closed | AdamantineOS + Shield Orchestrator post-audit hardening | Complete + hardened |
 | 16D | Q-ID external baseline compatibility | External DigiByte-Q-ID Adamantine evidence v2 is proven compatible with the existing AdamantineOS Q-ID adapter and policy binding; no duplicate Q-ID adapter or authority path is added | AdamantineOS | Complete |
-| 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only; post-audit freshness and context-hash hardening complete | AdamantineOS + Adaptive Core exporter patch | Complete |
-| 16F | AI Gateway external baseline compatibility | External adamantine-ai-gateway AdamantineOS handoff / receipt evidence exporter is added and proven compatible with the existing AdamantineOS AI Gateway policy evidence boundary; AI Gateway remains evidence only and raw AI output authority is rejected | AdamantineOS + AI Gateway exporter patch | Complete |
+| 16E | Adaptive Core external baseline compatibility | External DigiByte-Adaptive-Core AdamantineOS advisory evidence exporter is added and proven compatible with the existing AdamantineOS Adaptive Core policy evidence boundary; Adaptive Core remains advisory only; post-audit freshness and context-hash hardening complete | AdamantineOS + Adaptive Core exporter hardening | Complete |
+| 16F | AI Gateway external baseline compatibility | External adamantine-ai-gateway AdamantineOS handoff / receipt evidence exporter is added and proven compatible with the existing AdamantineOS AI Gateway policy evidence boundary; AI Gateway remains evidence only and raw AI output authority is rejected | AdamantineOS + AI Gateway exporter hardening | Complete |
 | 16G | Full Level 4 negative-test matrix | Full connected evidence path is attacked with negative tests across Shield, WSQK v2, Q-ID, Adaptive Core, AI Gateway, replay, wallet policy, human gate, and final AdamantineOS policy; hidden final authority signals now fail closed at the final engine boundary | AdamantineOS | Complete |
 | 17 | Rebrand, proof pack, and docs alignment | Public identity aligned to DigiByte AdamantineOS; Level 4 proof pack created; docs and ledger alignment regression-locked before authorized red-team review | AdamantineOS docs and tests | Complete |
 
@@ -491,7 +491,7 @@ It proves that Adaptive Core can export AdamantineOS-consumable advisory evidenc
 
 A real two-sided connection gap was found before 16E: `DigiByte-Adaptive-Core` exposed strong v3 advisory/oracle/report surfaces, but did not have a clearly named AdamantineOS-facing exporter equivalent to the Q-ID AdamantineOS evidence builder.
 
-The smallest safe external patch was added to `DigiByte-Adaptive-Core`:
+The smallest safe external hardening was added to `DigiByte-Adaptive-Core`:
 
 ```text
 src/adaptive_core/v3/integration/__init__.py
@@ -964,7 +964,7 @@ AdamantineOS must remain v2.2.0 and untagged.
 
 ## 17. Milestone 18 - Authorized red-team review, runtime authority wiring, and fail-closed hardening
 
-Status: **closure hardening prepared after fourth Claude AI confirmation; pending maintainer copy-back, fresh ZIP inspection, and CI verification**.
+Status: **complete after fourth Claude AI confirmation, N8/N7 no-debt closure hardening, fresh ZIP inspection, and CI verification**.
 
 Milestone 18 began after Milestone 17 was completed and verified. The external Claude AI red-team report was treated as authorized review input and validated against the fresh `DigiByte-AdamantineOS` repository.
 
@@ -987,7 +987,7 @@ Milestone 18 selected **Option A**:
 Wire the final policy engine into the live runtime path.
 ```
 
-Runtime authority path after this patch:
+Runtime authority path after this hardening:
 
 ```text
 RuntimeHostV2
@@ -1030,7 +1030,7 @@ PYTHONPATH=src python -m pytest -q
 Milestone 18 is **not closed** yet. Required before closure:
 
 ```text
-Maintainer copies the patch into DigiByte-AdamantineOS.
+Maintainer copies the hardening into DigiByte-AdamantineOS.
 Fresh updated ZIP is uploaded back.
 Fresh ZIP is inspected.
 Full tests remain green.
@@ -1043,7 +1043,7 @@ Milestone 19 remains blocked until Milestone 18 closes cleanly.
 
 ## 18A. Milestone 18 second-review findings N1/N2 and second fix pass
 
-Status: **second fix pass prepared, pending maintainer copy-back, fresh ZIP inspection, and Claude re-review**.
+Status: **complete; second fix pass was applied, inspected, re-reviewed, and superseded by Option 2 full evidence-level wiring**.
 
 Claude AI's second red-team confirmation returned `PASS WITH NOTES`, not a Milestone 18 close. The review confirmed F2-F8 were fixed and F1 was structurally wired, but found two new blockers:
 
@@ -1052,7 +1052,7 @@ N1 MEDIUM - final policy engine was fed synthetic always-ALLOW evidence at runti
 N2 MEDIUM - legacy orchestrate_execution_v1 remained an executor-running path with no final policy engine
 ```
 
-Milestone 18 remains open. Milestone 19 remains blocked. AdamantineOS remains v2.2.0 and untagged.
+Milestone 18 remained open at this stage pending further review. AdamantineOS remained v2.2.0 and untagged.
 
 Second fix pass decisions:
 
@@ -1078,24 +1078,12 @@ PYTHONPATH=src python -m pytest -q
 100.00% coverage
 ```
 
-Milestone 18 closure remains blocked until:
-
-```text
-maintainer copies second patch into DigiByte-AdamantineOS
-fresh updated ZIP is uploaded back
-fresh ZIP is inspected
-full tests remain green
-coverage remains 100.00%
-Claude AI performs third confirmation review of N1/N2
-all new findings are fixed or explicitly accepted with rationale
-AdamantineOS remains untagged
-Milestone 19 remains blocked until Milestone 18 closes cleanly
-```
+Second fix pass closure conditions were completed and then superseded by the third/fourth review path. AdamantineOS remained untagged throughout.
 
 
 ## 18B. Milestone 18 Option 2 full evidence-level runtime wiring pass
 
-Status: **Option 2 verified by fourth Claude confirmation; N8/N7 closure hardening prepared and pending maintainer copy-back**.
+Status: **complete; Option 2 full evidence-level wiring verified by fourth Claude confirmation and N8/N7 no-debt closure hardening**.
 
 Claude AI's third red-team confirmation returned `PASS WITH NOTES`. It verified:
 
@@ -1113,7 +1101,7 @@ N6 note - ledger wording overclaimed full evidence wiring.
 N7 note - EQC failure surfaced through wallet_policy label.
 ```
 
-Maintainer decision: **Option 2 selected**. Milestone 18 remains open until full evidence-level wiring is re-reviewed.
+Maintainer decision: **Option 2 selected**. Full evidence-level wiring was implemented, re-reviewed, and verified before closure.
 
 Option 2 fix decisions:
 
@@ -1147,19 +1135,7 @@ PYTHONPATH=src python -m pytest -q
 100.00% coverage
 ```
 
-Milestone 18 closure remains blocked until:
-
-```text
-maintainer copies Option 2 patch into DigiByte-AdamantineOS
-fresh updated ZIP is uploaded back
-fresh ZIP is inspected
-full tests remain green
-coverage remains 100.00%
-Claude AI performs fourth confirmation review of full evidence-level wiring
-all new findings are fixed or explicitly accepted with rationale
-AdamantineOS remains untagged
-Milestone 19 remains blocked until Milestone 18 closes cleanly
-```
+Option 2 closure conditions were completed: fresh ZIP inspected, tests green, coverage 100.00%, and fourth Claude AI confirmation returned `PASS WITH NOTES - Milestone 18 can be closed`. N8/N7 were then closed with no technical debt carried forward.
 
 
 ### Milestone 18 N7 closure â EQC / wallet_policy gate semantics
@@ -1169,7 +1145,7 @@ EQC aggregate runtime policy verdict is intentionally surfaced through the stabl
 
 ## 18C. Milestone 18 final no-debt closure hardening for N8/N7
 
-Status: **prepared, pending maintainer copy-back, fresh ZIP inspection, and CI verification**.
+Status: **complete after fresh ZIP inspection and CI verification**.
 
 Claude AI's fourth confirmation returned `PASS WITH NOTES` and stated Milestone 18 can be closed, with only two non-blocking notes remaining:
 
@@ -1206,7 +1182,7 @@ N7 regression proof:
 test_milestone_18_n7_eqc_wallet_policy_mapping_is_explicit_in_docs
 ```
 
-Closure-patch local verification:
+Closure-hardening local verification:
 
 ```text
 PYTHONPATH=src python -m pytest -q
@@ -1214,4 +1190,74 @@ PYTHONPATH=src python -m pytest -q
 100.00% coverage
 ```
 
-AdamantineOS remains v2.2.0 and untagged. Milestone 19 remains blocked until this closure patch is copied, a fresh ZIP is inspected, and CI evidence is verified.
+AdamantineOS remains v2.2.0 and untagged. Milestone 18 is complete. Milestone 19 is now the only remaining milestone and remains blocked until the final release gate is prepared and verified.
+
+
+## 18D. Milestone 18 final closure verification
+
+Status: **complete**.
+
+Fresh ZIP inspected after the N8/N7 no-debt closure hardening:
+
+```text
+DigiByte-AdamantineOS-main(6).zip
+```
+
+Final verification evidence:
+
+```text
+PYTHONPATH=src python -m pytest -q
+925 passed
+100.00% coverage
+TOTAL 4097 statements, 0 missed
+```
+
+Final Milestone 18 closure state:
+
+```text
+F1-F8: resolved
+N1: fixed by full per-source evidence-level runtime wiring
+N2: fixed by final-policy gating of the legacy v1 executor path
+N7: closed by explicit EQC -> wallet_policy audit semantics
+N8: fixed by reject-branch final-policy divergence hardening
+No HIGH/MEDIUM/LOW findings remain open
+No known red-team note is carried forward as technical debt
+AdamantineOS remains v2.2.0 and untagged
+Milestone 19 remains pending as the final release gate
+```
+
+Milestone 18 is complete. This is not release/tag approval. AdamantineOS must remain untagged until Milestone 19 is completed and verified.
+
+## 18E. Milestone 18 final external closure report
+
+Status: **complete**.
+
+The final Claude AI closure review is preserved in the repository as:
+
+```text
+docs/RED_TEAM/ADAMANTINEOS_MILESTONE_18_FINAL_CLOSURE_REVIEW.docx
+```
+
+Final external review verdict:
+
+```text
+PASS - Milestone 18 can be closed
+```
+
+The final review verified:
+
+```text
+N1: fixed
+N2: fixed
+N7: closed
+N8: fixed
+F1-F8: fixed
+N3-N6: closed or superseded
+No HIGH/MEDIUM/LOW/NOTE findings remain open
+No red-team note is carried forward as technical debt
+AdamantineOS remains v2.2.0 and untagged
+Milestone 19 remains the only final release gate
+```
+
+The final review does **not** authorize release or tagging. AdamantineOS remains untagged until Milestone 19 is completed and verified.
+
