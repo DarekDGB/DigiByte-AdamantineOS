@@ -1,15 +1,15 @@
-# Adamantine Wallet OS — Interfaces
+# AdamantineOS — Interfaces
 
 **License:** MIT License  
 **Author:** DarekDGB  
-**Repository:** DigiByte Adamantine Wallet OS  
+**Repository:** DigiByte AdamantineOS  
 **Scope:** Foundation Interfaces (Contracts, No Runtime)
 
 ---
 
 ## 1. Purpose
 
-This document defines the **interface contracts** that form the explicit boundaries between components in the Adamantine Wallet OS foundation.
+This document defines the **interface contracts** that form the explicit boundaries between components in the AdamantineOS foundation.
 
 An interface in Adamantine is:
 - a **contract**, not an integration
