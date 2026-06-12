@@ -51,3 +51,19 @@ def test_issuer_rejects_empty_nonce() -> None:
     with pytest.raises(TVAError) as e:
         issue_wsqk_authority(req)
     assert str(e.value) == ReasonId.WSQK_INVALID_NONCE.value
+
+
+def test_issuer_preserves_now_conversion_exception_chain() -> None:
+    req = WSQKIssueRequest(
+        wallet_id="w1",
+        action="SEND",
+        context_hash="abc123",
+        now=object(),  # type: ignore[arg-type]
+        ttl_seconds=60,
+        nonce="n1",
+    )
+    with pytest.raises(TVAError) as exc:
+        issue_wsqk_authority(req)
+
+    assert str(exc.value) == ReasonId.WSQK_MISSING_NOW.value
+    assert exc.value.__cause__ is not None
