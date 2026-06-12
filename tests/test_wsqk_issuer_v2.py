@@ -144,3 +144,30 @@ def test_wsqk_v2_canonical_families_accept_tuple_and_trim_values() -> None:
         "pqc_signature",
         "qid_hybrid",
     )
+
+
+def test_wsqk_v2_canonical_families_preserves_type_error_chain() -> None:
+    with pytest.raises(TVAError) as exc:
+        canonical_required_evidence_families(None)  # type: ignore[arg-type]
+
+    assert str(exc.value) == ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value
+    assert isinstance(exc.value.__cause__, TypeError)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "reason"),
+    [
+        ("now", object(), ReasonId.WSQK_MISSING_NOW),
+        ("ttl_seconds", object(), ReasonId.WSQK_INVALID_TTL),
+    ],
+)
+def test_wsqk_v2_issuer_preserves_numeric_conversion_exception_chains(
+    field: str,
+    value: object,
+    reason: ReasonId,
+) -> None:
+    with pytest.raises(TVAError) as exc:
+        issue_wsqk_authority_v2(_request(**{field: value}))
+
+    assert str(exc.value) == reason.value
+    assert exc.value.__cause__ is not None
