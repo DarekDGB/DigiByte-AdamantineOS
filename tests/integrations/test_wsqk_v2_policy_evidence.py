@@ -315,3 +315,52 @@ def test_wsqk_request_mapping_error_becomes_structured_deny() -> None:
     assert result.state == WSQKV2PolicyEvidenceState.DENY_WSQK_REJECTED
     assert result.reason_id == ReasonId.WSQK_INVALID_TTL.value
     assert result.accepted_as_evidence is False
+
+
+def test_wsqk_authority_mapping_missing_field_keeps_diagnostic_reason() -> None:
+    authority = issue_wsqk_authority_v2(_request())
+
+    result = _run(
+        {
+            "contract_version": authority.contract_version,
+            "wallet_id": authority.wallet_id,
+            "action": authority.action,
+            "context_hash": authority.context_hash,
+            "issued_at": authority.issued_at,
+            "expires_at": authority.expires_at,
+            "required_evidence_families": list(authority.required_evidence_families),
+            "quantum_posture": authority.quantum_posture,
+            "proof_bindings_hash": authority.proof_bindings_hash,
+        }
+    )
+
+    assert result.state == WSQKV2PolicyEvidenceState.DENY_UNSUPPORTED_INPUT
+    assert result.reason_id == ReasonId.WSQK_V2_AUTHORITY_MAPPING_MISSING_FIELD
+    assert result.dominant_reason_ids == (ReasonId.WSQK_V2_AUTHORITY_MAPPING_MISSING_FIELD.value,)
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+
+
+def test_wsqk_authority_mapping_invalid_field_keeps_diagnostic_reason() -> None:
+    authority = issue_wsqk_authority_v2(_request())
+
+    result = _run(
+        {
+            "contract_version": authority.contract_version,
+            "wallet_id": authority.wallet_id,
+            "action": authority.action,
+            "context_hash": authority.context_hash,
+            "issued_at": "not-int",
+            "expires_at": authority.expires_at,
+            "nonce": authority.nonce,
+            "required_evidence_families": list(authority.required_evidence_families),
+            "quantum_posture": authority.quantum_posture,
+            "proof_bindings_hash": authority.proof_bindings_hash,
+        }
+    )
+
+    assert result.state == WSQKV2PolicyEvidenceState.DENY_UNSUPPORTED_INPUT
+    assert result.reason_id == ReasonId.WSQK_V2_AUTHORITY_MAPPING_INVALID_FIELD
+    assert result.dominant_reason_ids == (ReasonId.WSQK_V2_AUTHORITY_MAPPING_INVALID_FIELD.value,)
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
