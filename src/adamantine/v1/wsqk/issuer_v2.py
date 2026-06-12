@@ -52,8 +52,8 @@ def canonical_required_evidence_families(families: Iterable[str]) -> tuple[str, 
 
     try:
         raw = tuple(families)
-    except TypeError:
-        raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value)
+    except TypeError as exc:
+        raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value) from exc
 
     if not raw:
         raise TVAError(ReasonId.WSQK_V2_INVALID_EVIDENCE_FAMILIES.value)
@@ -116,13 +116,13 @@ def issue_wsqk_authority_v2(req: WSQKIssueRequestV2) -> WSQKAuthorityV2:
 
     try:
         issued_at = int(req.now)
-    except Exception:
-        raise TVAError(ReasonId.WSQK_MISSING_NOW.value)
+    except Exception as exc:
+        raise TVAError(ReasonId.WSQK_MISSING_NOW.value) from exc
 
     try:
         ttl = int(req.ttl_seconds)
-    except Exception:
-        raise TVAError(ReasonId.WSQK_INVALID_TTL.value)
+    except Exception as exc:
+        raise TVAError(ReasonId.WSQK_INVALID_TTL.value) from exc
     if ttl <= 0:
         raise TVAError(ReasonId.WSQK_INVALID_TTL.value)
 
