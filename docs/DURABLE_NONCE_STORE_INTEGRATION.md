@@ -58,6 +58,11 @@ The minimal behavior required is equivalent to **check-and-mark**, but without t
 **Note:** This is a *conceptual* description. Adamantine never calls this directly.
 Instead, the runtime produces **replay evidence** derived from this behavior.
 
+### 4.2 Production store requirement
+
+Production deployments MUST pass `production=True` and inject a `DurableNonceStore`.
+The in-memory store is for tests and local development only; it provides no crash-safety, persistence, or cross-process replay protection.
+
 ---
 
 ## 5. Replay Evidence Required by Adamantine
