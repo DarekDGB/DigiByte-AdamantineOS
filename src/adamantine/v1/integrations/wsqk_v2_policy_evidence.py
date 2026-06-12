@@ -88,8 +88,8 @@ def _deny(
     )
 
 
-def _authority_from_mapping(value: Mapping[str, Any]) -> WSQKAuthorityV2 | None:
-    authority_fields = {
+_AUTHORITY_MAPPING_FIELDS = frozenset(
+    {
         "contract_version",
         "wallet_id",
         "action",
@@ -101,8 +101,21 @@ def _authority_from_mapping(value: Mapping[str, Any]) -> WSQKAuthorityV2 | None:
         "quantum_posture",
         "proof_bindings_hash",
     }
-    if not authority_fields.issubset(value.keys()):
-        return None
+)
+_AUTHORITY_MAPPING_SHAPE_FIELDS = frozenset({"contract_version", "issued_at", "expires_at", "proof_bindings_hash"})
+
+
+def _looks_like_authority_mapping(value: Mapping[str, Any]) -> bool:
+    return bool(_AUTHORITY_MAPPING_SHAPE_FIELDS.intersection(value.keys()))
+
+
+def _authority_from_mapping(
+    value: Mapping[str, Any],
+) -> tuple[WSQKAuthorityV2 | None, ReasonId | None]:
+    if not _AUTHORITY_MAPPING_FIELDS.issubset(value.keys()):
+        if _looks_like_authority_mapping(value):
+            return None, ReasonId.WSQK_V2_AUTHORITY_MAPPING_MISSING_FIELD
+        return None, None
     families = value["required_evidence_families"]
     if isinstance(families, (str, bytes)):
         families_tuple: tuple[str, ...] = (str(families),)
@@ -112,20 +125,23 @@ def _authority_from_mapping(value: Mapping[str, Any]) -> WSQKAuthorityV2 | None:
         except TypeError:
             families_tuple = ()
     try:
-        return WSQKAuthorityV2(
-            contract_version=str(value["contract_version"]),
-            wallet_id=str(value["wallet_id"]),
-            action=str(value["action"]),
-            context_hash=str(value["context_hash"]),
-            issued_at=int(value["issued_at"]),
-            expires_at=int(value["expires_at"]),
-            nonce=str(value["nonce"]),
-            required_evidence_families=families_tuple,
-            quantum_posture=str(value["quantum_posture"]),
-            proof_bindings_hash=str(value["proof_bindings_hash"]),
+        return (
+            WSQKAuthorityV2(
+                contract_version=str(value["contract_version"]),
+                wallet_id=str(value["wallet_id"]),
+                action=str(value["action"]),
+                context_hash=str(value["context_hash"]),
+                issued_at=int(value["issued_at"]),
+                expires_at=int(value["expires_at"]),
+                nonce=str(value["nonce"]),
+                required_evidence_families=families_tuple,
+                quantum_posture=str(value["quantum_posture"]),
+                proof_bindings_hash=str(value["proof_bindings_hash"]),
+            ),
+            None,
         )
-    except Exception:
-        return None
+    except (TypeError, ValueError):
+        return None, ReasonId.WSQK_V2_AUTHORITY_MAPPING_INVALID_FIELD
 
 
 def _request_from_mapping(value: Mapping[str, Any]) -> WSQKIssueRequestV2 | None:
@@ -168,9 +184,14 @@ def _normalize_authority(value: Any) -> WSQKAuthorityV2 | WSQKV2PolicyEvidenceRe
                 return issue_wsqk_authority_v2(request)
             except TVAError as exc:
                 return _deny(state=WSQKV2PolicyEvidenceState.DENY_WSQK_REJECTED, reason_id=str(exc))
-        authority = _authority_from_mapping(value)
+        authority, authority_mapping_reason = _authority_from_mapping(value)
         if authority is not None:
             return authority
+        if authority_mapping_reason is not None:
+            return _deny(
+                state=WSQKV2PolicyEvidenceState.DENY_UNSUPPORTED_INPUT,
+                reason_id=authority_mapping_reason,
+            )
     return _deny(
         state=WSQKV2PolicyEvidenceState.DENY_UNSUPPORTED_INPUT,
         reason_id=ReasonId.DENY_WSQK,
