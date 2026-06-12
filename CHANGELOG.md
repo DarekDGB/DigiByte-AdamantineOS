@@ -7,47 +7,6 @@ Scope: Foundation Releases and Contract History
 
 ------------------------------------------------------------------------
 
-## Unreleased — Post-v3.0.0 Security Audit Hardening
-
-**Status:** Audit hardening in progress; no new tag authorized  
-**Type:** Security fix, regression lock, documentation callout, and observability polish  
-**Compatibility:** No package distribution rename, no Python import-path change, and no release-version bump
-
-This unreleased hardening set resolves the post-tag v3.0.0 security audit findings without changing DigiByte consensus, block rules, mining, supply, or Python import paths. It is intended to remain on the audit/hardening track until further review is complete.
-
-### Fixed
-
-1. **F-1 context-hash canonicalization weakness**
-   - `compute_context_hash` now rejects C0 control characters and DEL in `wallet_id`, `action`, field keys, and field values.
-   - Field keys now reject `=` to keep the canonical `key=value` encoding unambiguous.
-   - Unicode wallet IDs remain supported.
-   - `=` remains allowed in field values.
-   - Pinned context-hash vectors remain byte-identical.
-
-2. **Envelope boundary defense-in-depth**
-   - Execution Request Envelope v2 rejects context-hash injection characters before hashing.
-   - Malformed context fields fail closed with `DENY_SCHEMA_INVALID`.
-
-3. **F-2 nonce-store production callout**
-   - Integrator documentation now states that production deployments must pass `production=True` and inject a `DurableNonceStore`.
-
-4. **F-3 WSQK observability**
-   - Malformed WSQK v2 authority mappings now return a structured diagnostic reason instead of losing parse context.
-
-5. **F-4 WSQK exception chains**
-   - WSQK parse/conversion failures now preserve the original exception cause using `raise ... from exc`.
-
-6. **F-5 documentation hygiene**
-   - Documentation index now warns that older proof-pack version strings are retained as historical evidence.
-
-### Verification
-
-- Full test suite passes locally.
-- Coverage remains at 100%.
-- No tag decision is made by this changelog entry.
-
-------------------------------------------------------------------------
-
 ## v3.0.0 — Final Policy Runtime Authority Release
 
 **Status:** Release-stamped and approved for tag after final fresh-ZIP verification  
