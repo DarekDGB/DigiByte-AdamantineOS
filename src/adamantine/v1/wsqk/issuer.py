@@ -45,8 +45,8 @@ def issue_wsqk_authority(req: WSQKIssueRequest) -> WSQKAuthority:
 
     try:
         now = int(req.now)
-    except Exception:
-        raise TVAError(ReasonId.WSQK_MISSING_NOW.value)
+    except Exception as exc:
+        raise TVAError(ReasonId.WSQK_MISSING_NOW.value) from exc
 
     ttl = int(req.ttl_seconds)
     if ttl <= 0:
