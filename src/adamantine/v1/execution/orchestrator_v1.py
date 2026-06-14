@@ -171,7 +171,7 @@ def _extract_wsqk_authority(
         return None
     if not isinstance(ch, str) or not ch:
         return None
-    if not isinstance(ia, int) or not isinstance(ea, int):
+    if type(ia) is not int or type(ea) is not int:
         return None
     if not isinstance(n, str) or not n:
         return None
