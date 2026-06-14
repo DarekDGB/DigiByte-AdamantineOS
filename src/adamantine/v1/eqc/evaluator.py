@@ -61,7 +61,7 @@ def evaluate_eqc(
         reasons.append(ReasonId.EQC_MISSING_ACTION)
 
     # Deterministic time must be injected
-    if now is None or not isinstance(now, int):
+    if now is None or type(now) is not int:
         reasons.append(ReasonId.EQC_MISSING_NOW)
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
@@ -174,7 +174,7 @@ def evaluate_eqc_v2(
     if not action_s:
         reasons.append(ReasonId.EQC_MISSING_ACTION)
 
-    if now is None or not isinstance(now, int):
+    if now is None or type(now) is not int:
         reasons.append(ReasonId.EQC_MISSING_NOW)
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
