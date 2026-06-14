@@ -163,7 +163,7 @@ def test_eqc_covers_time_branches_and_validation_failures() -> None:
     assert ReasonId.EQC_INVALID_QID_PROOF.value in res.reason_ids
 
     # invalid risk report (contract validate raises)
-    session_ok = QIDSessionProof("did:x", issued_at=100, expires_at=300, proof_hash="h")
+    session_ok = QIDSessionProof("did:x", issued_at=100, expires_at=300, proof_hash="h", context_hash=ctx_hash)
     risk_bad = RiskReport(ctx_hash, (RiskSignal("", 1, ("ok",)),), 90, generated_at=150)
     res = evaluate_eqc(
         wallet_id="w1",
