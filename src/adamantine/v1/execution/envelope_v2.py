@@ -94,9 +94,15 @@ def _expect_keys(
         _fail(metrics, ReasonId.DENY_UNKNOWN_FIELD, f"{name} has unknown keys: {sorted(unknown)}")
 
 
+def _contains_control_character(value: str) -> bool:
+    return any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value)
+
+
 def _require_nonempty_str(metrics: Metrics | None, v: Any, *, rid: ReasonId, name: str) -> str:
     if not isinstance(v, str) or v == "":
         _fail(metrics, rid, f"{name} must be non-empty str")
+    if _contains_control_character(v):
+        _fail(metrics, rid, f"{name} contains a forbidden control character")
     return v
 
 
@@ -194,8 +200,14 @@ def parse_execution_request_envelope_v2(
     for k, val in fields_m.items():
         if not isinstance(k, str) or k == "":
             _fail(metrics, ReasonId.DENY_SCHEMA_INVALID, "context.fields keys must be non-empty str")
+        if _contains_control_character(k):
+            _fail(metrics, ReasonId.DENY_SCHEMA_INVALID, "context.fields keys contain a forbidden control character")
+        if "=" in k:
+            _fail(metrics, ReasonId.DENY_SCHEMA_INVALID, "context.fields keys must not contain '='")
         if not isinstance(val, str):
             _fail(metrics, ReasonId.DENY_SCHEMA_INVALID, "context.fields values must be str")
+        if _contains_control_character(val):
+            _fail(metrics, ReasonId.DENY_SCHEMA_INVALID, "context.fields values contain a forbidden control character")
         fields[k] = val
 
     context_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
