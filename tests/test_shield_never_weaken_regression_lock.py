@@ -11,13 +11,14 @@ from adamantine.v1.eqc.evaluator import evaluate_eqc_v2
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
-def _session(*, now: int) -> QIDSessionProof:
+def _session(*, now: int, context_hash: str | None = None) -> QIDSessionProof:
     # Minimal valid session spanning `now`.
     return QIDSessionProof(
         subject="user-1",
         issued_at=now - 10,
         expires_at=now + 10,
         proof_hash="p" * 32,
+        context_hash=context_hash,
     )
 
 
@@ -83,7 +84,7 @@ def test_regression_lock_shield_can_only_strengthen_deny() -> None:
         wallet_id=wallet_id,
         action=action,
         fields=None,
-        session=_session(now=now),
+        session=_session(now=now, context_hash=ctx_hash),
         oracle=_oracle(ctx_hash=ctx_hash, now=now),
         shield=shield_a,
         now=now,
@@ -99,7 +100,7 @@ def test_regression_lock_shield_can_only_strengthen_deny() -> None:
         wallet_id=wallet_id,
         action=action,
         fields=None,
-        session=_session(now=now),
+        session=_session(now=now, context_hash=ctx_hash),
         oracle=_oracle(ctx_hash=ctx_hash, now=now),
         shield=shield_b,
         now=now,
@@ -121,7 +122,7 @@ def test_regression_lock_shield_can_only_strengthen_deny() -> None:
         wallet_id=wallet_id,
         action=action,
         fields=None,
-        session=_session(now=now),
+        session=_session(now=now, context_hash=ctx_hash),
         oracle=_oracle(ctx_hash=ctx_hash, now=now),
         shield=shield_c,
         now=now,
