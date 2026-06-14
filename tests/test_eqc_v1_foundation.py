@@ -9,12 +9,13 @@ from adamantine.v1.contracts.risk import RiskReport, RiskSignal
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
-def _valid_session(*, now: int) -> QIDSessionProof:
+def _valid_session(*, now: int, context_hash: str | None = None) -> QIDSessionProof:
     return QIDSessionProof(
         subject="did:example:123",
         issued_at=now - 50,
         expires_at=now + 50,
         proof_hash="proofhash123",
+        context_hash=context_hash or compute_context_hash(wallet_id="w1", action="SEND", fields=None),
         device_binding="device-1",
         issuer_version="qid-v0",
     )
@@ -111,7 +112,7 @@ def test_eqc_denies_score_below_threshold() -> None:
         wallet_id="w1",
         action="SEND",
         fields=None,
-        session=_valid_session(now=now),
+        session=_valid_session(now=now, context_hash=ctx_hash),
         risk=_valid_risk(context_hash=ctx_hash, now=now, score=90),
         now=now,
         policy=policy,
@@ -159,7 +160,7 @@ def test_eqc_allows_when_evidence_present_and_score_meets_policy() -> None:
         wallet_id="w1",
         action="SEND",
         fields={"amount": "10"},
-        session=_valid_session(now=now),
+        session=_valid_session(now=now, context_hash=ctx_hash),
         risk=_valid_risk(context_hash=ctx_hash, now=now, score=90),
         now=now,
         policy=RiskPolicy(min_overall_score=85),
