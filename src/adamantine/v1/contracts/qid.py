@@ -30,7 +30,7 @@ class QIDSessionProof:
     issuer_version: Optional[str] = None
 
     def validate(self, *, now: int) -> None:
-        if not isinstance(now, int):
+        if type(now) is not int:
             raise ValueError("now must be int")
 
         if not self.subject:
@@ -42,7 +42,7 @@ class QIDSessionProof:
         if self.context_hash is not None and not _is_sha256_hex(self.context_hash):
             raise ValueError("context_hash must be a 64-character lowercase sha256 hex string")
 
-        if not isinstance(self.issued_at, int) or not isinstance(self.expires_at, int):
+        if type(self.issued_at) is not int or type(self.expires_at) is not int:
             raise ValueError("issued_at and expires_at must be int")
 
         if self.issued_at <= 0 or self.expires_at <= 0:
