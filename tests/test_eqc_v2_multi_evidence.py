@@ -12,12 +12,13 @@ from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
-def _valid_session(*, now: int) -> QIDSessionProof:
+def _valid_session(*, now: int, context_hash: str | None = None) -> QIDSessionProof:
     return QIDSessionProof(
         subject="did:example:123",
         issued_at=now - 50,
         expires_at=now + 50,
         proof_hash="proofhash123",
+        context_hash=context_hash or compute_context_hash(wallet_id="w1", action="SEND", fields=None),
         device_binding="device-1",
         issuer_version="qid-v0",
     )
@@ -73,7 +74,7 @@ def test_eqc_v2_denies_missing_oracle() -> None:
         wallet_id="w1",
         action="SEND",
         fields=None,
-        session=_valid_session(now=now),
+        session=_valid_session(now=now, context_hash=ctx_hash),
         oracle=None,
         shield=_shield_ok(context_hash=ctx_hash, now=now),
         now=now,
@@ -90,7 +91,7 @@ def test_eqc_v2_denies_missing_shield_bundle() -> None:
         wallet_id="w1",
         action="SEND",
         fields=None,
-        session=_valid_session(now=now),
+        session=_valid_session(now=now, context_hash=ctx_hash),
         oracle=_valid_oracle(context_hash=ctx_hash, now=now, score=90),
         shield=None,
         now=now,
@@ -107,7 +108,7 @@ def test_eqc_v2_denies_conflicting_shield_evidence() -> None:
         wallet_id="w1",
         action="SEND",
         fields=None,
-        session=_valid_session(now=now),
+        session=_valid_session(now=now, context_hash=ctx_hash),
         oracle=_valid_oracle(context_hash=ctx_hash, now=now, score=90),
         shield=_shield_deny(context_hash=ctx_hash, now=now),
         now=now,
@@ -124,7 +125,7 @@ def test_eqc_v2_allows_when_all_evidence_present_and_ok() -> None:
         wallet_id="w1",
         action="SEND",
         fields={"amount": "10"},
-        session=_valid_session(now=now),
+        session=_valid_session(now=now, context_hash=ctx_hash),
         oracle=_valid_oracle(context_hash=ctx_hash, now=now, score=90),
         shield=_shield_ok(context_hash=ctx_hash, now=now),
         now=now,
