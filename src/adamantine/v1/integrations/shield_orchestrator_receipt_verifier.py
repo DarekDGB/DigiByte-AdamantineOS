@@ -7,6 +7,9 @@ from typing import Any, Iterable, Mapping
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield_orchestrator_receipt import (
     ALLOWED_FINAL_OUTCOMES,
+    DirectComponentVerdictError,
+    ShieldReceiptContextMismatchError,
+    ShieldReceiptHashMismatchError,
     reject_direct_component_verdict,
     validate_shield_orchestrator_receipt,
 )
@@ -183,12 +186,15 @@ def _rejected(
 
 
 def _classify_base_error(exc: ValueError) -> tuple[ShieldReceiptVerificationState, ReasonId]:
-    # WARNING: This minimum pre-16F hardening intentionally documents a
-    # dependency on exact ValueError message wording from
-    # validate_shield_orchestrator_receipt and reject_direct_component_verdict.
-    # If those contract messages change, update this classifier and its tests in
-    # the same commit. Prefer typed contract exceptions in a future contract
-    # version before changing the public receipt validation API.
+    if isinstance(exc, DirectComponentVerdictError):
+        return ShieldReceiptVerificationState.REJECTED_RAW_COMPONENT_BYPASS, ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    if isinstance(exc, ShieldReceiptContextMismatchError):
+        return ShieldReceiptVerificationState.REJECTED_CONTEXT_MISMATCH, ReasonId.EQC_SHIELD_CONTEXT_HASH_MISMATCH
+    if isinstance(exc, ShieldReceiptHashMismatchError):
+        return ShieldReceiptVerificationState.REJECTED_TAMPERED_RECEIPT, ReasonId.EQC_INVALID_SHIELD_BUNDLE
+
+    # Legacy fallback for older callers that may still raise plain ValueError.
+    # Typed contract exceptions above are the authoritative classification path.
     message = str(exc).lower()
     if "direct shield component" in message:
         return ShieldReceiptVerificationState.REJECTED_RAW_COMPONENT_BYPASS, ReasonId.EQC_INVALID_SHIELD_BUNDLE
