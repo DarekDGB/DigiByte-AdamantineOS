@@ -150,7 +150,7 @@ def parse_execution_request_envelope_v2(
         Deep validation happens later in adapters and EQC v2.
       - `body` is validated as strict object only; per-intent schemas are enforced later.
     """
-    if not isinstance(now, int):
+    if type(now) is not int:
         _fail(metrics, ReasonId.DENY_SCHEMA_INVALID, "now must be int (unix seconds)")
 
     env = _require_mapping(metrics, payload, rid=ReasonId.DENY_SCHEMA_INVALID, name="envelope")
@@ -248,7 +248,7 @@ def parse_execution_request_envelope_v2(
         _fail(metrics, ReasonId.DENY_TIMEBOX_INVALID, "timebox.expires_at must be > issued_at")
 
     skew = tb_m.get("max_skew_seconds", 0)
-    if not isinstance(skew, int) or skew < 0:
+    if type(skew) is not int or skew < 0:
         _fail(metrics, ReasonId.DENY_TIMEBOX_INVALID, "timebox.max_skew_seconds must be non-negative int")
     if skew > _MAX_TIMEBOX_SKEW_SECONDS:
         _fail(metrics, ReasonId.DENY_TIMEBOX_INVALID, "timebox.max_skew_seconds exceeds maximum allowed skew")
