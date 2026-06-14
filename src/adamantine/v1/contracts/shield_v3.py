@@ -28,7 +28,7 @@ class ShieldBundleV3:
         if not isinstance(self.context_hash, str) or len(self.context_hash) != 64:
             raise ValueError("context_hash must be 64-char hex str")
 
-        if not isinstance(self.issued_at, int) or not isinstance(self.expires_at, int):
+        if type(self.issued_at) is not int or type(self.expires_at) is not int:
             raise ValueError("issued_at/expires_at must be int")
 
         if self.expires_at < self.issued_at:
