@@ -27,7 +27,7 @@ def parse_risk_report(
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> RiskReport:
-    if not isinstance(now, int):
+    if type(now) is not int:
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
 
     if not isinstance(expected_context_hash, str) or not expected_context_hash:
@@ -73,13 +73,13 @@ def parse_risk_report(
     overall_score = payload.get("overall_score")
     signals_raw = payload.get("signals")
 
-    if not isinstance(generated_at, int) or generated_at <= 0:
+    if type(generated_at) is not int or generated_at <= 0:
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "generated_at must be positive int")
 
     if generated_at > now:
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "generated_at cannot be in the future")
 
-    if not isinstance(overall_score, int) or not (0 <= overall_score <= 100):
+    if type(overall_score) is not int or not (0 <= overall_score <= 100):
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "overall_score must be int in range 0..100")
 
     if not isinstance(signals_raw, Sequence) or isinstance(signals_raw, (str, bytes)):
@@ -99,7 +99,7 @@ def parse_risk_report(
         if not isinstance(source, str) or not source:
             _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, f"signal[{idx}].source must be non-empty str")
 
-        if not isinstance(severity, int) or not (0 <= severity <= 100):
+        if type(severity) is not int or not (0 <= severity <= 100):
             _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, f"signal[{idx}].severity must be 0..100 int")
 
         if not isinstance(reason_ids_raw, Sequence) or isinstance(reason_ids_raw, (str, bytes)):
