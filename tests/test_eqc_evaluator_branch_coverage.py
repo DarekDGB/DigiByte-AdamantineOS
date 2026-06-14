@@ -14,13 +14,14 @@ from adamantine.v1.policy.risk_policy import RiskPolicy
 NOW = 1706918400
 
 
-def _session(*, now: int, issued_at_delta: int = -10, ttl: int = 60) -> QIDSessionProof:
+def _session(*, now: int, issued_at_delta: int = -10, ttl: int = 60, ctx_hash: str | None = None) -> QIDSessionProof:
     """Minimal VALID QIDSessionProof for evaluator branches (matches current contract)."""
     return QIDSessionProof(
         subject="w1",
         issued_at=now + issued_at_delta,
         expires_at=now + issued_at_delta + ttl,
         proof_hash="b" * 64,
+        context_hash=ctx_hash or compute_context_hash(wallet_id="w1", action="send", fields=None),
         device_binding=None,
         issuer_version="v1",
     )
@@ -84,7 +85,7 @@ def test_eqc_v2_oracle_report_context_hash_mismatch() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"a": "1"})
 
-    session = _session(now=now)
+    session = _session(now=now, ctx_hash=ctx_hash)
 
     # Oracle report context_hash mismatch triggers EQC_RISK_CONTEXT_HASH_MISMATCH
     oracle = _oracle(ctx_hash=("c" * 64), now=now, overall_score=95)
@@ -106,7 +107,7 @@ def test_eqc_v2_oracle_report_context_hash_mismatch() -> None:
 def test_eqc_v2_oracle_validate_failure_maps_to_invalid_risk_report() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
-    session = _session(now=now)
+    session = _session(now=now, ctx_hash=ctx_hash)
 
     # Make oracle invalid via timebox (issued_at > expires_at)
     rs = RiskSignal(source="ac", severity=10, reason_ids=(ReasonId.EVIDENCE_OK.value,))
@@ -146,7 +147,7 @@ def test_eqc_v2_oracle_validate_failure_maps_to_invalid_risk_report() -> None:
 def test_eqc_v2_score_below_threshold() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
-    session = _session(now=now)
+    session = _session(now=now, ctx_hash=ctx_hash)
 
     policy = RiskPolicy(min_overall_score=90)
     policy.validate()
@@ -171,7 +172,7 @@ def test_eqc_v2_score_below_threshold() -> None:
 def test_eqc_v2_shield_invalid_bundle() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
-    session = _session(now=now)
+    session = _session(now=now, ctx_hash=ctx_hash)
     oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
 
     # invalid: missing required layers
@@ -202,7 +203,7 @@ def test_eqc_v2_shield_invalid_bundle() -> None:
 def test_eqc_v2_shield_context_hash_mismatch() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
-    session = _session(now=now)
+    session = _session(now=now, ctx_hash=ctx_hash)
     oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
 
     shield = _shield_ok(ctx_hash=("d" * 64), now=now)  # mismatch vs computed ctx_hash
@@ -223,7 +224,7 @@ def test_eqc_v2_shield_context_hash_mismatch() -> None:
 def test_eqc_v2_shield_stale_window() -> None:
     now = NOW
     ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields=None)
-    session = _session(now=now)
+    session = _session(now=now, ctx_hash=ctx_hash)
     oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
     shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
@@ -245,7 +246,7 @@ def test_eqc_v2_final_presence_reasons_after_valid_evidence() -> None:
     now = NOW
 
     ctx_hash = compute_context_hash(wallet_id="", action="send", fields={"x": "1"})
-    session = _session(now=now)
+    session = _session(now=now, ctx_hash=ctx_hash)
     oracle = _oracle(ctx_hash=ctx_hash, now=now, overall_score=95)
     shield = _shield_ok(ctx_hash=ctx_hash, now=now)
 
