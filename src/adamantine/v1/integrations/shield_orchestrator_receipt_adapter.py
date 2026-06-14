@@ -6,6 +6,9 @@ from typing import Any, Mapping
 
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield_orchestrator_receipt import (
+    DirectComponentVerdictError,
+    ShieldReceiptContextMismatchError,
+    ShieldReceiptHashMismatchError,
     reject_direct_component_verdict,
     validate_shield_orchestrator_receipt,
 )
@@ -59,6 +62,14 @@ def _rejected(
 
 
 def _classify_validation_error(exc: ValueError) -> ShieldReceiptAdapterState:
+    if isinstance(exc, DirectComponentVerdictError):
+        return ShieldReceiptAdapterState.SHIELD_REJECTED_RAW_COMPONENT_BYPASS
+    if isinstance(exc, ShieldReceiptContextMismatchError):
+        return ShieldReceiptAdapterState.SHIELD_REJECTED_CONTEXT_MISMATCH
+    if isinstance(exc, ShieldReceiptHashMismatchError):
+        return ShieldReceiptAdapterState.SHIELD_REJECTED_TAMPERED_RECEIPT
+
+    # Legacy fallback for older callers that may still raise plain ValueError.
     message = str(exc).lower()
     if "direct shield component" in message or "component verdict" in message:
         return ShieldReceiptAdapterState.SHIELD_REJECTED_RAW_COMPONENT_BYPASS
