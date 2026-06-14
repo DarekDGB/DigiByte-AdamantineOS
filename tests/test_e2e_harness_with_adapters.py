@@ -21,13 +21,14 @@ from adamantine.v1.policy.risk_policy import RiskPolicy
 from adamantine.v1.wsqk.issuer import WSQKIssueRequest, issue_wsqk_authority
 
 
-def _qid_payload(*, issued_at: int, expires_at: int) -> dict:
+def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = None) -> dict:
     return {
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": issued_at,
         "expires_at": expires_at,
         "proof_hash": "proofhash123",
+        "context_hash": context_hash,
         "device_binding": "device-1",
         "issuer_version": "qid-v0",
     }
@@ -55,7 +56,7 @@ def test_e2e_allows_and_executes_with_valid_evidence() -> None:
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
     risk = parse_risk_report(
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
@@ -134,7 +135,7 @@ def test_e2e_denies_on_score_below_threshold() -> None:
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
     risk = parse_risk_report(
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=80, reason_ids=["ok"]),
         now=now,
@@ -164,7 +165,7 @@ def test_tva_nonce_replay_denies_second_execution() -> None:
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
     risk = parse_risk_report(
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
@@ -273,7 +274,8 @@ def test_e2e_denies_when_missing_risk_evidence() -> None:
     action = "SEND"
     fields = {"amount": "10"}
 
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
 
     eqc = evaluate_eqc(
         wallet_id=wallet_id,
@@ -296,7 +298,7 @@ def test_e2e_determinism_same_inputs_same_result() -> None:
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
     risk = parse_risk_report(
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
@@ -500,7 +502,7 @@ def test_e2e_reason_ordering_for_basic_presence_failures_is_stable() -> None:
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
     risk = parse_risk_report(
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
@@ -531,7 +533,7 @@ def test_e2e_reason_ordering_wallet_and_action_missing_is_stable() -> None:
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
     risk = parse_risk_report(
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
@@ -565,7 +567,7 @@ def test_e2e_adapters_cannot_grant_authority_via_injected_fields() -> None:
 
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
-    qid = _qid_payload(issued_at=150, expires_at=250)
+    qid = _qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash)
     qid["verdict"] = "ALLOW"
     qid["authority"] = {"class": "admin", "scope": {"policy_pack": "root"}}
 
@@ -605,7 +607,7 @@ def test_e2e_no_execution_without_valid_tva_authority() -> None:
     ctx_hash = compute_context_hash(wallet_id=wallet_id, action=action, fields=fields)
 
     # Evidence passes -> EQC allows
-    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250), now=now)
+    session = parse_qid_session(payload=_qid_payload(issued_at=150, expires_at=250, context_hash=ctx_hash), now=now)
     risk = parse_risk_report(
         payload=_risk_payload(context_hash=ctx_hash, generated_at=190, overall_score=90, reason_ids=["ok"]),
         now=now,
