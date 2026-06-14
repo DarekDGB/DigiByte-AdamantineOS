@@ -35,7 +35,7 @@ class ShieldSignal:
         if not isinstance(self.source, ShieldSource):
             raise ValueError("source must be ShieldSource")
 
-        if not isinstance(self.severity, int) or not (0 <= self.severity <= 100):
+        if type(self.severity) is not int or not (0 <= self.severity <= 100):
             raise ValueError("severity must be int in range 0..100")
 
         if not isinstance(self.reason_ids, tuple) or len(self.reason_ids) == 0:
