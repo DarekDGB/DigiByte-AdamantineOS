@@ -11,13 +11,14 @@ from adamantine.v1.execution.orchestrator_v1 import orchestrate_execution_v1
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
 
-def _qid_payload(*, issued_at: int, expires_at: int) -> dict[str, Any]:
+def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = None) -> dict[str, Any]:
     return {
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": issued_at,
         "expires_at": expires_at,
         "proof_hash": "proofhash123",
+        "context_hash": context_hash,
         "device_binding": "device-1",
         "issuer_version": "qid-v0",
     }
@@ -89,7 +90,7 @@ def _allow_payload(now: int) -> dict[str, Any]:
     env["payload"] = {
         "ui_confirmed": True,
         "evidence": {
-            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50),
+            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50, context_hash=ctx_hash),
             "risk": _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=95, reason_ids=["ok"]),
         },
     }
@@ -104,7 +105,7 @@ def _deny_payload_low_score(now: int) -> dict[str, Any]:
     env["payload"] = {
         "ui_confirmed": True,
         "evidence": {
-            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50),
+            "qid": _qid_payload(issued_at=now - 50, expires_at=now + 50, context_hash=ctx_hash),
             "risk": _risk_payload(context_hash=ctx_hash, generated_at=now - 10, overall_score=10, reason_ids=["ok"]),
         },
     }
