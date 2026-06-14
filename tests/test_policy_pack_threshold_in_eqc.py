@@ -10,12 +10,13 @@ from adamantine.v1.contracts.qid import QIDSessionProof
 from adamantine.v1.contracts.risk import RiskReport, RiskSignal
 
 
-def _session_ok(now: int) -> QIDSessionProof:
+def _session_ok(now: int, context_hash: str) -> QIDSessionProof:
     return QIDSessionProof(
         subject="did:example:123",
         issued_at=now - 10,
         expires_at=now + 10,
         proof_hash="h",
+        context_hash=context_hash,
         device_binding="device-1",
         issuer_version="qid-v0",
     )
@@ -47,7 +48,7 @@ def test_eqc_threshold_comes_from_policy_pack_denies_below() -> None:
         wallet_id=wallet_id,
         action=action,
         fields=fields,
-        session=_session_ok(now),
+        session=_session_ok(now, ctx_hash),
         risk=_risk(now, ctx_hash=ctx_hash, score=84),
         now=now,
         policy=policy,
@@ -71,7 +72,7 @@ def test_eqc_threshold_comes_from_policy_pack_allows_at_threshold() -> None:
         wallet_id=wallet_id,
         action=action,
         fields=fields,
-        session=_session_ok(now),
+        session=_session_ok(now, ctx_hash),
         risk=_risk(now, ctx_hash=ctx_hash, score=85),
         now=now,
         policy=policy,
