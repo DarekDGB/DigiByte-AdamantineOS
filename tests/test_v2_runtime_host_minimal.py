@@ -34,7 +34,7 @@ def _policy(*, min_score: int = 85) -> RiskPolicy:
     return RiskPolicy(min_overall_score=min_score, policy_pack=pack)
 
 
-def _qid_payload(*, now: int, session_nonce: str) -> dict[str, Any]:
+def _qid_payload(*, now: int, session_nonce: str, context_hash: str | None = None) -> dict[str, Any]:
     # Valid Q-ID session + replay proof (safe to always include)
     return {
         "qid_iface_version": "qid-session-v0",
@@ -42,6 +42,7 @@ def _qid_payload(*, now: int, session_nonce: str) -> dict[str, Any]:
         "issued_at": now - 10,
         "expires_at": now + 10,
         "proof_hash": "proofhash123",
+        "context_hash": context_hash,
         "device_binding": "device-1",
         "issuer_version": "qid-v0",
         "replay_proof": {
@@ -156,7 +157,7 @@ def _envelope_v2(
         "nonce": {"value": "n1", "store": "tva", "mode": "single_use"},
         "payload": {
             "evidence": {
-                "qid": _qid_payload(now=now, session_nonce="n1"),
+                "qid": _qid_payload(now=now, session_nonce="n1", context_hash=context_hash),
                 "oracle": _oracle_payload(now=now, context_hash=context_hash, overall_score=oracle_score),
                 "shield": _shield_bundle(now=now, context_hash=context_hash, required_layers=shield_required_layers),
             },
