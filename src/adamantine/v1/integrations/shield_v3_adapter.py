@@ -131,7 +131,7 @@ def _require_str_max(
 
 def _require_int(metrics: Metrics | None, m: Mapping[str, Any], key: str, rid: ReasonId, name: str) -> int:
     v = m.get(key)
-    if not isinstance(v, int):
+    if type(v) is not int:
         _fail(metrics, rid, f"{name}.{key} must be int")
     return v
 
@@ -279,11 +279,11 @@ def _parse_signal_v3(
         label="signal.reason_id",
     )
 
-    # â Correct registry API + correct reason id
+    # Ã¢ÂÂ Correct registry API + correct reason id
     if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
         _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
 
-    # â Correct reason map API
+    # Ã¢ÂÂ Correct reason map API
     mapped = reason_map.lookup(ext_reason)
     if mapped is None:
         _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {ext_reason}")
@@ -306,7 +306,7 @@ def parse_shield_bundle_v3(
     require_versions: bool = False,
     metrics: Metrics | None = None,
 ) -> ShieldBundleV3:
-    if not isinstance(now, int):
+    if type(now) is not int:
         _fail(metrics, ReasonId.DENY_ADAPTER_INVALID, "now must be int")
 
     if not isinstance(expected_context_hash, str) or not expected_context_hash.strip():
