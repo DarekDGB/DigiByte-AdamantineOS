@@ -13,8 +13,15 @@ _EPOCH_ISO_Z = "1970-01-01T00:00:00Z"
 
 
 def _iso_z_from_unix_seconds(sec: int) -> str:
-    """Deterministic RFC3339 UTC format with 'Z'."""
-    dt = datetime.fromtimestamp(int(sec), tz=timezone.utc).replace(microsecond=0)
+    """Deterministic RFC3339 UTC format with 'Z'.
+
+    Fail closed to the Unix epoch for integers outside the platform/date
+    range so response construction stays total for every caller-supplied int.
+    """
+    try:
+        dt = datetime.fromtimestamp(int(sec), tz=timezone.utc).replace(microsecond=0)
+    except (OverflowError, OSError, ValueError):
+        return _EPOCH_ISO_Z
     return dt.isoformat().replace("+00:00", "Z")
 
 
@@ -56,10 +63,10 @@ def build_execution_response_v2(
     """Deterministic builder for execution_response_v2.
 
     Contract invariants:
-    - status â {"allow","deny","error"}
+    - status Ã¢ÂÂ {"allow","deny","error"}
     - status=="allow" => decision.allowed==True and reason_id==OK_ALLOW
     - status in {"deny","error"} => decision.allowed==False
-    - protection_mode â {"legacy","minimal","full"}
+    - protection_mode Ã¢ÂÂ {"legacy","minimal","full"}
     - response shape is fixed; no unknown keys are inserted
     - no nondeterminism: no environment reads, no random ids, no clocks (caller injects times)
     """
