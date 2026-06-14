@@ -56,7 +56,7 @@ def parse_adaptive_core_oracle_v3(
     policy: RiskPolicy | None = None,
     metrics: Metrics | None = None,
 ) -> AdaptiveCoreOracleV3:
-    if not isinstance(now, int):
+    if type(now) is not int:
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
 
     if not _is_canonical_context_hash(expected_context_hash):
@@ -80,7 +80,7 @@ def parse_adaptive_core_oracle_v3(
 
     issued_at = payload.get("issued_at")
     expires_at = payload.get("expires_at")
-    if not isinstance(issued_at, int) or not isinstance(expires_at, int):
+    if type(issued_at) is not int or type(expires_at) is not int:
         _fail(metrics, ReasonId.EQC_INVALID_RISK_REPORT, "issued_at/expires_at must be int")
 
     if expires_at < issued_at:
