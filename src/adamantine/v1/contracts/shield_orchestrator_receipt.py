@@ -21,6 +21,22 @@ REQUIRED_RECEIPT_FIELDS = frozenset({
 })
 
 
+class ShieldReceiptError(ValueError):
+    """Fail-closed base error for Shield Orchestrator receipt validation."""
+
+
+class DirectComponentVerdictError(ShieldReceiptError):
+    """A raw Shield component verdict attempted to bypass the Orchestrator receipt."""
+
+
+class ShieldReceiptContextMismatchError(ShieldReceiptError):
+    """The receipt context hash does not match the expected AdamantineOS context."""
+
+
+class ShieldReceiptHashMismatchError(ShieldReceiptError):
+    """The receipt hash does not match the canonical receipt body."""
+
+
 def canonical_json(payload: dict[str, Any]) -> str:
     if not isinstance(payload, dict):
         raise ValueError("payload must be dict")
@@ -45,7 +61,7 @@ def reject_direct_component_verdict(payload: dict[str, Any]) -> None:
     if not isinstance(payload, dict):
         raise ValueError("Shield payload must be dict")
     if payload.get("schema_version") == "shield.verdict.v1" or "decision" in payload:
-        raise ValueError("AdamantineOS rejects direct Shield component verdicts; Orchestrator receipt required")
+        raise DirectComponentVerdictError("AdamantineOS rejects direct Shield component verdicts; Orchestrator receipt required")
 
 
 def validate_shield_orchestrator_receipt(receipt: dict[str, Any], *, expected_context_hash: str) -> dict[str, Any]:
@@ -59,7 +75,7 @@ def validate_shield_orchestrator_receipt(receipt: dict[str, Any], *, expected_co
     if receipt["fail_closed"] is not True:
         raise ValueError("Shield receipt must be fail_closed")
     if _require_hash(receipt["context_hash"], field="context_hash") != _require_hash(expected_context_hash, field="expected_context_hash"):
-        raise ValueError("Shield receipt context mismatch")
+        raise ShieldReceiptContextMismatchError("Shield receipt context mismatch")
     if receipt["final_outcome"] not in ALLOWED_FINAL_OUTCOMES:
         raise ValueError("unsupported Shield final outcome")
     if not isinstance(receipt["component_verdicts"], list) or not receipt["component_verdicts"]:
@@ -75,7 +91,7 @@ def validate_shield_orchestrator_receipt(receipt: dict[str, Any], *, expected_co
     received_hash = _require_hash(without_hash["receipt_hash"], field="receipt_hash")
     without_hash["receipt_hash"] = ""
     if canonical_sha256(without_hash) != received_hash:
-        raise ValueError("Shield receipt hash mismatch")
+        raise ShieldReceiptHashMismatchError("Shield receipt hash mismatch")
     if receipt["final_outcome"] == "DENY" and handoff["handoff_allowed"] is True:
         raise ValueError("Shield DENY cannot allow AdamantineOS handoff")
     if receipt["final_outcome"] == "HUMAN_REVIEW_REQUIRED" and handoff["handoff_allowed"] is True:
