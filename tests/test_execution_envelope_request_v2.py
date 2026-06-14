@@ -152,3 +152,39 @@ def test_reject_audit_unknown_field() -> None:
     with pytest.raises(EnvelopeError) as e:
         parse_execution_request_envelope_v2(payload=env, now=NOW)
     assert e.value.reason_id is ReasonId.DENY_UNKNOWN_FIELD
+
+
+def test_reject_control_character_before_context_hashing() -> None:
+    env = _base()
+    env["context"]["wallet_id"] = "w1\naction=send"
+    with pytest.raises(EnvelopeError) as e:
+        parse_execution_request_envelope_v2(payload=env, now=NOW)
+    assert e.value.reason_id is ReasonId.DENY_SCHEMA_INVALID
+    assert "forbidden control character" in e.value.message
+
+
+def test_reject_context_field_key_delimiter_before_context_hashing() -> None:
+    env = _base()
+    env["context"]["fields"] = {"asset=DGB": "1"}
+    with pytest.raises(EnvelopeError) as e:
+        parse_execution_request_envelope_v2(payload=env, now=NOW)
+    assert e.value.reason_id is ReasonId.DENY_SCHEMA_INVALID
+    assert "must not contain" in e.value.message
+
+
+def test_reject_context_field_value_control_character_before_context_hashing() -> None:
+    env = _base()
+    env["context"]["fields"]["memo"] = "ok\nforged=1"
+    with pytest.raises(EnvelopeError) as e:
+        parse_execution_request_envelope_v2(payload=env, now=NOW)
+    assert e.value.reason_id is ReasonId.DENY_SCHEMA_INVALID
+    assert "forbidden control character" in e.value.message
+
+
+def test_reject_context_field_key_control_character_before_context_hashing() -> None:
+    env = _base()
+    env["context"]["fields"] = {"asset\nforged": "DGB"}
+    with pytest.raises(EnvelopeError) as e:
+        parse_execution_request_envelope_v2(payload=env, now=NOW)
+    assert e.value.reason_id is ReasonId.DENY_SCHEMA_INVALID
+    assert "forbidden control character" in e.value.message
