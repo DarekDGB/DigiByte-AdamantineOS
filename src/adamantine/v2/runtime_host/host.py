@@ -27,7 +27,7 @@ def run_mobile_execution_call_v2(
     - orchestrator_v2 is the single decision authority
     - host MUST NOT mutate decision, reason_id, context_hash, or protection_mode
     """
-    if not isinstance(now, int):
+    if type(now) is not int:
         raise TypeError("now must be int (unix seconds)")
 
     return orchestrate_execution_v2(
