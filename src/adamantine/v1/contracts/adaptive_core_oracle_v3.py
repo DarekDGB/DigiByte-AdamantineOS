@@ -20,13 +20,13 @@ class AdaptiveCoreOracleV3:
     report: RiskReport
 
     def validate(self, *, now: int) -> None:
-        if not isinstance(now, int):
+        if type(now) is not int:
             raise ValueError("now must be int")
 
         if not isinstance(self.context_hash, str) or not self.context_hash.strip():
             raise ValueError("context_hash must be non-empty str")
 
-        if not isinstance(self.issued_at, int) or not isinstance(self.expires_at, int):
+        if type(self.issued_at) is not int or type(self.expires_at) is not int:
             raise ValueError("issued_at/expires_at must be int")
 
         if self.expires_at < self.issued_at:
