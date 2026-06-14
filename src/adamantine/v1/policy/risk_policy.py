@@ -66,7 +66,7 @@ class RiskPolicy:
             if self.min_overall_score != self.policy_pack.min_overall_score:
                 raise ValueError("min_overall_score must match policy_pack.min_overall_score")
 
-        if not isinstance(self.min_overall_score, int):
+        if type(self.min_overall_score) is not int:
             raise ValueError("min_overall_score must be int")
         if not (0 <= self.min_overall_score <= 100):
             raise ValueError("min_overall_score must be in range 0..100")
