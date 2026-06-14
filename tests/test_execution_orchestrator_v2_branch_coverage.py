@@ -290,3 +290,22 @@ def test_orchestrator_v2_calls_qid_verifier_before_parsing(monkeypatch: pytest.M
     assert called["parse"] is True
     assert resp["status"] == "deny"
     assert resp["reason_id"] == ReasonId.EQC_INVALID_QID_PROOF.value
+
+
+def test_orchestrator_v2_denies_control_character_context_end_to_end() -> None:
+    payload = _base_payload()
+    payload["context"]["wallet_id"] = "w1\naction=send"
+
+    resp = orch_mod.orchestrate_execution_v2(
+        payload=payload,
+        now=NOW,
+        executor=_NoopExecutor(),
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(),
+    )
+
+    assert resp["status"] == "error"
+    assert resp["reason_id"] == ReasonId.DENY_SCHEMA_INVALID.value
+    assert resp["decision"]["allowed"] is False
+    assert resp["decision"]["gates"]["eqc"]["allowed"] is False
+    assert "forbidden control character" in resp["artifacts"]["error"]
