@@ -45,13 +45,14 @@ def _policy(*, min_score: int = 85) -> RiskPolicy:
     return RiskPolicy(min_overall_score=min_score, policy_pack=pack)
 
 
-def _qid_payload(*, issued_at: int, expires_at: int) -> dict[str, Any]:
+def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = None) -> dict[str, Any]:
     return {
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": issued_at,
         "expires_at": expires_at,
         "proof_hash": "proofhash123",
+        "context_hash": context_hash,
         "device_binding": "device-1",
         "issuer_version": "qid-v0",
     }
@@ -176,7 +177,7 @@ def _envelope_v2(
         "nonce": {"value": "n1", "store": "tva", "mode": "single_use"},
         "payload": {
             "evidence": {
-                "qid": _qid_payload(issued_at=now - 10, expires_at=now + 10),
+                "qid": _qid_payload(issued_at=now - 10, expires_at=now + 10, context_hash=context_hash),
                 "oracle": _oracle_payload(
                     context_hash=context_hash,
                     issued_at=now - 5,
