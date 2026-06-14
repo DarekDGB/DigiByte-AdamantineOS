@@ -18,7 +18,7 @@ class RiskSignal:
         if not self.source:
             raise ValueError("source must be non-empty")
 
-        if not isinstance(self.severity, int) or not (0 <= self.severity <= 100):
+        if type(self.severity) is not int or not (0 <= self.severity <= 100):
             raise ValueError("severity must be int in range 0..100")
 
         if not isinstance(self.reason_ids, tuple):
@@ -46,16 +46,16 @@ class RiskReport:
     external_source_id: str | None = None
 
     def validate(self, *, now: int) -> None:
-        if not isinstance(now, int):
+        if type(now) is not int:
             raise ValueError("now must be int")
 
         if not self.context_hash:
             raise ValueError("context_hash must be non-empty")
 
-        if not isinstance(self.overall_score, int) or not (0 <= self.overall_score <= 100):
+        if type(self.overall_score) is not int or not (0 <= self.overall_score <= 100):
             raise ValueError("overall_score must be int in range 0..100")
 
-        if not isinstance(self.generated_at, int) or self.generated_at <= 0:
+        if type(self.generated_at) is not int or self.generated_at <= 0:
             raise ValueError("generated_at must be positive int")
 
         if self.generated_at > now:
