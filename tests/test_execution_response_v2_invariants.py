@@ -76,3 +76,15 @@ def test_artifacts_and_metrics_must_be_dict_when_present() -> None:
     kw3["metrics"] = ["nope"]  # type: ignore[assignment]
     with pytest.raises(ValueError):
         build_execution_response_v2(**kw3)  # type: ignore[arg-type]
+
+
+def test_out_of_range_unix_seconds_fall_back_to_epoch() -> None:
+    kw = _base_kwargs()
+    kw["issued_at"] = 10**100
+    kw["expires_at"] = -(10**100)
+
+    resp = build_execution_response_v2(**kw)  # type: ignore[arg-type]
+
+    timebox = resp["decision"]["timebox"]
+    assert timebox["issued_at"] == "1970-01-01T00:00:00Z"
+    assert timebox["expires_at"] == "1970-01-01T00:00:00Z"
