@@ -1,80 +1,77 @@
 {
-  "v": "execution_request_v2",
-  "request_id": "req-1",
-  "intent": "authorize",
-  "context": {
-    "wallet_id": "w1",
-    "device_id": "d1",
-    "app_id": "app",
-    "session_id": "s1",
-    "action": "send",
-    "fields": {
-      "asset": "DGB",
-      "amount": "1"
-    }
-  },
   "authority": {
     "class": "user",
-    "scope": {
-      "policy_pack": "default"
-    },
     "proofs": {
       "wsqk": {
-        "wallet_id": "w1",
         "action": "send",
         "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-        "issued_at": 1706990400,
         "expires_at": 1706990460,
-        "nonce": "n1"
+        "issued_at": 1706990400,
+        "nonce": "n1",
+        "wallet_id": "w1"
       }
+    },
+    "scope": {
+      "policy_pack": "default"
     }
   },
-  "timebox": {
-    "issued_at": "2024-02-03T20:00:00Z",
-    "expires_at": "2024-02-03T20:01:00Z"
+  "context": {
+    "action": "send",
+    "app_id": "app",
+    "device_id": "d1",
+    "fields": {
+      "amount": "1",
+      "asset": "DGB"
+    },
+    "session_id": "s1",
+    "wallet_id": "w1"
   },
+  "intent": "authorize",
   "nonce": {
-    "value": "n1",
+    "mode": "single_use",
     "store": "tva",
-    "mode": "single_use"
+    "value": "n1"
   },
   "payload": {
+    "body": {
+      "ui_confirmed": true
+    },
     "evidence": {
-      "qid": {
-        "qid_iface_version": "qid-session-v0",
-        "subject": "did:example:123",
-        "issued_at": 1706990390,
-        "expires_at": 1706990410,
-        "proof_hash": "proofhash123",
-        "device_binding": "device-1",
-        "issuer_version": "qid-v0"
-      },
       "oracle": {
         "ac_iface_version": "adaptive_core_oracle_v3",
         "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-        "issued_at": 1706990395,
         "expires_at": 1706990405,
+        "external_source_id": "ac-prod-1",
         "generated_at": 1706990399,
+        "issued_at": 1706990395,
+        "oracle_version": "adaptive-core/3.0.0",
         "overall_score": 10,
         "signals": [
           {
-            "source": "ac_model",
-            "severity": 10,
             "reason_ids": [
               "AC_OK"
-            ]
+            ],
+            "severity": 10,
+            "source": "ac_model"
           }
-        ],
-        "oracle_version": "adaptive-core/3.0.0",
-        "external_source_id": "ac-prod-1"
+        ]
+      },
+      "qid": {
+        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "device_binding": "device-1",
+        "expires_at": 1706990410,
+        "issued_at": 1706990390,
+        "issuer_version": "qid-v0",
+        "proof_hash": "proofhash123",
+        "qid_iface_version": "qid-session-v0",
+        "subject": "did:example:123"
       },
       "shield": {
-        "v": "shield_bundle_v3",
-        "shield_bundle_version": "1.0.0",
         "bundle_id": "b1",
         "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-        "issued_at": 1706990400,
         "expires_at": 1706990460,
+        "issued_at": 1706990400,
+        "meta": {},
         "required_layers": [
           "sentinel_ai",
           "adn",
@@ -82,93 +79,97 @@
           "qwg",
           "guardian_wallet"
         ],
+        "shield_bundle_version": "1.0.0",
         "signals": [
           {
-            "v": "shield_signal_v3",
+            "confidence": 90,
+            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "expires_at": 1706990460,
+            "facts": {
+              "k": "v"
+            },
+            "issued_at": 1706990400,
             "layer": "adn",
             "layer_version": "1.0.0",
-            "signal_id": "a-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-            "issued_at": 1706990400,
-            "expires_at": 1706990460,
-            "verdict": "allow",
+            "meta": {},
             "reason_id": "OK",
+            "signal_id": "a-1",
+            "v": "shield_signal_v3",
+            "verdict": "allow"
+          },
+          {
             "confidence": 90,
+            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "expires_at": 1706990460,
             "facts": {
               "k": "v"
             },
-            "meta": {}
-          },
-          {
-            "v": "shield_signal_v3",
+            "issued_at": 1706990400,
             "layer": "dqsn",
             "layer_version": "1.0.0",
-            "signal_id": "d-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-            "issued_at": 1706990400,
-            "expires_at": 1706990460,
-            "verdict": "allow",
+            "meta": {},
             "reason_id": "OK",
+            "signal_id": "d-1",
+            "v": "shield_signal_v3",
+            "verdict": "allow"
+          },
+          {
             "confidence": 90,
+            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "expires_at": 1706990460,
             "facts": {
               "k": "v"
             },
-            "meta": {}
-          },
-          {
-            "v": "shield_signal_v3",
+            "issued_at": 1706990400,
             "layer": "guardian_wallet",
             "layer_version": "1.0.0",
-            "signal_id": "g-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-            "issued_at": 1706990400,
-            "expires_at": 1706990460,
-            "verdict": "allow",
+            "meta": {},
             "reason_id": "OK",
+            "signal_id": "g-1",
+            "v": "shield_signal_v3",
+            "verdict": "allow"
+          },
+          {
             "confidence": 90,
+            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "expires_at": 1706990460,
             "facts": {
               "k": "v"
             },
-            "meta": {}
-          },
-          {
-            "v": "shield_signal_v3",
+            "issued_at": 1706990400,
             "layer": "qwg",
             "layer_version": "1.0.0",
-            "signal_id": "q-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-            "issued_at": 1706990400,
-            "expires_at": 1706990460,
-            "verdict": "allow",
+            "meta": {},
             "reason_id": "OK",
-            "confidence": 90,
-            "facts": {
-              "k": "v"
-            },
-            "meta": {}
+            "signal_id": "q-1",
+            "v": "shield_signal_v3",
+            "verdict": "allow"
           },
           {
-            "v": "shield_signal_v3",
-            "layer": "sentinel_ai",
-            "layer_version": "1.0.0",
-            "signal_id": "s-1",
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
-            "issued_at": 1706990400,
-            "expires_at": 1706990460,
-            "verdict": "allow",
-            "reason_id": "OK",
             "confidence": 90,
+            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "expires_at": 1706990460,
             "facts": {
               "k": "v"
             },
-            "meta": {}
+            "issued_at": 1706990400,
+            "layer": "sentinel_ai",
+            "layer_version": "1.0.0",
+            "meta": {},
+            "reason_id": "OK",
+            "signal_id": "s-1",
+            "v": "shield_signal_v3",
+            "verdict": "allow"
           }
         ],
-        "meta": {}
+        "v": "shield_bundle_v3"
       }
-    },
-    "body": {
-      "ui_confirmed": true
     }
-  }
+  },
+  "request_id": "req-1",
+  "timebox": {
+    "expires_at": "2024-02-03T20:01:00Z",
+    "issued_at": "2024-02-03T20:00:00Z"
+  },
+  "v": "execution_request_v2"
 }
