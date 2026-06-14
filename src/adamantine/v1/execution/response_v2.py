@@ -63,10 +63,10 @@ def build_execution_response_v2(
     """Deterministic builder for execution_response_v2.
 
     Contract invariants:
-    - status Ã¢ÂÂ {"allow","deny","error"}
+    - status ÃÂ¢ÃÂÃÂ {"allow","deny","error"}
     - status=="allow" => decision.allowed==True and reason_id==OK_ALLOW
     - status in {"deny","error"} => decision.allowed==False
-    - protection_mode Ã¢ÂÂ {"legacy","minimal","full"}
+    - protection_mode ÃÂ¢ÃÂÃÂ {"legacy","minimal","full"}
     - response shape is fixed; no unknown keys are inserted
     - no nondeterminism: no environment reads, no random ids, no clocks (caller injects times)
     """
@@ -91,8 +91,8 @@ def build_execution_response_v2(
     allowed = status == "allow"
     gate_reason = ReasonId.OK_ALLOW if allowed else reason_id
 
-    issued_at_s = _iso_z_from_unix_seconds(issued_at) if isinstance(issued_at, int) else _EPOCH_ISO_Z
-    expires_at_s = _iso_z_from_unix_seconds(expires_at) if isinstance(expires_at, int) else _EPOCH_ISO_Z
+    issued_at_s = _iso_z_from_unix_seconds(issued_at) if type(issued_at) is int else _EPOCH_ISO_Z
+    expires_at_s = _iso_z_from_unix_seconds(expires_at) if type(expires_at) is int else _EPOCH_ISO_Z
 
     decision: Dict[str, Any] = {
         "intent": intent,
