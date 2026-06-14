@@ -26,6 +26,14 @@ def _sha256_hex(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
+def _is_sha256_hex(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdef" for ch in value)
+    )
+
+
 def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics | None = None) -> QIDSessionProof:
     """
     External Q-ID session payload -> QIDSessionProof (contract)
@@ -46,6 +54,7 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
       - invalid time window (not yet valid / expired)
       - empty subject / empty proof_hash
       - proof_hash mismatch (v2)
+      - missing/malformed context_hash
     """
     if not isinstance(now, int):
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
@@ -66,12 +75,20 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
         subject = response_payload.get("address")
         issued_at = response_payload.get("issued_at")
         expires_at = response_payload.get("expires_at")
+        context_hash = response_payload.get("context_hash")
 
         if not isinstance(subject, str) or not subject:
             _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "response_payload.address must be non-empty str")
 
         if not isinstance(issued_at, int) or not isinstance(expires_at, int):
             _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "response_payload.issued_at/expires_at must be int")
+
+        if context_hash is not None and not _is_sha256_hex(context_hash):
+            _fail(
+                metrics,
+                ReasonId.EQC_INVALID_QID_PROOF,
+                "response_payload.context_hash must be a 64-character lowercase sha256 hex string",
+            )
 
         if now < issued_at:
             _fail(metrics, ReasonId.EQC_QID_SESSION_NOT_YET_VALID, "session not yet valid")
@@ -91,6 +108,7 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
             issued_at=issued_at,
             expires_at=expires_at,
             proof_hash=proof_hash,
+            context_hash=context_hash,
             device_binding=None,
             issuer_version=None,
         )
@@ -113,12 +131,16 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
     issued_at = payload.get("issued_at")
     expires_at = payload.get("expires_at")
     proof_hash = payload.get("proof_hash")
+    context_hash = payload.get("context_hash")
 
     if not isinstance(subject, str) or not subject:
         _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "subject must be non-empty str")
 
     if not isinstance(proof_hash, str) or not proof_hash:
         _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "proof_hash must be non-empty str")
+
+    if context_hash is not None and not _is_sha256_hex(context_hash):
+        _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "context_hash must be a 64-character lowercase sha256 hex string")
 
     if not isinstance(issued_at, int) or not isinstance(expires_at, int):
         _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "issued_at/expires_at must be int")
@@ -141,6 +163,7 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
         issued_at=issued_at,
         expires_at=expires_at,
         proof_hash=proof_hash,
+        context_hash=context_hash,
         device_binding=device_binding,
         issuer_version=issuer_version,
     )
