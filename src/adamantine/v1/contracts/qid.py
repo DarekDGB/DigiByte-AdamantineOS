@@ -4,6 +4,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 
+def _is_sha256_hex(value: str) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(ch in "0123456789abcdef" for ch in value)
+    )
+
+
 @dataclass(frozen=True)
 class QIDSessionProof:
     """
@@ -17,6 +25,7 @@ class QIDSessionProof:
     issued_at: int
     expires_at: int
     proof_hash: str
+    context_hash: Optional[str] = None
     device_binding: Optional[str] = None
     issuer_version: Optional[str] = None
 
@@ -29,6 +38,9 @@ class QIDSessionProof:
 
         if not self.proof_hash:
             raise ValueError("proof_hash must be non-empty")
+
+        if self.context_hash is not None and not _is_sha256_hex(self.context_hash):
+            raise ValueError("context_hash must be a 64-character lowercase sha256 hex string")
 
         if not isinstance(self.issued_at, int) or not isinstance(self.expires_at, int):
             raise ValueError("issued_at and expires_at must be int")
