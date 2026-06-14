@@ -94,6 +94,11 @@ def evaluate_eqc(
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
+    if session.context_hash != ctx_hash:
+        reasons.append(ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH)
+        _inc_all(metrics, reasons)
+        return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
+
     # Risk report evidence (fail-closed)
     if risk is None:
         reasons.append(ReasonId.EQC_MISSING_RISK_REPORT)
@@ -197,6 +202,11 @@ def evaluate_eqc_v2(
         session.validate(now=now)
     except ValueError:
         reasons.append(ReasonId.EQC_INVALID_QID_PROOF)
+        _inc_all(metrics, reasons)
+        return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
+
+    if session.context_hash != ctx_hash:
+        reasons.append(ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH)
         _inc_all(metrics, reasons)
         return EQCResult.deny(context_hash=ctx_hash, reasons=tuple(reasons))
 
