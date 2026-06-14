@@ -36,7 +36,7 @@ class PolicyPack:
     external_reason_map: ExternalReasonMap = _DEFAULT_REASON_MAP
 
     def validate(self) -> None:
-        if not isinstance(self.min_overall_score, int):
+        if type(self.min_overall_score) is not int:
             raise ValueError("min_overall_score must be int")
         if not (0 <= self.min_overall_score <= 100):
             raise ValueError("min_overall_score must be in range 0..100")
