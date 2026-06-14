@@ -302,3 +302,23 @@ def test_component_verdict_validator_rejects_non_list_boundary_shape() -> None:
     from adamantine.v1.integrations.shield_orchestrator_receipt_verifier import _validate_component_verdicts
 
     assert _validate_component_verdicts({"component_verdicts": None}) is False
+
+
+def test_verifier_classifies_typed_shield_receipt_errors_without_message_substrings() -> None:
+    from adamantine.v1.contracts.shield_orchestrator_receipt import (
+        DirectComponentVerdictError,
+        ShieldReceiptContextMismatchError,
+        ShieldReceiptHashMismatchError,
+    )
+    from adamantine.v1.integrations.shield_orchestrator_receipt_verifier import _classify_base_error
+
+    raw_state, raw_reason = _classify_base_error(DirectComponentVerdictError("typed-only raw bypass"))
+    context_state, context_reason = _classify_base_error(ShieldReceiptContextMismatchError("typed-only context failure"))
+    hash_state, hash_reason = _classify_base_error(ShieldReceiptHashMismatchError("typed-only receipt digest failure"))
+
+    assert raw_state == ShieldReceiptVerificationState.REJECTED_RAW_COMPONENT_BYPASS
+    assert raw_reason == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert context_state == ShieldReceiptVerificationState.REJECTED_CONTEXT_MISMATCH
+    assert context_reason == ReasonId.EQC_SHIELD_CONTEXT_HASH_MISMATCH
+    assert hash_state == ShieldReceiptVerificationState.REJECTED_TAMPERED_RECEIPT
+    assert hash_reason == ReasonId.EQC_INVALID_SHIELD_BUNDLE
