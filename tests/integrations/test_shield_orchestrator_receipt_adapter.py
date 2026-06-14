@@ -147,3 +147,24 @@ def test_adapter_rejects_receipt_with_invalid_hash_field() -> None:
     assert result.state == ShieldReceiptAdapterState.SHIELD_REJECTED_INVALID_RECEIPT
     assert result.context_hash == "bad"
     assert result.accepted_as_evidence is False
+
+
+def test_adapter_classifies_typed_shield_receipt_errors_without_message_substrings() -> None:
+    from adamantine.v1.contracts.shield_orchestrator_receipt import (
+        DirectComponentVerdictError,
+        ShieldReceiptContextMismatchError,
+        ShieldReceiptHashMismatchError,
+    )
+    from adamantine.v1.integrations.shield_orchestrator_receipt_adapter import _classify_validation_error
+
+    assert _classify_validation_error(DirectComponentVerdictError("typed-only raw bypass")) == ShieldReceiptAdapterState.SHIELD_REJECTED_RAW_COMPONENT_BYPASS
+    assert _classify_validation_error(ShieldReceiptContextMismatchError("typed-only context failure")) == ShieldReceiptAdapterState.SHIELD_REJECTED_CONTEXT_MISMATCH
+    assert _classify_validation_error(ShieldReceiptHashMismatchError("typed-only receipt digest failure")) == ShieldReceiptAdapterState.SHIELD_REJECTED_TAMPERED_RECEIPT
+
+
+def test_adapter_preserves_legacy_plain_value_error_message_fallbacks() -> None:
+    from adamantine.v1.integrations.shield_orchestrator_receipt_adapter import _classify_validation_error
+
+    assert _classify_validation_error(ValueError("legacy direct Shield component wording")) == ShieldReceiptAdapterState.SHIELD_REJECTED_RAW_COMPONENT_BYPASS
+    assert _classify_validation_error(ValueError("legacy context mismatch wording")) == ShieldReceiptAdapterState.SHIELD_REJECTED_CONTEXT_MISMATCH
+    assert _classify_validation_error(ValueError("legacy hash mismatch wording")) == ShieldReceiptAdapterState.SHIELD_REJECTED_TAMPERED_RECEIPT
