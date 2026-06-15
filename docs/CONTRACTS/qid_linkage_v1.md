@@ -27,6 +27,8 @@ The linkage MUST bind the Q-ID proof to the following canonical inputs:
 - `proof_hash`
 - `session_nonce`
 
+For policy binding, the Q-ID session proof is also bound to the current Adamantine `context_hash` by the public policy-binding boundary.
+
 Where:
 
 - `wallet_id` is from the execution envelope.
@@ -60,6 +62,16 @@ Where:
 - Domain separation MAY be applied (recommended), but must be stable once introduced.
 
 The binding hash MUST change if any input changes.
+
+### 4A. Context Binding Requirement (T-2 Hardening)
+
+The exported `normalize_qid_policy_binding(...)` boundary MUST receive an `expected_context_hash` from the execution/integration caller. The parsed Q-ID session proof MUST carry the same `context_hash`.
+
+If `expected_context_hash` is omitted, or if `session.context_hash != expected_context_hash`, the boundary MUST fail closed with:
+
+- `EQC_QID_CONTEXT_HASH_MISMATCH`
+
+This rule propagates the N-1 context-binding invariant into the public Q-ID policy-binding surface. Q-ID evidence may be accepted only as evidence for the same transaction context that Adamantine is evaluating. Context-less Q-ID evidence MUST NOT reach `ALLOW_EVIDENCE_CONTINUE_CHECKS` through this boundary.
 
 ---
 
