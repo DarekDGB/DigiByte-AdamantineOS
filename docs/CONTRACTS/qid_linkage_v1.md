@@ -116,9 +116,17 @@ For any execution call carrying Q-ID Adamantine evidence v2 (`v="2"`, `kind="qid
 
 The verifier is responsible for checking the external Q-ID signature/key material. Adamantine remains deterministic and does not hold Q-ID private keys or silently trust self-hashed evidence.
 
-Legacy Shape-A session proof inputs remain linkage evidence only and are not a substitute for Q-ID v2 signature verification. Production integrations SHOULD emit Q-ID v2 evidence and MUST provide a verifier for every Q-ID v2 evidence path.
+The injected verifier MUST be Q-ID's real signed-login verification path, or a wrapper that is cryptographically equivalent to it. A placeholder, no-op, test stub, UI callback, or adapter that returns successfully without checking the Q-ID signature is forbidden in production. The verifier MUST return successfully only after checking the Adamantine evidence envelope, login URI, service/callback binding, response payload, proof hash, context hash, and signature/key material. Any malformed, forged, tampered, or unverifiable evidence MUST raise and therefore fail closed inside Adamantine.
 
-Shape-A `proof_hash` is now enforced as a deterministic integrity hash over the normalized Shape-A contract fields only: `qid_iface_version`, `subject`, `issued_at`, `expires_at`, `context_hash`, `device_binding`, and `issuer_version`. Extra keys are intentionally excluded and cannot create authority. A Shape-A payload with an omitted, decorative, stale, or mismatched `proof_hash` MUST fail closed with `EQC_INVALID_QID_PROOF`.
+The Q-ID repository provides a purpose-built adapter for this contract: `qid.integration.adamantine.build_adamantineos_qid_verifier(...)`. Integrators SHOULD use that real verifier wrapper instead of hand-writing a permissive callable. Integration tests MUST prove that a valid Q-ID evidence object is accepted and that a tampered signature or tampered signed payload is denied through the Adamantine `qid_verifier` path.
+
+### 5C. Shape-A Trusted-Source Restriction (N-B Hardening)
+
+Legacy Shape-A session proof inputs remain linkage evidence only and are not a substitute for Q-ID v2 signature verification. Shape-A may be supplied only by a trusted in-process boundary that has already established authenticity outside this adapter. Shape-A MUST NOT be accepted directly from untrusted external transport, remote wallet glue, UI input, bridge payloads, or network-facing API requests.
+
+Production integrations SHOULD emit Q-ID v2 evidence and MUST provide a verifier for every Q-ID v2 evidence path. If Shape-A ever becomes externally reachable, the integration MUST either migrate that path to Q-ID v2 evidence with the real verifier or add an equivalent authenticity verifier before Shape-A evidence can influence policy.
+
+Shape-A `proof_hash` is now enforced as a deterministic integrity hash over the normalized Shape-A contract fields only: `qid_iface_version`, `subject`, `issued_at`, `expires_at`, `context_hash`, `device_binding`, and `issuer_version`. Extra keys are intentionally excluded and cannot create authority. A Shape-A payload with an omitted, decorative, stale, or mismatched `proof_hash` MUST fail closed with `EQC_INVALID_QID_PROOF`. This hash is integrity-only; it does not prove issuer authenticity.
 
 ---
 
