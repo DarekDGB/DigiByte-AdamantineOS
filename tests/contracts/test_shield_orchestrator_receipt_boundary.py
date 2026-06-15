@@ -192,6 +192,49 @@ def test_adamantine_rejects_deny_and_human_review_handoff():
         validate_shield_orchestrator_receipt(receipt("HUMAN_REVIEW_REQUIRED", True), expected_context_hash=CTX)
 
 
+def test_adamantine_rejects_uppercase_top_level_context_hash_even_with_valid_receipt_hash():
+    item = receipt()
+    item["context_hash"] = CTX.upper()
+    item["receipt_hash"] = ""
+    item["receipt_hash"] = canonical_sha256(item)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="lowercase sha256 hex"):
+        validate_shield_orchestrator_receipt(item, expected_context_hash=CTX)
+
+
+def test_adamantine_rejects_uppercase_expected_context_hash():
+    with pytest.raises(ValueError, match="lowercase sha256 hex"):
+        validate_shield_orchestrator_receipt(receipt(), expected_context_hash=CTX.upper())
+
+
+def test_adamantine_rejects_uppercase_receipt_hash():
+    item = receipt()
+    item["receipt_hash"] = str(item["receipt_hash"]).upper()
+
+    with pytest.raises(ValueError, match="lowercase sha256 hex"):
+        validate_shield_orchestrator_receipt(item, expected_context_hash=CTX)
+
+
+def test_adamantine_rejects_uppercase_component_context_hash_even_with_valid_receipt_hash():
+    item = receipt()
+    item["component_verdicts"][0]["context_hash"] = CTX.upper()  # type: ignore[index]
+    item["receipt_hash"] = ""
+    item["receipt_hash"] = canonical_sha256(item)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="component verdict invalid"):
+        validate_shield_orchestrator_receipt(item, expected_context_hash=CTX)
+
+
+def test_adamantine_rejects_uppercase_component_evidence_hash_even_with_valid_receipt_hash():
+    item = receipt()
+    item["component_verdicts"][0]["evidence_hash"] = ("b" * 64).upper()  # type: ignore[index]
+    item["receipt_hash"] = ""
+    item["receipt_hash"] = canonical_sha256(item)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="component verdict invalid"):
+        validate_shield_orchestrator_receipt(item, expected_context_hash=CTX)
+
+
 def test_adamantine_bad_input_hash_paths_fail_closed():
     with pytest.raises(ValueError):
         canonical_sha256("bad")  # type: ignore[arg-type]
