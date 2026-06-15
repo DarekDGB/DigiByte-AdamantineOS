@@ -79,11 +79,26 @@ If `require_qid_replay_proof = false`, replay proof MAY be absent without forcin
 
 ---
 
+## 5A. Authenticity Verification Requirement (T-1 Hardening)
+
+`proof_hash` is an integrity hash only. It proves that a payload was not changed after hashing; it does **not** prove that Q-ID issued the payload or that the signature is valid.
+
+For any execution call carrying Q-ID Adamantine evidence v2 (`v="2"`, `kind="qid_login_v2"`), the runtime integrator MUST inject a trusted `qid_verifier` before Adamantine parses the evidence as valid session input. If `qid_verifier` is absent on that v2 evidence path, Adamantine MUST fail closed with:
+
+- `QID_AUTHENTICITY_VERIFIER_MISSING`
+
+The verifier is responsible for checking the external Q-ID signature/key material. Adamantine remains deterministic and does not hold Q-ID private keys or silently trust self-hashed evidence.
+
+Legacy shape-A session proof inputs remain linkage evidence only and are not a substitute for Q-ID v2 signature verification. Production integrations SHOULD emit Q-ID v2 evidence and MUST provide a verifier for every Q-ID v2 evidence path. Shape-A proof-hash hardening/deprecation remains tracked separately under T-4.
+
+---
+
 ## 6. Failure Modes (Normative)
 
 Adamantine MUST produce distinct deterministic reason IDs for:
 
-- Invalid signature: `QID_INVALID_SIGNATURE`
+- Verifier missing for Q-ID v2 evidence: `QID_AUTHENTICITY_VERIFIER_MISSING`
+- Invalid signature: verifier-specific failure mapped by the injected `qid_verifier`
 - Malformed proof: `QID_MALFORMED_PROOF`
 - Wallet mismatch: `QID_WALLET_MISMATCH`
 - Subject mismatch: `QID_SUBJECT_MISMATCH`
