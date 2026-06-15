@@ -229,3 +229,11 @@ This model ensures that Adamantine remains deterministic, auditable, and resista
 
 Execution responses include `decision.protection_mode` to make the security posture auditable and deterministic:
 - `legacy` / `minimal` / `full` (see `docs/CONTRACTS/mobile_decision_result_v1.md`).
+
+### 8.3 Legacy Shape-A Q-ID integrity binding
+
+Legacy Shape-A Q-ID session proof inputs (`qid_iface_version`, `subject`, `issued_at`, `expires_at`, `proof_hash`) are still supported as compatibility evidence, but their `proof_hash` is no longer decorative.
+
+For Shape-A, Adamantine recomputes a deterministic SHA-256 hash over the normalized contract fields: `qid_iface_version`, `subject`, `issued_at`, `expires_at`, `context_hash`, `device_binding`, and `issuer_version`. The adapter excludes extra keys from the binding and denies with `EQC_INVALID_QID_PROOF` when the supplied hash does not match.
+
+This remains integrity-only. Shape-A does not replace Q-ID v2 signature verification. Production Q-ID integrations SHOULD use Q-ID Adamantine evidence v2 with an injected `qid_verifier`.
