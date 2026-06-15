@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.qid_shape_a_test_helpers import bind_shape_a_proof_hash
 """Regression lock: Shield evidence can only strengthen deny.
 
 Invariant (v1.3.0):
@@ -46,7 +47,7 @@ def _policy(*, min_score: int = 85) -> RiskPolicy:
 
 
 def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = None) -> dict[str, Any]:
-    return {
+    return bind_shape_a_proof_hash({
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": issued_at,
@@ -55,7 +56,7 @@ def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = 
         "context_hash": context_hash,
         "device_binding": "device-1",
         "issuer_version": "qid-v0",
-    }
+    })
 
 
 def _oracle_payload(*, context_hash: str, issued_at: int, expires_at: int, generated_at: int, score: int) -> dict[str, Any]:
