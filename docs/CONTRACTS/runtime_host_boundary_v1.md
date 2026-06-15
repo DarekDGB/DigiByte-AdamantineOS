@@ -90,7 +90,9 @@ The runtime host **MUST NEVER**:
 - inject runtime-generated artifacts into core `artifacts`
 - rely on wall-clock time or randomness to produce output fields that are asserted in tests
 - store secrets or keys inside Adamantine core objects
-- treat Q-ID `proof_hash` as signature/authenticity proof; Q-ID v2 evidence requires injected verifier wiring
+- treat Q-ID `proof_hash` as signature/authenticity proof; Q-ID v2 evidence requires injected real verifier wiring
+- inject a no-op, placeholder, test stub, UI callback, or permissive adapter as `qid_verifier`
+- accept Shape-A Q-ID evidence from untrusted external transport, UI input, wallet glue, bridge payloads, or network-facing APIs without a separate authenticity boundary
 - treat Q-ID `fresh = true` or `registry_commitment` as trustworthy when they were produced by untrusted runtime glue instead of a stateful replay registry
 
 ---
@@ -103,6 +105,8 @@ A compliant integration **MUST** be provable with tests that lock:
 - ALLOW → executor called exactly once
 - hostile runtime attempts to override decision fields are ignored/fail-closed
 - Q-ID replay freshness is not accepted as a real guarantee unless it is sourced from a trusted replay registry/nonce authority
+- Q-ID v2 evidence uses Q-ID's real verifier wrapper and a forged/tampered signature is denied end-to-end before parsing/trusting the session proof
+- Shape-A Q-ID evidence is accepted only from trusted in-process boundaries, never directly from untrusted transport
 - determinism across repeated runs (recommended 50–100 runs)
 
 See also:
