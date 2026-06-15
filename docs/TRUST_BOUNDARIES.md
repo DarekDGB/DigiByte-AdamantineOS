@@ -19,6 +19,11 @@ Everything outside a contract boundary is **untrusted input**.
 3) Authority → Enforcement (TVA)
 - TVA verifies binding before any execution may happen.
 
+4) Q-ID Replay Registry → Adamantine adapter
+- Q-ID replay fields (`fresh`, `registry_commitment`) are trusted only when supplied by a stateful integrator replay registry or nonce authority.
+- Runtime glue, wallet UI, and adapter shortcuts remain untrusted and MUST NOT self-assert freshness.
+- Missing, stale, ambiguous, or unverifiable replay-registry state must fail closed.
+
 ## Non-goals (current)
 
 No runtime boundaries yet (clients, OS keychain, signing devices). Those come later once contracts are locked.
