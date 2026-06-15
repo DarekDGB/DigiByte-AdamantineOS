@@ -89,9 +89,24 @@ Missing or invalid replay proof MUST deny.
 
 If `require_qid_replay_proof = false`, replay proof MAY be absent without forcing denial.
 
+### 5A. Replay Registry Trust Requirement (T-5 Hardening)
+
+The replay proof fields `fresh` and `registry_commitment` are **not cryptographic proof by themselves**. They are trusted only when they originate from a stateful, integrator-controlled replay registry or nonce authority that Adamantine is configured to treat as part of the protected integration boundary.
+
+Adamantine validates the replay proof shape, linkage, wallet/subject/nonce/device bindings, and `fresh == true` when freshness is required. Adamantine does **not** independently prove that a runtime-supplied boolean came from a real registry. A naive or hostile wallet runtime can set `fresh = true` and invent a `registry_commitment` string. That data MUST NOT be considered replay protection unless the integrator can prove it came from a trusted registry.
+
+Production integrations MUST ensure:
+
+- `fresh` is produced by a stateful registry/nonce service, not by UI, wallet glue, or arbitrary runtime input.
+- `registry_commitment` identifies the registry state/checkpoint used to decide freshness.
+- The replay registry is fail-closed: unavailable, ambiguous, or unverifiable registry state MUST deny.
+- Runtime code MUST NOT self-assert `fresh = true` to satisfy Adamantine policy.
+
+If the integrator cannot provide this trusted replay-registry boundary, then the replay proof is advisory shape data only and MUST NOT be described as a real anti-replay guarantee.
+
 ---
 
-## 5A. Authenticity Verification Requirement (T-1 Hardening)
+## 5B. Authenticity Verification Requirement (T-1 Hardening)
 
 `proof_hash` is an integrity hash only. It proves that a payload was not changed after hashing; it does **not** prove that Q-ID issued the payload or that the signature is valid.
 
