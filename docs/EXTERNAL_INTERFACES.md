@@ -178,7 +178,7 @@ Q-ID `proof_hash` values are self-hashes. They prove payload integrity, not issu
 
 Every execution path carrying Q-ID Adamantine evidence v2 (`v="2"`, `kind="qid_login_v2"`) MUST receive an injected `qid_verifier` from the integrator. If the verifier is absent, Adamantine fails closed with `QID_AUTHENTICITY_VERIFIER_MISSING` before parsing the Q-ID v2 evidence as a trusted session. This rule is independent of WSQK/protected-mode presence.
 
-The verifier owns external Q-ID signature/key validation. Adamantine does not hold Q-ID signing keys and must not silently promote self-hashed evidence into authenticated evidence.
+The verifier owns external Q-ID signature/key validation. Adamantine does not hold Q-ID signing keys and must not silently promote self-hashed evidence into authenticated evidence. The verifier MUST be Q-ID's real verification path, or a cryptographically equivalent wrapper such as `qid.integration.adamantine.build_adamantineos_qid_verifier(...)` from the Q-ID repository. A no-op callable, placeholder test hook, or UI/runtime shortcut that returns without validating the Q-ID signature is forbidden in production. Integrator tests MUST prove forged or tampered signatures are denied through this callable.
 
 ### 8.2 Q-ID replay registry trust requirement
 
@@ -244,4 +244,4 @@ Legacy Shape-A Q-ID session proof inputs (`qid_iface_version`, `subject`, `issue
 
 For Shape-A, Adamantine recomputes a deterministic SHA-256 hash over the normalized contract fields: `qid_iface_version`, `subject`, `issued_at`, `expires_at`, `context_hash`, `device_binding`, and `issuer_version`. The adapter excludes extra keys from the binding and denies with `EQC_INVALID_QID_PROOF` when the supplied hash does not match.
 
-This remains integrity-only. Shape-A does not replace Q-ID v2 signature verification. Production Q-ID integrations SHOULD use Q-ID Adamantine evidence v2 with an injected `qid_verifier`.
+This remains integrity-only. Shape-A does not replace Q-ID v2 signature verification. Shape-A MUST NOT be accepted from untrusted external transport, network-facing APIs, UI input, wallet glue, or bridge payloads unless an equivalent authenticity boundary has already verified the issuer. Production Q-ID integrations SHOULD use Q-ID Adamantine evidence v2 with an injected real `qid_verifier`.
