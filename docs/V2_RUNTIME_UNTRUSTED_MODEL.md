@@ -99,3 +99,9 @@ A v2.0.0-compliant build must have negative-first tests proving:
 - determinism across repeated runs (50–100 repeats recommended)
 
 ---
+
+## Q-ID Verifier and Shape-A Transport Boundaries
+
+The runtime host MUST inject Q-ID's real signature/authenticity verifier for every Q-ID Adamantine evidence v2 path. A callable that simply returns, logs, delegates to UI state, or checks only `proof_hash` is not a verifier. It is a fail-open integration bug. Integrators SHOULD use the Q-ID repository adapter `qid.integration.adamantine.build_adamantineos_qid_verifier(...)` and prove that forged or tampered signatures are denied through the Adamantine `qid_verifier` path.
+
+Legacy Shape-A Q-ID evidence is an integrity-bound local session shape only. It MUST NOT be accepted from untrusted runtime glue, UI input, bridge payloads, external APIs, or network transport. If a future integration needs externally supplied Q-ID evidence, it must use Q-ID evidence v2 with the real verifier or an equivalent authenticity boundary before the data can affect Adamantine policy.
