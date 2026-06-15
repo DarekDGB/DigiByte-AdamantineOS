@@ -6,10 +6,12 @@ from typing import Any, Iterable, Mapping
 
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield_orchestrator_receipt import (
-    ALLOWED_FINAL_OUTCOMES,
+    ShieldReceiptAuthorityBypassError,
+    ShieldReceiptComponentVerdictError,
     DirectComponentVerdictError,
     ShieldReceiptContextMismatchError,
     ShieldReceiptHashMismatchError,
+    ShieldReceiptOutcomeMismatchError,
     reject_direct_component_verdict,
     validate_shield_orchestrator_receipt,
 )
@@ -48,112 +50,6 @@ class ShieldReceiptVerificationResult:
     receipt: Mapping[str, Any] | None = None
 
 
-_LEGACY_COMPONENT_KEYS = frozenset({"component_id", "verdict", "reason_ids"})
-_V3_2_COMPONENT_KEYS = frozenset({
-    "component_id",
-    "contract_version",
-    "schema_version",
-    "request_id",
-    "context_hash",
-    "decision",
-    "reason_ids",
-    "evidence_hash",
-    "evidence_families",
-    "metadata",
-    "fail_closed",
-})
-_V3_2_COMPONENT_DECISIONS = frozenset({"ALLOW", "ESCALATE", "DENY", "ERROR", "SKIPPED"})
-_REQUIRED_SHIELD_V3_2_COMPONENT_IDS = frozenset({
-    "adn",
-    "dqsn",
-    "guardian_wallet",
-    "qwg",
-    "sentinel_ai",
-})
-_COMPONENT_REASON_IDS = {
-    "guardian_wallet": frozenset({
-        "GW_OK_HEALTHY_ALLOW",
-        "GW_ESCALATE_QID_REQUIRED",
-        "GW_DENY_POLICY_BLOCKED",
-        "GW_ERROR_INVALID_VERDICT",
-        "GW_ERROR_CONTEXT_HASH_MISMATCH",
-    }),
-    "adn": frozenset({
-        "ADN_OK_COORDINATION_ALLOW",
-        "ADN_ESCALATE_POLICY_REVIEW",
-        "ADN_DENY_DEFENSE_TRIGGERED",
-        "ADN_ERROR_INVALID_VERDICT",
-        "ADN_ERROR_CONTEXT_HASH_MISMATCH",
-    }),
-    "sentinel_ai": frozenset({
-        "SNTL_OK_TELEMETRY_ALLOW",
-        "SNTL_ESCALATE_THREAT_REVIEW",
-        "SNTL_DENY_THREAT_DETECTED",
-        "SNTL_ERROR_AI_OUTPUT_UNTRUSTED",
-        "SNTL_ERROR_CONTEXT_HASH_MISMATCH",
-    }),
-    "dqsn": frozenset({
-        "DQSN_OK_NETWORK_ALLOW",
-        "DQSN_ESCALATE_QUANTUM_SIGNAL",
-        "DQSN_DENY_NETWORK_RISK",
-        "DQSN_ERROR_INVALID_VERDICT",
-        "DQSN_ERROR_CONTEXT_HASH_MISMATCH",
-    }),
-    "qwg": frozenset({
-        "QWG_OK_POSTURE_ALLOW",
-        "QWG_ESCALATE_QUANTUM_POSTURE",
-        "QWG_DENY_KEY_RISK",
-        "QWG_ERROR_INVALID_VERDICT",
-        "QWG_ERROR_CONTEXT_HASH_MISMATCH",
-    }),
-}
-_COMPONENT_EVIDENCE_FAMILIES = {
-    "guardian_wallet": frozenset({
-        "wallet_context",
-        "transaction_context",
-        "qid_auth_context",
-        "sentinel_signal",
-        "device_signal",
-    }),
-    "adn": frozenset({"defense_signal", "policy_context", "coordination_state"}),
-    "sentinel_ai": frozenset({
-        "telemetry",
-        "monitor_signal",
-        "threat_observation",
-        "adaptive_core_bridge_event",
-    }),
-    "dqsn": frozenset({
-        "network_observation",
-        "quantum_signal",
-        "node_state",
-        "aggregate_signal",
-    }),
-    "qwg": frozenset({
-        "wallet_posture",
-        "quantum_risk_context",
-        "key_age_context",
-        "dormancy_context",
-    }),
-}
-_FORBIDDEN_AUTHORITY_KEYS = frozenset(
-    {
-        "allow",
-        "approved",
-        "authority",
-        "auto_approve",
-        "broadcast",
-        "bypass",
-        "can_sign",
-        "decision",
-        "execute",
-        "final_approval",
-        "force_allow",
-        "human_approved",
-        "override",
-        "sign",
-        "trusted",
-    }
-)
 
 
 def _string_or_none(payload: Any, key: str) -> str | None:
@@ -192,6 +88,12 @@ def _classify_base_error(exc: ValueError) -> tuple[ShieldReceiptVerificationStat
         return ShieldReceiptVerificationState.REJECTED_CONTEXT_MISMATCH, ReasonId.EQC_SHIELD_CONTEXT_HASH_MISMATCH
     if isinstance(exc, ShieldReceiptHashMismatchError):
         return ShieldReceiptVerificationState.REJECTED_TAMPERED_RECEIPT, ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    if isinstance(exc, ShieldReceiptAuthorityBypassError):
+        return ShieldReceiptVerificationState.REJECTED_AUTHORITY_BYPASS, ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    if isinstance(exc, ShieldReceiptOutcomeMismatchError):
+        return ShieldReceiptVerificationState.REJECTED_AUTHORITY_BYPASS, ReasonId.EQC_CONFLICTING_EVIDENCE
+    if isinstance(exc, ShieldReceiptComponentVerdictError):
+        return ShieldReceiptVerificationState.REJECTED_INVALID_RECEIPT, ReasonId.EQC_INVALID_SHIELD_BUNDLE
 
     # Legacy fallback for older callers that may still raise plain ValueError.
     # Typed contract exceptions above are the authoritative classification path.
@@ -204,132 +106,6 @@ def _classify_base_error(exc: ValueError) -> tuple[ShieldReceiptVerificationStat
         return ShieldReceiptVerificationState.REJECTED_TAMPERED_RECEIPT, ReasonId.EQC_INVALID_SHIELD_BUNDLE
     return ShieldReceiptVerificationState.REJECTED_INVALID_RECEIPT, ReasonId.EQC_INVALID_SHIELD_BUNDLE
 
-
-def _contains_authority_bypass(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return bool(set(value.keys()) & _FORBIDDEN_AUTHORITY_KEYS) or any(_contains_authority_bypass(item) for item in value.values())
-    if isinstance(value, list):
-        return any(_contains_authority_bypass(item) for item in value)
-    return False
-
-
-def _component_contains_unknown_authority_field(component: Any) -> bool:
-    if not isinstance(component, Mapping):
-        return False
-    keys = set(component.keys())
-    allowed_contract_keys = _LEGACY_COMPONENT_KEYS | _V3_2_COMPONENT_KEYS
-    unknown_keys = keys - allowed_contract_keys
-    if unknown_keys & _FORBIDDEN_AUTHORITY_KEYS:
-        return True
-    metadata = component.get("metadata")
-    return _contains_authority_bypass(metadata)
-
-
-def _is_hash(value: Any) -> bool:
-    if not isinstance(value, str) or len(value) != 64:
-        return False
-    try:
-        int(value, 16)
-    except ValueError:
-        return False
-    return value == value.lower()
-
-
-def _has_non_empty_string_list(value: Any, *, unique: bool = False) -> bool:
-    if not isinstance(value, list) or not value:
-        return False
-    if any(not isinstance(item, str) or not item.strip() for item in value):
-        return False
-    return not unique or len(set(value)) == len(value)
-
-
-def _validate_legacy_component_verdict(component: Mapping[str, Any]) -> bool:
-    if set(component.keys()) != _LEGACY_COMPONENT_KEYS:
-        return False
-    if not isinstance(component["component_id"], str) or not component["component_id"].strip():
-        return False
-    if component["verdict"] not in ALLOWED_FINAL_OUTCOMES:
-        return False
-    return _has_non_empty_string_list(component["reason_ids"])
-
-
-def _validate_v3_2_component_verdict(component: Mapping[str, Any], *, receipt: Mapping[str, Any]) -> bool:
-    if set(component.keys()) != _V3_2_COMPONENT_KEYS:
-        return False
-    if not isinstance(component["component_id"], str) or not component["component_id"].strip():
-        return False
-    component_id = str(component["component_id"])
-    if component_id not in _REQUIRED_SHIELD_V3_2_COMPONENT_IDS:
-        return False
-    if component["contract_version"] != 3:
-        return False
-    if component["schema_version"] != "shield.verdict.v1":
-        return False
-    if component["request_id"] != receipt.get("request_id"):
-        return False
-    if component["context_hash"] != receipt.get("context_hash") or not _is_hash(component["context_hash"]):
-        return False
-    if component["decision"] not in _V3_2_COMPONENT_DECISIONS:
-        return False
-    if component["decision"] == "SKIPPED":
-        return False
-    if not _has_non_empty_string_list(component["reason_ids"]):
-        return False
-    if not set(component["reason_ids"]).issubset(_COMPONENT_REASON_IDS[component_id]):
-        return False
-    if not _is_hash(component["evidence_hash"]):
-        return False
-    if not _has_non_empty_string_list(component["evidence_families"], unique=True):
-        return False
-    if not set(component["evidence_families"]).issubset(_COMPONENT_EVIDENCE_FAMILIES[component_id]):
-        return False
-    if not isinstance(component["metadata"], Mapping):
-        return False
-    if component["fail_closed"] is not True:
-        return False
-    return True
-
-
-def _validate_component_verdicts(receipt: Mapping[str, Any]) -> bool:
-    components = receipt.get("component_verdicts")
-    if not isinstance(components, list) or not components:
-        return False
-    v3_2_component_ids: list[str] = []
-    legacy_component_seen = False
-    for component in components:
-        if not isinstance(component, Mapping):
-            return False
-        if _validate_legacy_component_verdict(component):
-            legacy_component_seen = True
-            continue
-        if _validate_v3_2_component_verdict(component, receipt=receipt):
-            v3_2_component_ids.append(str(component["component_id"]))
-            continue
-        return False
-    if v3_2_component_ids:
-        if legacy_component_seen:
-            return False
-        if len(set(v3_2_component_ids)) != len(v3_2_component_ids):
-            return False
-        if set(v3_2_component_ids) != _REQUIRED_SHIELD_V3_2_COMPONENT_IDS:
-            return False
-    return True
-
-
-def _component_decision(component: Mapping[str, Any]) -> str:
-    if "decision" in component:
-        return str(component["decision"])
-    return str(component["verdict"])
-
-
-def _deny_dominates(receipt: Mapping[str, Any]) -> bool:
-    components = receipt["component_verdicts"]
-    decisions = [_component_decision(component) for component in components]
-    if any(decision in {"DENY", "ERROR"} for decision in decisions):
-        return receipt["final_outcome"] == "DENY"
-    if "ESCALATE" in decisions:
-        return receipt["final_outcome"] == "HUMAN_REVIEW_REQUIRED"
-    return True
 
 
 def verify_shield_orchestrator_receipt(
@@ -352,7 +128,12 @@ def verify_shield_orchestrator_receipt(
         valid = validate_shield_orchestrator_receipt(receipt, expected_context_hash=expected_context_hash)
     except ValueError as exc:
         state, reason_id = _classify_base_error(exc)
-        return _rejected(state=state, reason_id=reason_id, payload=receipt)
+        dominant_reason = None
+        if isinstance(exc, ShieldReceiptOutcomeMismatchError):
+            dominant_reason = "DENY_MUST_DOMINATE"
+        elif isinstance(exc, ShieldReceiptComponentVerdictError):
+            dominant_reason = "COMPONENT_VERDICTS_INVALID"
+        return _rejected(state=state, reason_id=reason_id, payload=receipt, dominant_reason=dominant_reason)
 
     if not isinstance(expected_request_id, str) or not expected_request_id.strip():
         return _rejected(
@@ -377,28 +158,6 @@ def verify_shield_orchestrator_receipt(
             payload=valid,
         )
 
-    if any(_component_contains_unknown_authority_field(component) for component in valid["component_verdicts"]):
-        return _rejected(
-            state=ShieldReceiptVerificationState.REJECTED_AUTHORITY_BYPASS,
-            reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
-            payload=valid,
-        )
-
-    if not _validate_component_verdicts(valid):
-        return _rejected(
-            state=ShieldReceiptVerificationState.REJECTED_INVALID_RECEIPT,
-            reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
-            payload=valid,
-            dominant_reason="COMPONENT_VERDICTS_INVALID",
-        )
-
-    if not _deny_dominates(valid):
-        return _rejected(
-            state=ShieldReceiptVerificationState.REJECTED_AUTHORITY_BYPASS,
-            reason_id=ReasonId.EQC_CONFLICTING_EVIDENCE,
-            payload=valid,
-            dominant_reason="DENY_MUST_DOMINATE",
-        )
 
     final_outcome = str(valid["final_outcome"])
     handoff_allowed = bool(valid["adamantineos_handoff"]["handoff_allowed"])
