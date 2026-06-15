@@ -439,6 +439,10 @@ def _protected_call_requested(authority_proofs: Mapping[str, Any] | None) -> boo
     return "wsqk" in authority_proofs
 
 
+def _is_qid_v2_login_evidence(evidence_qid: Mapping[str, Any]) -> bool:
+    return evidence_qid.get("v") == "2" and evidence_qid.get("kind") == "qid_login_v2"
+
+
 def _compute_protection_mode(
     *,
     protected_requested: bool,
@@ -605,7 +609,16 @@ def orchestrate_execution_v2(
 
         # Q-ID must validate first. If Q-ID rejects, the final policy engine
         # now receives that real rejected source instead of being bypassed.
+        # T-1 hardening: Q-ID v2 proof_hash proves integrity only, not issuer
+        # authenticity. Any Q-ID v2 login evidence MUST provide an external
+        # verifier before Adamantine parses or trusts it. This is independent of
+        # WSQK/protected-mode presence; missing verifier is fail-closed.
         try:
+            if _is_qid_v2_login_evidence(req.evidence_qid) and qid_verifier is None:
+                raise AdapterError(
+                    ReasonId.QID_AUTHENTICITY_VERIFIER_MISSING,
+                    "qid_verifier is required for Q-ID v2 evidence",
+                )
             if qid_verifier is not None:
                 try:
                     qid_verifier(req.evidence_qid)
