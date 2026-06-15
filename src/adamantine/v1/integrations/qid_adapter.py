@@ -236,8 +236,14 @@ def parse_qid_replay_proof(
     """
     v1.4.0 Q-ID linkage hardening (clock-free replay gate).
 
-    We require untrusted runtime to supply a replay proof object and we validate it
+    We require the integration to supply a replay proof object and we validate it
     deterministically. Adamantine remains pure/stateless.
+
+    Security boundary: ``fresh`` and ``registry_commitment`` are meaningful only
+    when they originate from a trusted, stateful integrator replay registry. This
+    parser can reject malformed, mismatched, or non-fresh claims, but it cannot
+    independently prove that a runtime-supplied ``fresh=True`` came from a real
+    registry. Runtime glue MUST NOT self-assert freshness.
 
     Missing proof:
       - deny with QID_REPLAY_PROOF_MISSING (call-site decides when mandatory)
