@@ -24,6 +24,7 @@ This document exists to prevent drift: even as “runtime features” evolve, th
 - Runtime host glue code
 - Executor implementation (sign/broadcast/etc)
 - Integrator-provided Q-ID verifier wiring until explicitly injected and enforced
+- Integrator-provided Q-ID replay registry wiring until explicitly injected and enforced
 - Network calls
 - OS / device / secure enclave APIs
 - Logging, telemetry, analytics
@@ -77,6 +78,9 @@ The runtime host must treat replay protection as a **security gate**, not a UX f
 - nonce consumption is tied to **successful allow-path execution**
 - hostile or buggy runtime must not consume nonces early
 - host must not “invent” nonce receipts
+- host must not self-assert Q-ID `fresh = true` or invent `registry_commitment` values
+- Q-ID replay freshness is meaningful only when produced by a trusted, stateful integrator registry
+- unavailable or unverifiable replay-registry state must fail closed, not downgrade to runtime-provided freshness
 
 ---
 
@@ -91,6 +95,7 @@ A v2.0.0-compliant build must have negative-first tests proving:
   - authority path (WSQK/Q-ID/Shield/Oracle evidence)
 - hostile runtime artifacts are ignored or fail-closed
 - any Q-ID v2 evidence without an injected verifier fails closed with `QID_AUTHENTICITY_VERIFIER_MISSING`
+- any claimed Q-ID replay freshness is sourced from a trusted registry boundary, not runtime self-assertion
 - determinism across repeated runs (50–100 repeats recommended)
 
 ---
