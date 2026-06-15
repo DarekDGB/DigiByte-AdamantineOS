@@ -26,6 +26,7 @@ class QIDPolicyBindingState(str, Enum):
     DENY_POSTURE_MISSING = "DENY_POSTURE_MISSING"
     DENY_POSTURE_INVALID = "DENY_POSTURE_INVALID"
     DENY_POSTURE_MISMATCH = "DENY_POSTURE_MISMATCH"
+    DENY_CONTEXT_HASH_MISMATCH = "DENY_CONTEXT_HASH_MISMATCH"
     DENY_HIDDEN_AUTHORITY_FIELD = "DENY_HIDDEN_AUTHORITY_FIELD"
 
 
@@ -155,6 +156,7 @@ def normalize_qid_policy_binding(
     expected_subject: str,
     expected_session_nonce: str,
     expected_quantum_posture: str,
+    expected_context_hash: str | None = None,
     expected_device_binding: str | None = None,
     require_fresh: bool = True,
 ) -> QIDPolicyBindingResult:
@@ -163,8 +165,14 @@ def normalize_qid_policy_binding(
     The boundary consumes existing Q-ID adapter outputs through the adapter
     functions instead of duplicating cryptographic or replay parsing logic. Valid
     Q-ID evidence becomes ALLOW_EVIDENCE_CONTINUE_CHECKS only. Any adapter
-    failure, binding mismatch, stale replay flag, unsupported shape, hidden
-    authority field, or WSQK/Q-ID posture mismatch becomes a structured DENY.
+    failure, binding mismatch, context_hash mismatch, stale replay flag, unsupported
+    shape, hidden authority field, or WSQK/Q-ID posture mismatch becomes a
+    structured DENY.
+
+    Production invariant: expected_context_hash MUST be supplied by execution and
+    integration paths. Omitting it is treated as a context mismatch and fails
+    closed; Q-ID evidence without a session-bound context_hash can never reach
+    ALLOW_EVIDENCE_CONTINUE_CHECKS through this boundary.
 
     Production invariant: require_fresh MUST remain True in execution paths.
     The parameter exists only for explicit tests that need to exercise stale
@@ -227,6 +235,19 @@ def normalize_qid_policy_binding(
         return _deny(
             state=QIDPolicyBindingState.DENY_SUBJECT_MISMATCH,
             reason_id=ReasonId.QID_REPLAY_SUBJECT_MISMATCH,
+            subject=session_proof.subject,
+            proof_hash=session_proof.proof_hash,
+            device_binding=session_proof.device_binding,
+            quantum_posture=expected_quantum_posture,
+            qid_posture_classical=posture.classical,
+            qid_posture_pqc=posture.pqc,
+            session_proof=session_proof,
+        )
+
+    if expected_context_hash is None or session_proof.context_hash != expected_context_hash:
+        return _deny(
+            state=QIDPolicyBindingState.DENY_CONTEXT_HASH_MISMATCH,
+            reason_id=ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH,
             subject=session_proof.subject,
             proof_hash=session_proof.proof_hash,
             device_binding=session_proof.device_binding,
