@@ -38,7 +38,7 @@ Architecture and system design documents.
 
 Documents describing governance interactions.
 
--   Adaptive Core Ã¢ÂÂ Adamantine Governance Flow
+-   Adaptive Core ÃÂ¢ÃÂÃÂ Adamantine Governance Flow
 -   Governance Review Contract
 
 ------------------------------------------------------------------------
@@ -60,7 +60,7 @@ Artifact schemas and interface definitions.
 AdamantineOS follows strict architectural guardrails:
 
 -   deterministic behavior
--   failÃ¢ÂÂclosed validation
+-   failÃÂ¢ÃÂÃÂclosed validation
 -   canonical serialization
 -   explicit invariants
 -   no silent fallback
@@ -93,6 +93,7 @@ Final release-gate and proof documents for the AdamantineOS v3.0.0 tag boundary.
 -   [Milestone 19 Final Release Gate](ADAMANTINEOS_MILESTONE_19_FINAL_RELEASE_GATE.md)
 -   [Milestone 19 Tag Decision](ADAMANTINEOS_MILESTONE_19_TAG_DECISION.md)
 -   [Shield Runtime Boundary Lock](ADAMANTINEOS_SHIELD_RUNTIME_BOUNDARY_LOCK.md)
+-   [Reproducible Audit Guide](ADAMANTINEOS_REPRODUCIBLE_AUDIT_GUIDE.md)
 -   [Final Proof Pack Index](ADAMANTINEOS_FINAL_PROOF_PACK_INDEX.md)
 -   [v3.0.0 Release Notes](ADAMANTINEOS_V3_0_0_RELEASE_NOTES.md)
 
