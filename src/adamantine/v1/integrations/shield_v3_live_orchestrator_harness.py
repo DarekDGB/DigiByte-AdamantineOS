@@ -172,16 +172,6 @@ def _verify_source_receipt_hash(receipt: Mapping[str, Any]) -> str:
     return source_hash
 
 
-def _decision_to_internal_verdict(decision: str) -> str:
-    if decision == "ALLOW":
-        return "ALLOW"
-    if decision in {"DENY", "ERROR"}:
-        return "DENY"
-    if decision == "ESCALATE":
-        return "HUMAN_REVIEW_REQUIRED"
-    raise ValueError("unsupported live component decision for AdamantineOS handoff")
-
-
 def _normalize_live_component(component: Any, *, expected_context_hash: str, expected_request_id: str) -> dict[str, Any]:
     if not isinstance(component, Mapping):
         raise ValueError("live component verdict must be object")
@@ -203,6 +193,8 @@ def _normalize_live_component(component: Any, *, expected_context_hash: str, exp
     decision = component["decision"]
     if decision not in _SUPPORTED_LIVE_DECISIONS:
         raise ValueError("live component decision unsupported")
+    if decision == "SKIPPED":
+        raise ValueError("unsupported live component decision for AdamantineOS handoff")
     if not isinstance(component["reason_ids"], list) or not component["reason_ids"]:
         raise ValueError("live component reason_ids invalid")
     if any(not isinstance(reason_id, str) or not reason_id.strip() for reason_id in component["reason_ids"]):
@@ -215,8 +207,16 @@ def _normalize_live_component(component: Any, *, expected_context_hash: str, exp
 
     return {
         "component_id": str(component_id),
-        "verdict": _decision_to_internal_verdict(str(decision)),
+        "contract_version": int(component["contract_version"]),
+        "schema_version": str(component["schema_version"]),
+        "request_id": str(component["request_id"]),
+        "context_hash": str(component["context_hash"]),
+        "decision": str(decision),
         "reason_ids": [str(reason_id) for reason_id in component["reason_ids"]],
+        "evidence_hash": str(component["evidence_hash"]),
+        "evidence_families": [str(evidence_family) for evidence_family in component["evidence_families"]],
+        "metadata": dict(component["metadata"]),
+        "fail_closed": True,
     }
 
 
