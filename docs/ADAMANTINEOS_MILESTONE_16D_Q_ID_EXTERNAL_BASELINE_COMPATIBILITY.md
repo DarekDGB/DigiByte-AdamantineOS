@@ -114,6 +114,8 @@ Q-ID evidence success returns ALLOW_EVIDENCE_CONTINUE_CHECKS, not final approval
 Q-ID evidence alone cannot become final authority.
 Hidden authority fields fail closed.
 Proof hash mismatch fails closed.
+Session context_hash must match the expected Adamantine context_hash.
+Context-less Q-ID v2 evidence fails closed.
 Subject mismatch fails closed before replay proof acceptance.
 External import-failure-shaped payload cannot become allow.
 ```
@@ -126,8 +128,9 @@ External import-failure-shaped payload cannot become allow.
 tests/fixtures/q_id_external_baseline/qid_adamantine_evidence_v2_policy_binding.json
 tests/integrations/test_milestone_16d_q_id_external_baseline_compatibility.py
 docs/ADAMANTINEOS_MILESTONE_16D_Q_ID_EXTERNAL_BASELINE_COMPATIBILITY.md
-docs/ADAMANTINEOS_FULL_INTEGRATION_BUILD_LEDGER.md
 ```
+
+The public Q-ID policy-binding boundary now requires expected_context_hash binding.
 
 No production Q-ID adapter file was added.
 
@@ -146,7 +149,7 @@ PYTHONPATH=src pytest -q
 Expected result after Milestone 16D:
 
 ```text
-848 passed
+985 passed
 Required test coverage of 100% reached
 Total coverage: 100.00%
 ```
