@@ -27,6 +27,20 @@ class ResilienceMode(str, Enum):
     STRICT_FAIL_CLOSED = "STRICT_FAIL_CLOSED"
 
 
+class ShieldRuntimeBoundary(str, Enum):
+    """
+    Explicit Shield evidence boundary selected for orchestrator_v2.
+
+    LEGACY_BUNDLE_V3_TEST_ONLY preserves the pre-hardening local bundle path
+    for old fixtures and compatibility tests only. Production hardening selects
+    ORCHESTRATOR_RECEIPT_V3_2 so Shield reaches AdamantineOS through the single
+    external Orchestrator receipt boundary.
+    """
+
+    LEGACY_BUNDLE_V3_TEST_ONLY = "LEGACY_BUNDLE_V3_TEST_ONLY"
+    ORCHESTRATOR_RECEIPT_V3_2 = "ORCHESTRATOR_RECEIPT_V3_2"
+
+
 @dataclass(frozen=True)
 class RiskPolicy:
     """
@@ -54,6 +68,13 @@ class RiskPolicy:
     # v1.4.0 Q-ID linkage latch
     # If enabled, protected executions MUST supply a valid Q-ID replay proof.
     require_qid_replay_proof: bool = False
+
+    # Post-v3.0.0 AOS-M-002A Shield runtime boundary lock.
+    # LEGACY_BUNDLE_V3_TEST_ONLY remains only for existing local compatibility
+    # tests until AOS-M-002B wires the full receipt path. Production hardening
+    # selects ORCHESTRATOR_RECEIPT_V3_2 and fails closed on bundle-shaped Shield
+    # evidence.
+    shield_runtime_boundary: ShieldRuntimeBoundary = ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY
 
     def validate(self) -> None:
         if self.policy_pack is not None:
@@ -85,6 +106,9 @@ class RiskPolicy:
 
         if not isinstance(self.require_qid_replay_proof, bool):
             raise ValueError("require_qid_replay_proof must be bool")
+
+        if not isinstance(self.shield_runtime_boundary, ShieldRuntimeBoundary):
+            raise ValueError("shield_runtime_boundary must be ShieldRuntimeBoundary")
 
     def effective_allowed_external_reason_ids(self) -> tuple[str, ...]:
         """
