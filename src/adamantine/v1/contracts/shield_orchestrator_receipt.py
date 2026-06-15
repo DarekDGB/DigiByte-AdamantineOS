@@ -150,11 +150,13 @@ def canonical_sha256(payload: dict[str, Any]) -> str:
 def _require_hash(value: Any, *, field: str) -> str:
     if not isinstance(value, str) or len(value) != 64:
         raise ValueError(f"{field} must be 64-character sha256 hex")
+    if value != value.lower():
+        raise ValueError(f"{field} must be lowercase sha256 hex")
     try:
         int(value, 16)
     except ValueError as exc:
         raise ValueError(f"{field} must be sha256 hex") from exc
-    return value.lower()
+    return value
 
 
 def _require_non_empty_str(value: Any, *, field: str) -> str:
