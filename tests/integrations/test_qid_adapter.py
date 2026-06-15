@@ -3,6 +3,8 @@ import json
 
 import pytest
 
+from tests.qid_shape_a_test_helpers import bind_shape_a_proof_hash
+
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_session
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -10,7 +12,7 @@ from adamantine.v1.contracts.reason_ids import ReasonId
 
 def test_parse_qid_session_accepts_valid_payload() -> None:
     now = 150
-    payload = {
+    payload = bind_shape_a_proof_hash({
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": 100,
@@ -19,10 +21,31 @@ def test_parse_qid_session_accepts_valid_payload() -> None:
         "device_binding": "device-1",
         "issuer_version": "qid-v0",
         "extra": "ignored",
-    }
+    })
     proof = parse_qid_session(payload=payload, now=now)
     assert proof.subject == "did:example:123"
 
+
+
+
+def test_parse_qid_session_shape_a_denies_proof_hash_mismatch() -> None:
+    now = 150
+    payload = bind_shape_a_proof_hash({
+        "qid_iface_version": "qid-session-v0",
+        "subject": "did:example:123",
+        "issued_at": 100,
+        "expires_at": 200,
+        "proof_hash": "placeholder",
+        "context_hash": "c" * 64,
+        "device_binding": "device-1",
+        "issuer_version": "qid-v0",
+    })
+    payload["proof_hash"] = "0" * 64
+
+    with pytest.raises(AdapterError) as e:
+        parse_qid_session(payload=payload, now=now)
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_QID_PROOF
 
 def test_parse_qid_session_denies_missing_version() -> None:
     now = 150
@@ -39,13 +62,13 @@ def test_parse_qid_session_denies_missing_version() -> None:
 
 def test_parse_qid_session_denies_expired() -> None:
     now = 250
-    payload = {
+    payload = bind_shape_a_proof_hash({
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": 100,
         "expires_at": 200,
         "proof_hash": "abc123",
-    }
+    })
     with pytest.raises(AdapterError) as e:
         parse_qid_session(payload=payload, now=now)
     assert e.value.reason_id is ReasonId.EQC_QID_SESSION_EXPIRED
