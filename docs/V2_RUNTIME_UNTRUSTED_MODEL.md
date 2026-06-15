@@ -23,6 +23,7 @@ This document exists to prevent drift: even as “runtime features” evolve, th
 - Wallet UI
 - Runtime host glue code
 - Executor implementation (sign/broadcast/etc)
+- Integrator-provided Q-ID verifier wiring until explicitly injected and enforced
 - Network calls
 - OS / device / secure enclave APIs
 - Logging, telemetry, analytics
@@ -89,6 +90,7 @@ A v2.0.0-compliant build must have negative-first tests proving:
   - decision fields (verdict/reason_id/context_hash/protection_mode)
   - authority path (WSQK/Q-ID/Shield/Oracle evidence)
 - hostile runtime artifacts are ignored or fail-closed
+- any Q-ID v2 evidence without an injected verifier fails closed with `QID_AUTHENTICITY_VERIFIER_MISSING`
 - determinism across repeated runs (50–100 repeats recommended)
 
 ---
