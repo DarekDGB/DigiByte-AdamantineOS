@@ -11,6 +11,7 @@ from adamantine.v1.contracts.shield_orchestrator_receipt import canonical_sha256
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution.executor import RecordingExecutor
+from adamantine.v1.execution import orchestrator_v2 as orch_mod
 from adamantine.v1.execution.orchestrator_v2 import REQUIRED_SHIELD_LAYERS_V3, orchestrate_execution_v2
 from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
@@ -159,7 +160,26 @@ def _orchestrator_receipt(*, request_id: str, context_hash: str) -> dict[str, An
     return receipt
 
 
-def _envelope(*, context_hash: str, shield: dict[str, Any]) -> dict[str, Any]:
+def _wsqk_proofs(*, context_hash: str) -> dict[str, Any]:
+    return {
+        "wsqk": {
+            "wallet_id": "w1",
+            "action": "send",
+            "context_hash": context_hash,
+            "issued_at": NOW,
+            "expires_at": NOW + 60,
+            "nonce": "n1",
+        }
+    }
+
+
+def _envelope(
+    *,
+    context_hash: str,
+    shield: dict[str, Any],
+    proofs: dict[str, Any] | None = None,
+    ui_confirmed: bool = True,
+) -> dict[str, Any]:
     return {
         "v": "execution_request_v2",
         "request_id": "req-1",
@@ -172,7 +192,7 @@ def _envelope(*, context_hash: str, shield: dict[str, Any]) -> dict[str, Any]:
             "action": "send",
             "fields": {"asset": "DGB", "amount": "1"},
         },
-        "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": {}},
+        "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs or {}},
         "timebox": {"issued_at": ISSUED_ISO, "expires_at": EXPIRES_ISO},
         "nonce": {"value": "n1", "store": "tva", "mode": "single_use"},
         "payload": {
@@ -181,7 +201,7 @@ def _envelope(*, context_hash: str, shield: dict[str, Any]) -> dict[str, Any]:
                 "oracle": _oracle_payload(context_hash=context_hash),
                 "shield": shield,
             },
-            "body": {"ui_confirmed": True},
+            "body": {"ui_confirmed": ui_confirmed},
         },
     }
 
@@ -206,7 +226,7 @@ def test_orchestrator_only_mode_rejects_legacy_bundle_shape() -> None:
     assert artifact["route_status"] == "receipt_rejected_at_orchestrator_only_boundary"
 
 
-def test_orchestrator_only_mode_accepts_receipt_as_evidence_only_and_fails_closed_until_step5() -> None:
+def test_orchestrator_only_mode_continues_from_verified_receipt_to_wsqk_gate() -> None:
     context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
     executor = RecordingExecutor()
     resp = orchestrate_execution_v2(
@@ -221,7 +241,7 @@ def test_orchestrator_only_mode_accepts_receipt_as_evidence_only_and_fails_close
     )
 
     assert resp["status"] == "deny"
-    assert resp["reason_id"] == ReasonId.DENY_POLICY.value
+    assert resp["reason_id"] == ReasonId.DENY_AUTHORITY_INVALID.value
     assert resp["decision"]["evidence"]["shield"]["valid"] is True
     assert resp["decision"]["allowed"] is False
     assert executor.called is False
@@ -233,9 +253,76 @@ def test_orchestrator_only_mode_accepts_receipt_as_evidence_only_and_fails_close
     assert artifact["accepted_as_evidence"] is True
     assert artifact["final_approval"] is False
     assert artifact["handoff_allowed"] is True
-    assert artifact["route_status"] == "receipt_verified_evidence_only_waiting_for_aos_m_002b_runtime_route"
+    assert artifact["route_status"] == "receipt_verified_runtime_route_wired"
     assert resp["artifacts"]["final_policy"]["final_approval"] is False
-    assert resp["artifacts"]["final_policy"]["stopped_at"] == "wallet_policy"
+    assert resp["artifacts"]["final_policy"]["stopped_at"] == "wsqk_v2"
+
+
+def test_orchestrator_receipt_runtime_route_allows_only_after_local_gates() -> None:
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    executor = RecordingExecutor()
+    resp = orchestrate_execution_v2(
+        payload=_envelope(
+            context_hash=context_hash,
+            shield=_orchestrator_receipt(request_id="req-1", context_hash=context_hash),
+            proofs=_wsqk_proofs(context_hash=context_hash),
+            ui_confirmed=True,
+        ),
+        now=NOW,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(boundary=ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2),
+    )
+
+    assert resp["status"] == "allow"
+    assert resp["reason_id"] == ReasonId.OK_ALLOW.value
+    assert resp["decision"]["allowed"] is True
+    assert resp["decision"]["evidence"]["shield"]["valid"] is True
+    assert resp["decision"]["protection_mode"] == "full"
+    assert resp["decision"]["gates"]["tva"]["allowed"] is True
+    assert resp["decision"]["gates"]["eqc"]["allowed"] is True
+    assert resp["decision"]["gates"]["wsqk"]["allowed"] is True
+    assert resp["decision"]["nonce"]["consumed"] is True
+    assert executor.called is True
+
+    artifact = resp["artifacts"]["shield_runtime_boundary"]
+    assert artifact["mode"] == ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2.value
+    assert artifact["receipt_state"] == "VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS"
+    assert artifact["verified"] is True
+    assert artifact["accepted_as_evidence"] is True
+    assert artifact["final_approval"] is False
+    assert artifact["handoff_allowed"] is True
+    assert artifact["route_status"] == "receipt_verified_runtime_route_wired"
+
+
+def test_orchestrator_receipt_runtime_route_still_requires_human_confirmation() -> None:
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    executor = RecordingExecutor()
+    resp = orchestrate_execution_v2(
+        payload=_envelope(
+            context_hash=context_hash,
+            shield=_orchestrator_receipt(request_id="req-1", context_hash=context_hash),
+            proofs=_wsqk_proofs(context_hash=context_hash),
+            ui_confirmed=False,
+        ),
+        now=NOW,
+        executor=executor,
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(boundary=ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2),
+    )
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.DENY_AUTHORITY_INSUFFICIENT.value
+    assert resp["decision"]["allowed"] is False
+    assert resp["decision"]["evidence"]["shield"]["valid"] is True
+    assert resp["decision"]["gates"]["tva"]["allowed"] is True
+    assert resp["decision"]["nonce"]["consumed"] is True
+    assert executor.called is False
+
+    artifact = resp["artifacts"]["shield_runtime_boundary"]
+    assert artifact["route_status"] == "receipt_verified_runtime_route_wired"
+    assert artifact["final_approval"] is False
+    assert resp["artifacts"]["final_policy"]["stopped_at"] == "human"
 
 
 def test_legacy_bundle_boundary_is_explicitly_named_test_only() -> None:
@@ -260,3 +347,68 @@ def test_shield_runtime_boundary_lock_document_is_indexed() -> None:
     assert "ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2" in doc
     assert "ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY" in doc
     assert "ADAMANTINEOS_SHIELD_RUNTIME_BOUNDARY_LOCK.md" in index
+    assert "receipt_verified_runtime_route_wired" in doc
+
+
+def _verified_receipt_result(*, context_hash: str):
+    receipt = _orchestrator_receipt(request_id="req-1", context_hash=context_hash)
+    return orch_mod.ShieldReceiptVerificationResult(
+        state=orch_mod.ShieldReceiptVerificationState.VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS,
+        reason_id=ReasonId.EVIDENCE_OK,
+        verified=True,
+        accepted_as_evidence=True,
+        final_approval=False,
+        final_outcome="ALLOW",
+        context_hash=context_hash,
+        request_id="req-1",
+        receipt_hash=receipt["receipt_hash"],
+        handoff_allowed=True,
+        dominant_reason_ids=("ORCH_OK_ALL_COMPONENTS_ALLOW",),
+        receipt=receipt,
+    )
+
+
+def test_receipt_internalization_rejects_impossible_or_tampered_verified_shapes() -> None:
+    from dataclasses import replace
+
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    base = _verified_receipt_result(context_hash=context_hash)
+    receipt = dict(base.receipt or {})
+    components = list(receipt["component_verdicts"])
+
+    invalid_component_type = dict(receipt)
+    invalid_component_type["component_verdicts"] = ["not-a-component"]
+
+    invalid_component_id = dict(receipt)
+    bad_component_id_components = [dict(item) for item in components]
+    bad_component_id_components[0]["component_id"] = "unknown_component"
+    invalid_component_id["component_verdicts"] = bad_component_id_components
+
+    non_allow_component = dict(receipt)
+    non_allow_components = [dict(item) for item in components]
+    non_allow_components[0]["decision"] = "DENY"
+    non_allow_component["component_verdicts"] = non_allow_components
+
+    missing_component = dict(receipt)
+    missing_component["component_verdicts"] = components[:-1]
+
+    cases = (
+        replace(base, state=orch_mod.ShieldReceiptVerificationState.VERIFIED_DENY_DOMINATES),
+        replace(base, verified=False),
+        replace(base, handoff_allowed=False),
+        replace(base, receipt=None),
+        replace(base, context_hash=None),
+        replace(base, receipt_hash=None),
+        replace(base, receipt={**receipt, "component_verdicts": None}),
+        replace(base, receipt=invalid_component_type),
+        replace(base, receipt=invalid_component_id),
+        replace(base, receipt=non_allow_component),
+        replace(base, receipt=missing_component),
+    )
+
+    for result in cases:
+        try:
+            orch_mod._shield_bundle_from_verified_receipt(result=result, issued_at=NOW, expires_at=NOW + 60)
+        except orch_mod.AdapterError:
+            continue
+        raise AssertionError("invalid Shield receipt internalization shape was accepted")
