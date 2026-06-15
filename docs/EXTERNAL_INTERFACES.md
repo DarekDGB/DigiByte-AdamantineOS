@@ -180,6 +180,12 @@ Every execution path carrying Q-ID Adamantine evidence v2 (`v="2"`, `kind="qid_l
 
 The verifier owns external Q-ID signature/key validation. Adamantine does not hold Q-ID signing keys and must not silently promote self-hashed evidence into authenticated evidence.
 
+### 8.2 Q-ID policy-binding context requirement
+
+The exported `normalize_qid_policy_binding(...)` boundary MUST receive `expected_context_hash` from the execution or integration caller. The parsed Q-ID session proof must carry the same `context_hash`.
+
+If `expected_context_hash` is omitted, or if the session-bound context differs from it, Adamantine fails closed with `EQC_QID_CONTEXT_HASH_MISMATCH`. Context-less Q-ID evidence is not valid policy-binding evidence.
+
 ---
 
 ## 9. Observability Constraints
