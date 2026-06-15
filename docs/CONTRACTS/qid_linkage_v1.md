@@ -101,7 +101,9 @@ For any execution call carrying Q-ID Adamantine evidence v2 (`v="2"`, `kind="qid
 
 The verifier is responsible for checking the external Q-ID signature/key material. Adamantine remains deterministic and does not hold Q-ID private keys or silently trust self-hashed evidence.
 
-Legacy shape-A session proof inputs remain linkage evidence only and are not a substitute for Q-ID v2 signature verification. Production integrations SHOULD emit Q-ID v2 evidence and MUST provide a verifier for every Q-ID v2 evidence path. Shape-A proof-hash hardening/deprecation remains tracked separately under T-4.
+Legacy Shape-A session proof inputs remain linkage evidence only and are not a substitute for Q-ID v2 signature verification. Production integrations SHOULD emit Q-ID v2 evidence and MUST provide a verifier for every Q-ID v2 evidence path.
+
+Shape-A `proof_hash` is now enforced as a deterministic integrity hash over the normalized Shape-A contract fields only: `qid_iface_version`, `subject`, `issued_at`, `expires_at`, `context_hash`, `device_binding`, and `issuer_version`. Extra keys are intentionally excluded and cannot create authority. A Shape-A payload with an omitted, decorative, stale, or mismatched `proof_hash` MUST fail closed with `EQC_INVALID_QID_PROOF`.
 
 ---
 
