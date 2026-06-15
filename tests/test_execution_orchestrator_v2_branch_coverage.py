@@ -309,3 +309,37 @@ def test_orchestrator_v2_denies_control_character_context_end_to_end() -> None:
     assert resp["decision"]["allowed"] is False
     assert resp["decision"]["gates"]["eqc"]["allowed"] is False
     assert "forbidden control character" in resp["artifacts"]["error"]
+
+
+def test_orchestrator_v2_requires_qid_verifier_for_any_qid_v2_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    called = {"parse": False}
+
+    def _parse_qid_session(*, payload: Any, now: int, metrics=None):  # type: ignore[no-untyped-def]
+        called["parse"] = True
+        raise AssertionError("Q-ID v2 evidence must not parse before authenticity verification")
+
+    monkeypatch.setattr(orch_mod, "parse_qid_session", _parse_qid_session)
+
+    payload = _base_payload()
+    payload["authority"]["proofs"] = {}  # protected_requested=False must not bypass T-1
+    payload["payload"]["evidence"]["qid"] = {
+        "v": "2",
+        "kind": "qid_login_v2",
+        "response_payload": {"address": "did:qid:attacker"},
+        "proof_hash": "attacker-controlled-self-hash",
+    }
+
+    resp = orch_mod.orchestrate_execution_v2(
+        payload=payload,
+        now=NOW,
+        executor=_NoopExecutor(),
+        nonce_store=InMemoryNonceStore(),
+        policy=_policy(),
+    )
+
+    assert called["parse"] is False
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.QID_AUTHENTICITY_VERIFIER_MISSING.value
+    assert resp["decision"]["allowed"] is False
