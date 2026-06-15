@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import pytest
 
+from tests.qid_shape_a_test_helpers import bind_shape_a_proof_hash
+
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.context import ExecutionContext
 from adamantine.v1.contracts.policy_pack import PolicyPack
@@ -243,13 +245,13 @@ def test_qid_adapter_covers_error_branches() -> None:
     assert e.value.reason_id is ReasonId.EQC_INVALID_QID_PROOF
 
     # contract validation failure path (timestamps non-positive)
-    payload = {
+    payload = bind_shape_a_proof_hash({
         "qid_iface_version": "qid-session-v0",
         "subject": "did:x",
         "issued_at": 0,
         "expires_at": 300,
         "proof_hash": "h",
-    }
+    })
     with pytest.raises(AdapterError) as e:
         parse_qid_session(payload=payload, now=150)
     assert e.value.reason_id is ReasonId.EQC_INVALID_QID_PROOF
