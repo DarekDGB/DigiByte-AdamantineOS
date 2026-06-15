@@ -110,6 +110,7 @@ def test_parse_qid_session_accepts_qid_evidence_v2() -> None:
         "version": "1",
         "issued_at": 100,
         "expires_at": 200,
+        "context_hash": "c" * 64,
     }
     proof_hash = hashlib.sha256(_canon_json_bytes(response_payload)).hexdigest()
 
@@ -128,6 +129,38 @@ def test_parse_qid_session_accepts_qid_evidence_v2() -> None:
     assert proof.issued_at == 100
     assert proof.expires_at == 200
     assert proof.proof_hash == proof_hash
+    assert proof.context_hash == "c" * 64
+
+
+def test_parse_qid_session_denies_qid_evidence_v2_missing_context_hash() -> None:
+    now = 150
+    response_payload = {
+        "type": "login_response",
+        "service_id": "svc",
+        "nonce": "n",
+        "address": "DGB1-ADDRESS",
+        "pubkey": "PUB",
+        "require": "legacy",
+        "version": "1",
+        "issued_at": 100,
+        "expires_at": 200,
+    }
+    proof_hash = hashlib.sha256(_canon_json_bytes(response_payload)).hexdigest()
+
+    evidence = {
+        "v": "2",
+        "kind": "qid_login_v2",
+        "login_uri": "qid://login?x=1",
+        "response_payload": response_payload,
+        "signature": "sig",
+        "subject": "DGB1-ADDRESS",
+        "proof_hash": proof_hash,
+    }
+
+    with pytest.raises(AdapterError) as e:
+        parse_qid_session(payload=evidence, now=now)
+
+    assert e.value.reason_id is ReasonId.EQC_INVALID_QID_PROOF
 
 
 def test_parse_qid_session_denies_qid_evidence_v2_hash_mismatch() -> None:
@@ -142,6 +175,7 @@ def test_parse_qid_session_denies_qid_evidence_v2_hash_mismatch() -> None:
         "version": "1",
         "issued_at": 100,
         "expires_at": 200,
+        "context_hash": "c" * 64,
     }
 
     evidence = {
