@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 
@@ -18,6 +19,7 @@ NOW = 1_760_000_000
 WALLET = "wallet-darek-16d"
 SUBJECT = "did:qid:darek-16d"
 NONCE = "qid-session-nonce-16d"
+CTX = "d" * 64
 
 
 def _fixture() -> dict[str, object]:
@@ -36,6 +38,7 @@ def _run(value: object):
         expected_subject=SUBJECT,
         expected_session_nonce=NONCE,
         expected_quantum_posture="pqc_required",
+        expected_context_hash=CTX,
         expected_device_binding=None,
     )
 
@@ -47,6 +50,7 @@ def test_milestone_16d_external_qid_v2_session_shape_parses_through_existing_ada
 
     assert proof.subject == SUBJECT
     assert proof.issued_at < NOW < proof.expires_at
+    assert proof.context_hash == CTX
     assert proof.device_binding is None
     assert proof.proof_hash == payload["proof_hash"]  # type: ignore[index]
 
@@ -64,6 +68,8 @@ def test_milestone_16d_external_qid_v2_policy_binding_is_evidence_only() -> None
     assert result.wallet_id == WALLET
     assert result.subject == SUBJECT
     assert result.session_nonce == NONCE
+    assert result.session_proof is not None
+    assert result.session_proof.context_hash == CTX
     assert result.quantum_posture == "pqc_required"
     assert result.qid_posture_pqc is True
     assert result.session_proof is not None
@@ -117,6 +123,7 @@ def test_milestone_16d_external_qid_v2_subject_mismatch_denies_before_replay() -
         expected_subject="did:qid:other-subject",
         expected_session_nonce=NONCE,
         expected_quantum_posture="pqc_required",
+        expected_context_hash=CTX,
         expected_device_binding=None,
     )
 
@@ -126,6 +133,55 @@ def test_milestone_16d_external_qid_v2_subject_mismatch_denies_before_replay() -
     assert result.replay_proof is None
     assert result.final_approval is False
 
+
+
+
+def _canonical_hash(value: object) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    ).hexdigest()
+
+
+def test_milestone_16d_external_qid_v2_context_mismatch_denies() -> None:
+    result = normalize_qid_policy_binding(
+        _policy_input(),
+        now=NOW,
+        expected_wallet_id=WALLET,
+        expected_subject=SUBJECT,
+        expected_session_nonce=NONCE,
+        expected_quantum_posture="pqc_required",
+        expected_context_hash="e" * 64,
+        expected_device_binding=None,
+    )
+
+    assert result.state == QIDPolicyBindingState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id == ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+    assert result.replay_proof is None
+
+
+def test_milestone_16d_external_qid_v2_contextless_fixture_denies() -> None:
+    value = _policy_input()
+    session = value["session"]
+    assert isinstance(session, dict)
+    response_payload = session["response_payload"]
+    assert isinstance(response_payload, dict)
+    response_payload.pop("context_hash")
+    session["proof_hash"] = _canonical_hash(response_payload)
+    replay_proof = value["replay_proof"]
+    assert isinstance(replay_proof, dict)
+    replay_proof["proof_hash"] = session["proof_hash"]
+
+    result = _run(value)
+
+    assert result.state == QIDPolicyBindingState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id == ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+    assert result.session_proof is not None
+    assert result.session_proof.context_hash is None
+    assert result.replay_proof is None
 
 def test_milestone_16d_external_qid_v2_import_failure_shape_is_not_allow() -> None:
     with_external_import_error_shape = {
