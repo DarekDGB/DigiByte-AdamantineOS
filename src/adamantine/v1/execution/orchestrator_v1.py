@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, cast
+from typing import Any, Callable, Mapping, cast
 
 from adamantine.errors import TVAError
 from adamantine.v1.contracts.authority import WSQKAuthority
@@ -121,6 +121,10 @@ def _extract_fields(original_payload: Mapping[str, Any]) -> dict[str, str] | Non
     return out
 
 
+def _is_qid_v2_login_evidence(qid_raw: Mapping[str, Any]) -> bool:
+    return qid_raw.get("v") == "2" and qid_raw.get("kind") == "qid_login_v2"
+
+
 def _extract_evidence(req_payload: Mapping[str, Any]) -> tuple[Mapping[str, Any] | None, Mapping[str, Any] | None]:
     """
     Evidence is carried inside the intent payload as:
@@ -200,6 +204,7 @@ def orchestrate_execution_v1(
     now: int,
     executor: Executor,
     nonce_store: NonceStore,
+    qid_verifier: Callable[[Mapping[str, Any]], None] | None = None,
     policy: RiskPolicy | None = None,
 ) -> dict[str, Any]:
     """
@@ -226,6 +231,18 @@ def orchestrate_execution_v1(
 
         session = None
         if qid_raw is not None:
+            if _is_qid_v2_login_evidence(qid_raw) and qid_verifier is None:
+                raise AdapterError(
+                    ReasonId.QID_AUTHENTICITY_VERIFIER_MISSING,
+                    "qid_verifier is required for Q-ID v2 evidence",
+                )
+            if qid_verifier is not None:
+                try:
+                    qid_verifier(qid_raw)
+                except AdapterError:
+                    raise
+                except Exception as ex:
+                    raise AdapterError(ReasonId.EQC_INVALID_QID_PROOF, f"qid_verifier error: {ex}")
             session = parse_qid_session(payload=qid_raw, now=now)
 
         risk = None
