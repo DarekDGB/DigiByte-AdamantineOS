@@ -200,3 +200,101 @@ def test_matrix_determinism_same_input_same_output() -> None:
     r2 = orchestrate_execution_v1(payload=payload, now=now, executor=executor, nonce_store=store, policy=policy)
 
     assert r1 == r2
+
+
+def test_v1_qid_verifier_acceptance_hook_on_allow_path() -> None:
+    now = 1706990400
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
+    called = {"verifier": False}
+
+    def _verifier(_evidence: Any) -> None:
+        called["verifier"] = True
+
+    resp = orchestrate_execution_v1(
+        payload=_allow_payload(now),
+        now=now,
+        executor=executor,
+        nonce_store=store,
+        qid_verifier=_verifier,
+        policy=policy,
+    )
+
+    assert called["verifier"] is True
+    assert resp["status"] == "allow"
+    assert resp["reason_id"] == ReasonId.OK_ALLOW.value
+    assert executor.called is True
+
+
+def test_v1_qid_verifier_adapter_error_reason_is_preserved() -> None:
+    from adamantine.v1.integrations.errors import AdapterError
+
+    now = 1706990400
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
+
+    def _verifier(_evidence: Any) -> None:
+        raise AdapterError(ReasonId.QID_AUTHENTICITY_VERIFIER_MISSING, "missing verifier material")
+
+    resp = orchestrate_execution_v1(
+        payload=_allow_payload(now),
+        now=now,
+        executor=executor,
+        nonce_store=store,
+        qid_verifier=_verifier,
+        policy=policy,
+    )
+
+    assert resp["status"] == "error"
+    assert resp["reason_id"] == ReasonId.QID_AUTHENTICITY_VERIFIER_MISSING.value
+    assert executor.called is False
+
+
+def test_v1_qid_verifier_generic_exception_is_fail_closed() -> None:
+    now = 1706990400
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
+
+    def _verifier(_evidence: Any) -> None:
+        raise ValueError("signature verifier unavailable")
+
+    resp = orchestrate_execution_v1(
+        payload=_allow_payload(now),
+        now=now,
+        executor=executor,
+        nonce_store=store,
+        qid_verifier=_verifier,
+        policy=policy,
+    )
+
+    assert resp["status"] == "error"
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_QID_PROOF.value
+    assert executor.called is False
+
+def test_v1_requires_qid_verifier_for_qid_v2_evidence() -> None:
+    now = 1706990400
+    executor = RecordingExecutor()
+    store = InMemoryNonceStore()
+    policy = RiskPolicy(min_overall_score=85, policy_pack=PolicyPack())
+    payload = _allow_payload(now)
+    payload["payload"]["evidence"]["qid"] = {
+        "v": "2",
+        "kind": "qid_login_v2",
+        "response_payload": {"address": "did:qid:attacker"},
+        "proof_hash": "attacker-controlled-self-hash",
+    }
+
+    resp = orchestrate_execution_v1(
+        payload=payload,
+        now=now,
+        executor=executor,
+        nonce_store=store,
+        policy=policy,
+    )
+
+    assert resp["status"] == "error"
+    assert resp["reason_id"] == ReasonId.QID_AUTHENTICITY_VERIFIER_MISSING.value
+    assert executor.called is False
