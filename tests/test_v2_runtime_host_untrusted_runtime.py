@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.qid_shape_a_test_helpers import bind_shape_a_proof_hash
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,7 +35,7 @@ def _policy(*, min_score: int = 85) -> RiskPolicy:
 
 
 def _qid_payload(*, now: int, session_nonce: str, context_hash: str | None = None) -> dict[str, Any]:
-    return {
+    return bind_shape_a_proof_hash({
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": now - 10,
@@ -53,7 +54,7 @@ def _qid_payload(*, now: int, session_nonce: str, context_hash: str | None = Non
             "fresh": True,
             "registry_commitment": "reg-commit-1",
         },
-    }
+    })
 
 
 def _oracle_payload(*, now: int, context_hash: str, overall_score: int) -> dict[str, Any]:
