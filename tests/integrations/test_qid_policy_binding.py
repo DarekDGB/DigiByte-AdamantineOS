@@ -16,6 +16,7 @@ NONCE = "qid-session-nonce-001"
 NOW = 1_760_000_000
 PROOF_HASH = "a" * 64
 REGISTRY = "registry-commitment-001"
+CTX = "c" * 64
 
 
 def _session(**overrides: object) -> dict[str, object]:
@@ -25,6 +26,7 @@ def _session(**overrides: object) -> dict[str, object]:
         "issued_at": NOW - 10,
         "expires_at": NOW + 300,
         "proof_hash": PROOF_HASH,
+        "context_hash": CTX,
         "device_binding": DEVICE,
         "issuer_version": "qid-adamantine-v1",
     }
@@ -64,6 +66,7 @@ def _run(value: object, **overrides: object):
         "expected_subject": SUBJECT,
         "expected_session_nonce": NONCE,
         "expected_quantum_posture": "hybrid_required",
+        "expected_context_hash": CTX,
         "expected_device_binding": DEVICE,
     }
     expected.update(overrides)
@@ -75,6 +78,7 @@ def _shape_b_payload() -> dict[str, object]:
         "address": SUBJECT,
         "issued_at": NOW - 10,
         "expires_at": NOW + 300,
+        "context_hash": CTX,
     }
     proof_hash = hashlib.sha256(
         json.dumps(response_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
@@ -234,6 +238,47 @@ def test_qid_invalid_session_hash_denies_for_shape_b() -> None:
     assert result.state == QIDPolicyBindingState.DENY_QID_REJECTED
     assert result.reason_id == ReasonId.EQC_INVALID_QID_PROOF
 
+
+
+
+def test_qid_missing_expected_context_hash_fails_closed() -> None:
+    result = normalize_qid_policy_binding(
+        _evidence(),
+        now=NOW,
+        expected_wallet_id=WALLET,
+        expected_subject=SUBJECT,
+        expected_session_nonce=NONCE,
+        expected_quantum_posture="hybrid_required",
+        expected_device_binding=DEVICE,
+    )
+
+    assert result.state == QIDPolicyBindingState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id == ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH
+    assert result.accepted_as_evidence is False
+    assert result.final_approval is False
+    assert result.handoff_allowed is False
+    assert result.session_proof is not None
+
+
+def test_qid_context_hash_mismatch_fails_closed_before_replay() -> None:
+    result = _run(_evidence(), expected_context_hash="d" * 64)
+
+    assert result.state == QIDPolicyBindingState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id == ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH
+    assert result.subject == SUBJECT
+    assert result.session_proof is not None
+    assert result.replay_proof is None
+    assert result.final_approval is False
+
+
+def test_qid_contextless_session_fails_closed() -> None:
+    result = _run(_evidence(session=_session(context_hash=None)))
+
+    assert result.state == QIDPolicyBindingState.DENY_CONTEXT_HASH_MISMATCH
+    assert result.reason_id == ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH
+    assert result.session_proof is not None
+    assert result.session_proof.context_hash is None
+    assert result.replay_proof is None
 
 def test_qid_subject_mismatch_denies_before_replay() -> None:
     result = _run(_evidence(), expected_subject="did:qid:other")
