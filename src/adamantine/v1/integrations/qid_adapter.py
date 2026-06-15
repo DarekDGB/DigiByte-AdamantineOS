@@ -17,9 +17,38 @@ def _fail(metrics: Metrics | None, rid: ReasonId, msg: str) -> NoReturn:
     raise AdapterError(rid, msg)
 
 
-def _canon_json_bytes(obj: object) -> bytes:
-    s = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+ADAMANTINE_QID_CANONICAL_JSON_PROFILE = "adamantine-qid-canonical-json-v1"
+
+
+def canonical_qid_json_bytes(obj: object) -> bytes:
+    """Return bytes for the Adamantine Q-ID canonical JSON profile.
+
+    Profile name: ``adamantine-qid-canonical-json-v1``.
+
+    This profile is intentionally explicit because Q-ID v2 ``proof_hash``
+    compatibility depends on both AdamantineOS and Q-ID hashing exactly the
+    same JSON byte string. It is not a general-purpose JSON profile and MUST
+    NOT be changed silently.
+    """
+
+    s = json.dumps(
+        obj,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+        allow_nan=False,
+    )
     return s.encode("utf-8")
+
+
+def compute_qid_v2_response_payload_proof_hash(response_payload: Mapping[str, Any]) -> str:
+    """Compute a Q-ID v2 response_payload proof hash using the named profile."""
+
+    return _sha256_hex(canonical_qid_json_bytes(dict(response_payload)))
+
+
+def _canon_json_bytes(obj: object) -> bytes:
+    return canonical_qid_json_bytes(obj)
 
 
 def _sha256_hex(b: bytes) -> str:
@@ -135,7 +164,10 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
         if not isinstance(proof_hash, str) or not proof_hash:
             _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "proof_hash must be non-empty str")
 
-        expected_hash = _sha256_hex(_canon_json_bytes(dict(response_payload)))
+        try:
+            expected_hash = compute_qid_v2_response_payload_proof_hash(response_payload)
+        except (TypeError, ValueError) as exc:
+            _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, f"response_payload canonicalization failed: {exc}")
         if proof_hash != expected_hash:
             _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "proof_hash mismatch")
 
