@@ -128,6 +128,24 @@ Production integrations SHOULD emit Q-ID v2 evidence and MUST provide a verifier
 
 Shape-A `proof_hash` is now enforced as a deterministic integrity hash over the normalized Shape-A contract fields only: `qid_iface_version`, `subject`, `issued_at`, `expires_at`, `context_hash`, `device_binding`, and `issuer_version`. Extra keys are intentionally excluded and cannot create authority. A Shape-A payload with an omitted, decorative, stale, or mismatched `proof_hash` MUST fail closed with `EQC_INVALID_QID_PROOF`. This hash is integrity-only; it does not prove issuer authenticity.
 
+### 5D. Q-ID v2 Canonical JSON Profile (AOS-N-001)
+
+Q-ID Adamantine evidence v2 `proof_hash` validation uses the named AdamantineOS profile:
+
+- `adamantine-qid-canonical-json-v1`
+
+AdamantineOS computes the Q-ID v2 response-payload proof hash as:
+
+`sha256(canonical_qid_json_bytes(response_payload)).hexdigest()`
+
+The canonical JSON byte profile is defined in:
+
+- `docs/ADAMANTINEOS_QID_CANONICAL_JSON_PROFILE.md`
+
+The profile sorts object keys, removes insignificant whitespace, uses ASCII JSON escaping, rejects NaN/Infinity, encodes the canonical JSON string as UTF-8 bytes, and emits lowercase SHA-256 hex. The profile applies to the exact Q-ID v2 `response_payload` object. Wrapper fields outside `response_payload` remain part of the real Q-ID verifier responsibility.
+
+Changing this profile, hashing a different object, changing hash casing, or reusing the same profile name for incompatible behavior requires a new contract review and a new profile name.
+
 ---
 
 ## 6. Failure Modes (Normative)
