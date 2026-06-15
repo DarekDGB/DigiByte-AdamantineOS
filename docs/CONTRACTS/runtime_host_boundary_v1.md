@@ -68,7 +68,7 @@ The runtime host **MUST**:
 A compliant reference host can be as small as:
 
 - **Input:** `MobileExecutionCall v2` payload (mapping / dict)
-- **Dependencies:** injected `Executor` (callable or interface) and required `NonceStore`
+- **Dependencies:** injected `Executor` (callable or interface), required `NonceStore`, and an integrator-provided `qid_verifier` for Q-ID v2 evidence
 - **Behavior:**
   1. Parse call
   2. Run `orchestrator_v2` to obtain an `execution_response_v2`
@@ -89,6 +89,7 @@ The runtime host **MUST NEVER**:
 - inject runtime-generated artifacts into core `artifacts`
 - rely on wall-clock time or randomness to produce output fields that are asserted in tests
 - store secrets or keys inside Adamantine core objects
+- treat Q-ID `proof_hash` as signature/authenticity proof; Q-ID v2 evidence requires injected verifier wiring
 
 ---
 
