@@ -1,5 +1,3 @@
-import hashlib
-import json
 from typing import Any
 
 import pytest
@@ -7,6 +5,7 @@ import pytest
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import (
     compute_qid_shape_a_proof_hash,
+    compute_qid_v2_response_payload_proof_hash,
     parse_qid_session,
 )
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -93,11 +92,6 @@ def test_parse_qid_session_denies_expired() -> None:
     assert e.value.reason_id is ReasonId.EQC_QID_SESSION_EXPIRED
 
 
-def _canon_json_bytes(obj: object) -> bytes:
-    s = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
-    return s.encode("utf-8")
-
-
 def test_parse_qid_session_accepts_qid_evidence_v2() -> None:
     now = 150
     response_payload = {
@@ -112,7 +106,7 @@ def test_parse_qid_session_accepts_qid_evidence_v2() -> None:
         "expires_at": 200,
         "context_hash": "c" * 64,
     }
-    proof_hash = hashlib.sha256(_canon_json_bytes(response_payload)).hexdigest()
+    proof_hash = compute_qid_v2_response_payload_proof_hash(response_payload)
 
     evidence = {
         "v": "2",
@@ -145,7 +139,7 @@ def test_parse_qid_session_denies_qid_evidence_v2_missing_context_hash() -> None
         "issued_at": 100,
         "expires_at": 200,
     }
-    proof_hash = hashlib.sha256(_canon_json_bytes(response_payload)).hexdigest()
+    proof_hash = compute_qid_v2_response_payload_proof_hash(response_payload)
 
     evidence = {
         "v": "2",
