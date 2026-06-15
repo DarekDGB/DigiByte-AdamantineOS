@@ -172,6 +172,14 @@ Adapter failure always results in **DENY**.
 
 Adapters cannot bypass execution rules or grant authority.
 
+### 8.1 Q-ID authenticity verifier requirement
+
+Q-ID `proof_hash` values are self-hashes. They prove payload integrity, not issuer authenticity.
+
+Every execution path carrying Q-ID Adamantine evidence v2 (`v="2"`, `kind="qid_login_v2"`) MUST receive an injected `qid_verifier` from the integrator. If the verifier is absent, Adamantine fails closed with `QID_AUTHENTICITY_VERIFIER_MISSING` before parsing the Q-ID v2 evidence as a trusted session. This rule is independent of WSQK/protected-mode presence.
+
+The verifier owns external Q-ID signature/key validation. Adamantine does not hold Q-ID signing keys and must not silently promote self-hashed evidence into authenticated evidence.
+
 ---
 
 ## 9. Observability Constraints
