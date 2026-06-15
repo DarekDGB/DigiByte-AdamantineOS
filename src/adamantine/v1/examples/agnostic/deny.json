@@ -61,7 +61,7 @@
         "expires_at": 1706990410,
         "issued_at": 1706990390,
         "issuer_version": "qid-v0",
-        "proof_hash": "proofhash123",
+        "proof_hash": "ae4971f2bda778f7c05d0581bd621e967cff885f6d7824928adcccd03b0f46c2",
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123"
       },
