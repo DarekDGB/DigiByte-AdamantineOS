@@ -161,7 +161,7 @@ def test_milestone_16d_external_qid_v2_context_mismatch_denies() -> None:
     assert result.replay_proof is None
 
 
-def test_milestone_16d_external_qid_v2_contextless_fixture_denies() -> None:
+def test_milestone_16d_external_qid_v2_contextless_fixture_denies_at_adapter_boundary() -> None:
     value = _policy_input()
     session = value["session"]
     assert isinstance(session, dict)
@@ -175,12 +175,11 @@ def test_milestone_16d_external_qid_v2_contextless_fixture_denies() -> None:
 
     result = _run(value)
 
-    assert result.state == QIDPolicyBindingState.DENY_CONTEXT_HASH_MISMATCH
-    assert result.reason_id == ReasonId.EQC_QID_CONTEXT_HASH_MISMATCH
+    assert result.state == QIDPolicyBindingState.DENY_QID_REJECTED
+    assert result.reason_id == ReasonId.EQC_INVALID_QID_PROOF
     assert result.accepted_as_evidence is False
     assert result.final_approval is False
-    assert result.session_proof is not None
-    assert result.session_proof.context_hash is None
+    assert result.session_proof is None
     assert result.replay_proof is None
 
 def test_milestone_16d_external_qid_v2_import_failure_shape_is_not_allow() -> None:
