@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.qid_shape_a_test_helpers import bind_shape_a_proof_hash
 import pytest
 
 from adamantine.errors import TVAError
@@ -22,7 +23,7 @@ from adamantine.v1.wsqk.issuer import WSQKIssueRequest, issue_wsqk_authority
 
 
 def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = None) -> dict:
-    return {
+    return bind_shape_a_proof_hash({
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123",
         "issued_at": issued_at,
@@ -31,7 +32,7 @@ def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = 
         "context_hash": context_hash,
         "device_binding": "device-1",
         "issuer_version": "qid-v0",
-    }
+    })
 
 
 def _risk_payload(*, context_hash: str, generated_at: int, overall_score: int, reason_ids: list[str]) -> dict:
