@@ -77,7 +77,7 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
          - qid_iface_version, subject, issued_at, expires_at, proof_hash, ...
          - proof_hash MUST equal sha256(canonical normalized Shape-A contract fields)
       B) Q-ID Adamantine evidence v2:
-         - v="2", kind="qid_login_v2", response_payload{address, issued_at, expires_at, ...}, proof_hash
+         - v="2", kind="qid_login_v2", response_payload{address, issued_at, expires_at, context_hash, ...}, proof_hash
 
     Observability:
       - If metrics is provided, increments on AdapterError ReasonId only.
@@ -90,6 +90,7 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
       - empty subject / empty proof_hash
       - proof_hash mismatch (Shape-A and v2)
       - missing/malformed context_hash
+      - Q-ID v2 response_payload.context_hash omitted or mismatched
     """
     if type(now) is not int:
         _fail(metrics, ReasonId.EQC_MISSING_NOW, "now must be int")
@@ -118,7 +119,7 @@ def parse_qid_session(*, payload: Mapping[str, Any], now: int, metrics: Metrics 
         if type(issued_at) is not int or type(expires_at) is not int:
             _fail(metrics, ReasonId.EQC_INVALID_QID_PROOF, "response_payload.issued_at/expires_at must be int")
 
-        if context_hash is not None and not _is_sha256_hex(context_hash):
+        if not _is_sha256_hex(context_hash):
             _fail(
                 metrics,
                 ReasonId.EQC_INVALID_QID_PROOF,
