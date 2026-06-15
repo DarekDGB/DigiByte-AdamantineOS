@@ -23,6 +23,11 @@ from adamantine.v1.execution.response_v2 import build_execution_response_v2, Pro
 from adamantine.v1.integrations.adaptive_core_oracle_v3_adapter import parse_adaptive_core_oracle_v3
 from adamantine.v1.integrations.errors import AdapterError
 from adamantine.v1.integrations.qid_adapter import parse_qid_replay_proof, parse_qid_session
+from adamantine.v1.integrations.shield_orchestrator_receipt_verifier import (
+    ShieldReceiptVerificationResult,
+    ShieldReceiptVerificationState,
+    verify_shield_orchestrator_receipt,
+)
 from adamantine.v1.integrations.shield_v3_adapter import parse_shield_bundle_v3
 from adamantine.v1.wsqk.issuer_v2 import WSQK_AUTHORITY_V2
 from adamantine.v1.policy.final_policy_engine import (
@@ -31,7 +36,7 @@ from adamantine.v1.policy.final_policy_engine import (
     LocalPolicyGateResult,
     evaluate_final_policy_engine,
 )
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
 
 
@@ -83,6 +88,58 @@ def _runtime_evidence_accepted(*, source: str, context_hash: str, reason_id: Rea
 
 def _runtime_evidence_rejected(*, source: str, context_hash: str, reason_id: ReasonId) -> _RuntimeFinalPolicyEvidence:
     return _runtime_evidence_from_boundary(source=source, context_hash=context_hash, reason_id=reason_id, accepted=False)
+
+
+def _runtime_evidence_from_shield_receipt(
+    *,
+    result: ShieldReceiptVerificationResult,
+    expected_context_hash: str,
+) -> _RuntimeFinalPolicyEvidence:
+    """Normalize a Shield Orchestrator receipt verification result.
+
+    AOS-M-002A locks the architecture choice without granting Shield final
+    authority. Only a verified ALLOW receipt becomes accepted Shield evidence;
+    DENY/HUMAN_REVIEW/invalid receipt states remain fail-closed at the Shield
+    gate. Even accepted Shield evidence always has final_approval=False.
+    """
+
+    context_hash = result.context_hash if isinstance(result.context_hash, str) else expected_context_hash
+    receipt_hash = result.receipt_hash if isinstance(result.receipt_hash, str) else "unverified"
+    accepted = result.state is ShieldReceiptVerificationState.VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS
+    return _RuntimeFinalPolicyEvidence(
+        source=f"shield_orchestrator_receipt:{receipt_hash}",
+        state=result.state.value if accepted else "DENY_EVIDENCE_REJECTED",
+        outcome="ALLOW_EVIDENCE" if accepted else "DENY",
+        reason_id=result.reason_id,
+        accepted_as_evidence=accepted,
+        final_approval=False,
+        handoff_allowed=result.handoff_allowed if accepted else False,
+        context_hash=context_hash,
+        dominant_reason_ids=tuple(result.dominant_reason_ids) if accepted else (result.reason_id.value,),
+        final_outcome=result.final_outcome,
+    )
+
+
+def _shield_runtime_boundary_artifact(
+    *,
+    policy: RiskPolicy,
+    receipt_result: ShieldReceiptVerificationResult,
+    route_status: str,
+) -> dict[str, Any]:
+    return {
+        "shield_runtime_boundary": {
+            "mode": policy.shield_runtime_boundary.value,
+            "receipt_state": receipt_result.state.value,
+            "verified": receipt_result.verified,
+            "accepted_as_evidence": (
+                receipt_result.state is ShieldReceiptVerificationState.VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS
+            ),
+            "final_approval": False,
+            "handoff_allowed": receipt_result.handoff_allowed,
+            "receipt_hash": receipt_result.receipt_hash,
+            "route_status": route_status,
+        }
+    }
 
 
 
@@ -721,6 +778,78 @@ def orchestrate_execution_v2(
                 shield_ok=False,
                 artifacts={"error": e.message},
                 include_final_policy_artifact=False,
+            )
+
+        if pol.shield_runtime_boundary is ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2:
+            receipt_result = verify_shield_orchestrator_receipt(
+                req.evidence_shield,
+                expected_context_hash=req.context.context_hash,
+                expected_request_id=req.request_id,
+            )
+            shield_evidence = _runtime_evidence_from_shield_receipt(
+                result=receipt_result,
+                expected_context_hash=req.context.context_hash,
+            )
+
+            if not shield_evidence.accepted_as_evidence:
+                final_policy = evaluate_final_policy_engine(
+                    shield=shield_evidence,
+                    wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_shield_receipt_reject", context_hash=req.context.context_hash),
+                    qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                    adaptive_core=_runtime_evidence_accepted(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+                    ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                    replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                    wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
+                    human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                    expected_context_hash=req.context.context_hash,
+                )
+                return _final_policy_denied_response_v2(
+                    req=req,
+                    pol=pol,
+                    final_policy=final_policy,
+                    protected_requested=protected_requested,
+                    qid_ok=True,
+                    oracle_ok=True,
+                    shield_ok=False,
+                    artifacts=_shield_runtime_boundary_artifact(
+                        policy=pol,
+                        receipt_result=receipt_result,
+                        route_status="receipt_rejected_at_orchestrator_only_boundary",
+                    ),
+                    include_final_policy_artifact=False,
+                )
+
+            # AOS-M-002A intentionally locks the receipt-only boundary before the
+            # AOS-M-002B full continuation route is wired. A verified receipt is
+            # represented as accepted Shield evidence, then the runtime fails
+            # closed so no integrator can mistake Shield evidence for final
+            # AdamantineOS approval.
+            final_policy = evaluate_final_policy_engine(
+                shield=shield_evidence,
+                wsqk_v2=_runtime_evidence_accepted(source="wsqk_v2:not_reached_before_shield_receipt_route_lock", context_hash=req.context.context_hash),
+                qid=_runtime_evidence_accepted(source=f"qid:{getattr(session, 'subject', 'validated_session')}", context_hash=req.context.context_hash),
+                adaptive_core=_runtime_evidence_accepted(source="adaptive_core:oracle_v3", context_hash=getattr(oracle, "context_hash", req.context.context_hash)),
+                ai_gateway=_runtime_evidence_accepted(source="ai_gateway:not_required_for_runtime_path", context_hash=req.context.context_hash),
+                replay=LocalPolicyGateResult("replay", True, ReasonId.EVIDENCE_OK),
+                wallet_policy=LocalPolicyGateResult("wallet_policy", False, ReasonId.DENY_POLICY),
+                human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+                expected_context_hash=req.context.context_hash,
+            )
+            return _final_policy_denied_response_v2(
+                req=req,
+                pol=pol,
+                final_policy=final_policy,
+                protected_requested=protected_requested,
+                qid_ok=True,
+                oracle_ok=True,
+                shield_ok=True,
+                eqc_allowed=False,
+                artifacts=_shield_runtime_boundary_artifact(
+                    policy=pol,
+                    receipt_result=receipt_result,
+                    route_status="receipt_verified_evidence_only_waiting_for_aos_m_002b_runtime_route",
+                ),
+                include_final_policy_artifact=True,
             )
 
         # Governance: map shield adapter failures to stable EQC-facing reasons.
