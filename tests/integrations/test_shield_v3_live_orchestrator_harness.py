@@ -25,14 +25,53 @@ def _context_payload(name: str = "valid_combined_context_hash_v1.json") -> dict[
     return json.loads((FIXTURE_ROOT / name).read_text(encoding="utf-8"))
 
 
+REASON_BY_COMPONENT_DECISION = {
+    "adn": {
+        "ALLOW": "ADN_OK_COORDINATION_ALLOW",
+        "ESCALATE": "ADN_ESCALATE_POLICY_REVIEW",
+        "DENY": "ADN_DENY_DEFENSE_TRIGGERED",
+        "ERROR": "ADN_ERROR_INVALID_VERDICT",
+        "SKIPPED": "ADN_ERROR_INVALID_VERDICT",
+    },
+    "dqsn": {
+        "ALLOW": "DQSN_OK_NETWORK_ALLOW",
+        "ESCALATE": "DQSN_ESCALATE_QUANTUM_SIGNAL",
+        "DENY": "DQSN_DENY_NETWORK_RISK",
+        "ERROR": "DQSN_ERROR_INVALID_VERDICT",
+        "SKIPPED": "DQSN_ERROR_INVALID_VERDICT",
+    },
+    "guardian_wallet": {
+        "ALLOW": "GW_OK_HEALTHY_ALLOW",
+        "ESCALATE": "GW_ESCALATE_QID_REQUIRED",
+        "DENY": "GW_DENY_POLICY_BLOCKED",
+        "ERROR": "GW_ERROR_INVALID_VERDICT",
+        "SKIPPED": "GW_ERROR_INVALID_VERDICT",
+    },
+    "qwg": {
+        "ALLOW": "QWG_OK_POSTURE_ALLOW",
+        "ESCALATE": "QWG_ESCALATE_QUANTUM_POSTURE",
+        "DENY": "QWG_DENY_KEY_RISK",
+        "ERROR": "QWG_ERROR_INVALID_VERDICT",
+        "SKIPPED": "QWG_ERROR_INVALID_VERDICT",
+    },
+    "sentinel_ai": {
+        "ALLOW": "SNTL_OK_TELEMETRY_ALLOW",
+        "ESCALATE": "SNTL_ESCALATE_THREAT_REVIEW",
+        "DENY": "SNTL_DENY_THREAT_DETECTED",
+        "ERROR": "SNTL_ERROR_AI_OUTPUT_UNTRUSTED",
+        "SKIPPED": "SNTL_ERROR_AI_OUTPUT_UNTRUSTED",
+    },
+}
+EVIDENCE_FAMILY_BY_COMPONENT = {
+    "adn": "defense_signal",
+    "dqsn": "network_observation",
+    "guardian_wallet": "wallet_context",
+    "qwg": "wallet_posture",
+    "sentinel_ai": "telemetry",
+}
+
+
 def _live_component(component_id: str, decision: str = "ALLOW", *, request_id: str = REQ, context_hash: str = CTX) -> dict[str, Any]:
-    reason = {
-        "ALLOW": "ORCH_OK_ALL_COMPONENTS_ALLOW",
-        "DENY": "ORCH_DENY_DOMINATES",
-        "ERROR": "ORCH_ERROR_INVALID_COMPONENT_VERDICT",
-        "ESCALATE": "ORCH_HUMAN_REVIEW_ESCALATE_PRESENT",
-        "SKIPPED": "ORCH_ERROR_MISSING_REQUIRED_VERDICT",
-    }[decision]
     return {
         "component_id": component_id,
         "contract_version": 3,
@@ -40,9 +79,9 @@ def _live_component(component_id: str, decision: str = "ALLOW", *, request_id: s
         "request_id": request_id,
         "context_hash": context_hash,
         "decision": decision,
-        "reason_ids": [reason],
+        "reason_ids": [REASON_BY_COMPONENT_DECISION[component_id][decision]],
         "evidence_hash": EVID,
-        "evidence_families": ["component_verdict"],
+        "evidence_families": [EVIDENCE_FAMILY_BY_COMPONENT[component_id]],
         "metadata": {},
         "fail_closed": True,
     }
@@ -98,7 +137,7 @@ def test_level_3_live_harness_accepts_real_orchestrator_allow_as_evidence_only()
     assert result.handoff_allowed is True
     assert result.source_receipt_hash is not None
     assert result.normalized_receipt_hash is not None
-    assert result.source_receipt_hash != result.normalized_receipt_hash
+    assert result.source_receipt_hash == result.normalized_receipt_hash
     assert result.adapter_harness is not None
     assert result.adapter_harness.final_approval is False
 
@@ -283,6 +322,8 @@ def test_level_3_live_harness_rejects_hidden_component_deny_under_live_final_all
     def builder(**kwargs: object) -> dict[str, Any]:
         receipt = _live_build_receipt(**kwargs)  # type: ignore[arg-type]
         receipt["component_verdicts"][0]["decision"] = "DENY"
+        component_id = str(receipt["component_verdicts"][0]["component_id"])
+        receipt["component_verdicts"][0]["reason_ids"] = [REASON_BY_COMPONENT_DECISION[component_id]["DENY"]]
         receipt["receipt_hash"] = canonical_sha256({**receipt, "receipt_hash": ""})
         return receipt
 
