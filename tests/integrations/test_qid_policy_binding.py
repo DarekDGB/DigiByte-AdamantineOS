@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 
+from tests.qid_shape_a_test_helpers import bind_shape_a_proof_hash
+
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.integrations.qid_policy_binding import (
     QIDPolicyBindingState,
@@ -31,7 +33,7 @@ def _session(**overrides: object) -> dict[str, object]:
         "issuer_version": "qid-adamantine-v1",
     }
     data.update(overrides)
-    return data
+    return bind_shape_a_proof_hash(data)  # type: ignore[arg-type]
 
 
 def _replay(**overrides: object) -> dict[str, object]:
@@ -39,7 +41,7 @@ def _replay(**overrides: object) -> dict[str, object]:
         "proof_version": "qid_replay_proof_v1",
         "wallet_id": WALLET,
         "subject": SUBJECT,
-        "proof_hash": PROOF_HASH,
+        "proof_hash": str(_session()["proof_hash"]),
         "session_nonce": NONCE,
         "registry_commitment": REGISTRY,
         "fresh": True,
@@ -103,7 +105,7 @@ def test_qid_success_becomes_evidence_only() -> None:
     assert result.handoff_allowed is True
     assert result.wallet_id == WALLET
     assert result.subject == SUBJECT
-    assert result.proof_hash == PROOF_HASH
+    assert result.proof_hash == _session()["proof_hash"]
     assert result.device_binding == DEVICE
     assert result.session_nonce == NONCE
     assert result.quantum_posture == "hybrid_required"
