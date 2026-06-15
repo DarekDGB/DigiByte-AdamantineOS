@@ -48,8 +48,9 @@ def compute_qid_shape_a_proof_hash(
 
     Shape-A is a legacy Adamantine session-proof interface. The hash is
     integrity-only; authenticity is still supplied by the trusted caller /
-    protected runtime boundary. The hash deliberately covers only normalized
-    contract fields and excludes decorative or untrusted extra keys.
+    protected runtime boundary. Shape-A evidence must not be accepted directly
+    from untrusted external transport. The hash deliberately covers only
+    normalized contract fields and excludes decorative or untrusted extra keys.
     """
 
     return _sha256_hex(
