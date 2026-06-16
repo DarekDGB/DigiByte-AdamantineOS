@@ -10,7 +10,7 @@ from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution.executor import RecordingExecutor
 from adamantine.v1.execution.orchestrator_v2 import REQUIRED_SHIELD_LAYERS_V3, orchestrate_execution_v2
 from adamantine.v1.integrations.qid_adapter import compute_qid_shape_a_proof_hash
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
 NOW = 1706990400
 ISSUED_ISO = "2024-02-03T20:00:00Z"
@@ -31,7 +31,11 @@ def _policy() -> RiskPolicy:
         allowed_external_reason_ids=("ok", "AC_OK", "OK", "BLOCK"),
         external_reason_map=reason_map,
     )
-    return RiskPolicy(min_overall_score=85, policy_pack=pack)
+    return RiskPolicy(
+        min_overall_score=85,
+        policy_pack=pack,
+        shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY,
+    )
 
 
 def _qid_payload(*, context_hash: str) -> dict[str, Any]:
