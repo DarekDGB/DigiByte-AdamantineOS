@@ -34,6 +34,7 @@ class Evidence:
     accepted_as_evidence: bool = True
     final_approval: bool = False
     handoff_allowed: bool = True
+    context_hash: str = CTX
     dominant_reason_ids: tuple[str, ...] = (ReasonId.EVIDENCE_OK.value,)
     final_outcome: str | None = None
 
@@ -56,6 +57,7 @@ def _run_final_engine(*, shield: Any, **overrides: Any):
         "replay": _allow_gate("replay"),
         "wallet_policy": _allow_gate("wallet_policy"),
         "human": _allow_gate("human"),
+        "expected_context_hash": CTX,
     }
     args.update(overrides)
     return evaluate_final_policy_engine(**args)
