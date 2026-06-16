@@ -139,7 +139,7 @@ def _envelope_v2_allow(*, now: int, context_hash: str, session_nonce: str = "n1"
             "app_id": "app",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs},
         "timebox": {"issued_at": issued_iso, "expires_at": expires_iso},
@@ -191,7 +191,7 @@ def test_untrusted_runtime_body_cannot_force_allow_or_override_fields() -> None:
     Those must NOT control verdict/reason/context/protection_mode.
     """
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     policy = _policy(min_score=85)
     executor = CountingExecutor()
     store = ReplayRejectingNonceStore()
@@ -221,7 +221,7 @@ def test_untrusted_runtime_replay_nonce_denies_and_never_executes() -> None:
     - second call with SAME nonce must deny and executor must NOT be called again
     """
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     policy = _policy(min_score=85)
     executor = CountingExecutor()
     store = ReplayRejectingNonceStore()
@@ -243,7 +243,7 @@ def test_untrusted_runtime_context_hash_mismatch_fail_closed() -> None:
     If runtime tries to mutate evidence to mismatch the context_hash, we must deny (fail-closed).
     """
     now = 1706990400
-    true_ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    true_ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     policy = _policy(min_score=85)
     executor = CountingExecutor()
     store = ReplayRejectingNonceStore()
@@ -265,7 +265,7 @@ def test_untrusted_runtime_determinism_with_hostile_body_multi_run() -> None:
     Determinism: hostile runtime injections must not create nondeterministic output.
     """
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     policy = _policy(min_score=85)
 
     payload = _envelope_v2_allow(now=now, context_hash=ctx_hash, session_nonce="n1")
