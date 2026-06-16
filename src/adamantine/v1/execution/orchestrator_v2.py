@@ -335,6 +335,33 @@ def _shield_bundle_from_verified_receipt(
     return bundle
 
 
+
+_BOUND_HUMAN_CONFIRMATION_FIELD = "ui_confirmed"
+_BOUND_HUMAN_CONFIRMATION_TRUE = "true"
+
+
+def _bound_human_confirmation_gate(
+    *,
+    payload_body: Mapping[str, Any],
+    context_fields: Mapping[str, str] | None,
+) -> LocalPolicyGateResult:
+    """Require the UI confirmation signal to be bound into context_hash.
+
+    AOS-RT-001: payload.body.ui_confirmed is an untrusted runtime flag on
+    its own. It is accepted only when the same confirmation value is present
+    in context.fields, which is part of the deterministic context_hash that
+    WSQK, Q-ID, Adaptive Core, and Shield evidence are expected to bind to.
+    """
+
+    payload_confirmed = payload_body.get(_BOUND_HUMAN_CONFIRMATION_FIELD) is True
+    bound_confirmed = (context_fields or {}).get(_BOUND_HUMAN_CONFIRMATION_FIELD) == _BOUND_HUMAN_CONFIRMATION_TRUE
+    accepted = payload_confirmed and bound_confirmed
+    return LocalPolicyGateResult(
+        "human",
+        accepted,
+        ReasonId.EVIDENCE_OK if accepted else ReasonId.DENY_AUTHORITY_INSUFFICIENT,
+    )
+
 def run_with_tva(
     *,
     executor: Executor,
@@ -1060,10 +1087,9 @@ def orchestrate_execution_v2(
         )
 
         payload_body = _require_mapping((_require_mapping(p.get("payload")) or {}).get("body")) or {}
-        human_gate = LocalPolicyGateResult(
-            "human",
-            payload_body.get("ui_confirmed") is True,
-            ReasonId.EVIDENCE_OK if payload_body.get("ui_confirmed") is True else ReasonId.DENY_AUTHORITY_INSUFFICIENT,
+        human_gate = _bound_human_confirmation_gate(
+            payload_body=payload_body,
+            context_fields=fields,
         )
 
         # Milestone 18 Option 2: TVA/replay is a real local gate into the
