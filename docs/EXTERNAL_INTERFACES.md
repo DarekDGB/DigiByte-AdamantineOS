@@ -219,6 +219,22 @@ If `expected_context_hash` is omitted, or if the session-bound context differs f
 
 ---
 
+### 8.5 Final policy engine context-binding requirement
+
+The final policy engine MUST receive `expected_context_hash` from the live execution request. This value is required at the function boundary and must be a lowercase 64-character SHA-256 hex string.
+
+Every normalized evidence object that reaches the final policy engine must carry the same `context_hash`. Evidence with a missing, malformed, or mismatched context hash fails closed with `DENY_CONTEXT_MISMATCH` / `EQC_CONFLICTING_EVIDENCE`; the engine no longer supports a context-less evaluation mode.
+
+This check is defense-in-depth. Adapter boundaries still validate their own context bindings first, but the final policy engine also enforces one shared request context across Shield, WSQK v2, Q-ID, Adaptive Core, and AI Gateway evidence.
+
+### 8.6 WSQK v2 evidence-family canonicalization at TVA
+
+TVA compares WSQK v2 required evidence families only after canonicalizing both the authority-stored families and the caller-required families through the Phase 1 sorted unique set profile.
+
+An authority that stores the same valid family set in a different order does not fail solely because of tuple ordering. Unknown, empty, duplicate-after-validation, or non-string family values still fail closed through the existing WSQK v2 reason IDs.
+
+---
+
 ## 9. Observability Constraints
 
 External interfaces may emit **non-sensitive observability data**.
