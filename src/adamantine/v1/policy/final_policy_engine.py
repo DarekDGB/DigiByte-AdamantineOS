@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import re
 from typing import Any, Iterable, Mapping
 
 from adamantine.v1.contracts.reason_ids import ReasonId
@@ -101,6 +102,11 @@ _NESTED_AUTHORITY_CONTAINERS = frozenset({
     "raw",
 })
 _ALLOWED_NORMALIZED_AUTHORITY_FIELDS = frozenset({"final_approval", "handoff_allowed"})
+_CONTEXT_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _is_context_hash(value: Any) -> bool:
+    return isinstance(value, str) and _CONTEXT_HASH_RE.fullmatch(value) is not None
 
 
 def _truthy_authority_value(value: Any) -> bool:
@@ -245,7 +251,7 @@ def _evaluate_evidence_gate(
     gate: str,
     evidence: Any,
     evaluation_order: tuple[str, ...],
-    expected_context_hash: str | None = None,
+    expected_context_hash: str,
 ) -> FinalPolicyEngineResult | None:
     if evidence is None:
         return _result(
@@ -277,19 +283,6 @@ def _evaluate_evidence_gate(
             dominant_reason_ids=(f"HIDDEN_AUTHORITY_BYPASS:{gate}",),
         )
 
-    if expected_context_hash is not None:
-        evidence_context_hash = getattr(evidence, "context_hash", None)
-        if evidence_context_hash != expected_context_hash:
-            return _result(
-                state=FinalPolicyEngineState.DENY_CONTEXT_MISMATCH,
-                outcome="DENY",
-                reason_id=ReasonId.EQC_CONFLICTING_EVIDENCE,
-                stopped_at=gate,
-                evaluation_order=evaluation_order,
-                dominant_reason_ids=(f"CONTEXT_MISMATCH:{gate}",),
-            )
-
-
     if getattr(evidence, "accepted_as_evidence", False) is not True:
         return _result(
             state=FinalPolicyEngineState.DENY_EVIDENCE_REJECTED,
@@ -308,6 +301,17 @@ def _evaluate_evidence_gate(
             stopped_at=gate,
             evaluation_order=evaluation_order,
             dominant_reason_ids=_dominant_reasons(evidence, ReasonId.DENY_POLICY),
+        )
+
+    evidence_context_hash = getattr(evidence, "context_hash", None)
+    if evidence_context_hash != expected_context_hash:
+        return _result(
+            state=FinalPolicyEngineState.DENY_CONTEXT_MISMATCH,
+            outcome="DENY",
+            reason_id=ReasonId.EQC_CONFLICTING_EVIDENCE,
+            stopped_at=gate,
+            evaluation_order=evaluation_order,
+            dominant_reason_ids=(f"CONTEXT_MISMATCH:{gate}",),
         )
 
     if _evidence_indicates_human_review(evidence):
@@ -375,7 +379,7 @@ def evaluate_final_policy_engine(
     replay: LocalPolicyGateResult,
     wallet_policy: LocalPolicyGateResult,
     human: LocalPolicyGateResult,
-    expected_context_hash: str | None = None,
+    expected_context_hash: str,
 ) -> FinalPolicyEngineResult:
     """Evaluate the locked local AdamantineOS final policy order.
 
@@ -386,7 +390,21 @@ def evaluate_final_policy_engine(
     This function consumes normalized evidence boundary results. It does not
     import external repositories, call live multi-repo code, or promote any
     evidence-only ALLOW into final approval before local gates pass.
+
+    ``expected_context_hash`` is required. Omitting it is impossible at the
+    signature level, and passing a malformed value fails closed before any
+    evidence gate can become trusted.
     """
+
+    if not _is_context_hash(expected_context_hash):
+        return _result(
+            state=FinalPolicyEngineState.DENY_CONTEXT_MISMATCH,
+            outcome="DENY",
+            reason_id=ReasonId.EQC_CONFLICTING_EVIDENCE,
+            stopped_at="expected_context_hash",
+            evaluation_order=("expected_context_hash",),
+            dominant_reason_ids=("EXPECTED_CONTEXT_HASH_REQUIRED",),
+        )
 
     evidence_by_gate = {
         "shield": shield,
