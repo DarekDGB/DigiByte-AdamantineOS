@@ -157,16 +157,13 @@ def test_phase7_tva_denies_context_binding_tamper_before_nonce_use(
     _enforce(authority, nonce_store=nonce_store)
 
 
-def test_phase7_tva_denies_required_family_order_tamper() -> None:
-    tampered = dataclasses.replace(
+def test_phase7_tva_accepts_unsorted_stored_families_after_canonicalization() -> None:
+    authority = dataclasses.replace(
         _issue_v2(),
         required_evidence_families=("qid_hybrid", "pqc_signature"),
     )
 
-    with pytest.raises(TVAError) as exc:
-        _enforce(tampered)
-
-    assert str(exc.value) == ReasonId.TVA_WSQK_V2_EVIDENCE_FAMILY_MISMATCH.value
+    _enforce(authority)
 
 
 @pytest.mark.parametrize(
