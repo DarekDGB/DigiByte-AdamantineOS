@@ -331,6 +331,46 @@ def test_legacy_bundle_boundary_is_explicitly_named_test_only() -> None:
     assert policy.shield_runtime_boundary is ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY
 
 
+def test_default_policy_uses_production_orchestrator_receipt_boundary() -> None:
+    policy = RiskPolicy()
+    policy.validate()
+
+    assert policy.shield_runtime_boundary is ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2
+
+
+def test_policy_pack_without_explicit_boundary_rejects_legacy_bundle_shape() -> None:
+    context_hash = compute_context_hash(
+        wallet_id="w1",
+        action="send",
+        fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
+    )
+    pack = PolicyPack(
+        min_overall_score=85,
+        allowed_external_reason_ids=("ok", "AC_OK", "OK"),
+        external_reason_map=_reason_map(),
+    )
+
+    resp = orchestrate_execution_v2(
+        payload=_envelope(
+            context_hash=context_hash,
+            shield=_legacy_shield_bundle(context_hash=context_hash),
+        ),
+        now=NOW,
+        executor=RecordingExecutor(),
+        nonce_store=InMemoryNonceStore(),
+        policy=RiskPolicy(min_overall_score=85, policy_pack=pack),
+    )
+
+    assert resp["status"] == "deny"
+    assert resp["reason_id"] == ReasonId.EQC_INVALID_SHIELD_BUNDLE.value
+    artifact = resp["artifacts"]["shield_runtime_boundary"]
+    assert artifact["mode"] == ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2.value
+    assert artifact["route_status"] == "receipt_rejected_at_orchestrator_only_boundary"
+    assert artifact["verified"] is False
+    assert artifact["accepted_as_evidence"] is False
+    assert artifact["final_approval"] is False
+
+
 def test_policy_rejects_non_enum_shield_runtime_boundary() -> None:
     policy = RiskPolicy(shield_runtime_boundary="ORCHESTRATOR_RECEIPT_V3_2")  # type: ignore[arg-type]
     try:
