@@ -62,7 +62,7 @@ def _envelope_v1_base() -> dict:
             "app_id": "com.example.wallet",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {"class": "user", "scope": {"policy_pack": "default"}},
         "timebox": {"issued_at": "2026-02-03T20:00:00Z", "expires_at": "2026-02-03T20:01:00Z"},
