@@ -10,7 +10,7 @@ from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution.executor import RecordingExecutor
 from adamantine.v1.execution.orchestrator_v2 import REQUIRED_SHIELD_LAYERS_V3, orchestrate_execution_v2
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
 
 def _reason_map() -> ExternalReasonMap:
@@ -31,7 +31,11 @@ def _policy(*, min_score: int = 85) -> RiskPolicy:
         allowed_external_reason_ids=("ok", "AC_OK", "OK", "BLOCK"),
         external_reason_map=_reason_map(),
     )
-    return RiskPolicy(min_overall_score=min_score, policy_pack=pack)
+    return RiskPolicy(
+        min_overall_score=min_score,
+        policy_pack=pack,
+        shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY,
+    )
 
 
 def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = None) -> dict[str, Any]:
