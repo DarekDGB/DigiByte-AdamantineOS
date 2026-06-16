@@ -1,6 +1,6 @@
 import pytest
 
-from adamantine.v1.policy.risk_policy import RiskPolicy, ResilienceMode, UnknownReasonMode
+from adamantine.v1.policy.risk_policy import RiskPolicy, ResilienceMode, ShieldRuntimeBoundary, UnknownReasonMode
 
 
 def test_default_policy_is_valid() -> None:
@@ -9,6 +9,7 @@ def test_default_policy_is_valid() -> None:
     assert p.min_overall_score == 85
     assert p.unknown_reason_mode is UnknownReasonMode.DENY_EXPLICIT
     assert p.resilience_mode is ResilienceMode.STRICT_FAIL_CLOSED
+    assert p.shield_runtime_boundary is ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2
 
 
 def test_policy_rejects_out_of_range_score() -> None:
