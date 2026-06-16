@@ -190,7 +190,7 @@ def _envelope(
             "app_id": "app",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs or {}},
         "timebox": {"issued_at": ISSUED_ISO, "expires_at": EXPIRES_ISO},
@@ -207,7 +207,7 @@ def _envelope(
 
 
 def test_orchestrator_only_mode_rejects_legacy_bundle_shape() -> None:
-    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     resp = orchestrate_execution_v2(
         payload=_envelope(context_hash=context_hash, shield=_legacy_shield_bundle(context_hash=context_hash)),
         now=NOW,
@@ -227,7 +227,7 @@ def test_orchestrator_only_mode_rejects_legacy_bundle_shape() -> None:
 
 
 def test_orchestrator_only_mode_continues_from_verified_receipt_to_wsqk_gate() -> None:
-    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     resp = orchestrate_execution_v2(
         payload=_envelope(
@@ -259,7 +259,7 @@ def test_orchestrator_only_mode_continues_from_verified_receipt_to_wsqk_gate() -
 
 
 def test_orchestrator_receipt_runtime_route_allows_only_after_local_gates() -> None:
-    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     resp = orchestrate_execution_v2(
         payload=_envelope(
@@ -296,7 +296,7 @@ def test_orchestrator_receipt_runtime_route_allows_only_after_local_gates() -> N
 
 
 def test_orchestrator_receipt_runtime_route_still_requires_human_confirmation() -> None:
-    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     resp = orchestrate_execution_v2(
         payload=_envelope(
@@ -371,7 +371,7 @@ def _verified_receipt_result(*, context_hash: str):
 def test_receipt_internalization_rejects_impossible_or_tampered_verified_shapes() -> None:
     from dataclasses import replace
 
-    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    context_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     base = _verified_receipt_result(context_hash=context_hash)
     receipt = dict(base.receipt or {})
     components = list(receipt["component_verdicts"])
