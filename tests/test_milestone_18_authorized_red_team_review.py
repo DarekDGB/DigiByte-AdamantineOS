@@ -36,7 +36,11 @@ def _policy(*, min_score: int = 85) -> orch.RiskPolicy:
         allowed_external_reason_ids=("ok", "AC_OK", "OK", "BLOCK"),
         external_reason_map=_reason_map(),
     )
-    return orch.RiskPolicy(min_overall_score=min_score, policy_pack=pack)
+    return orch.RiskPolicy(
+        min_overall_score=min_score,
+        policy_pack=pack,
+        shield_runtime_boundary=orch.ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY,
+    )
 
 
 def _qid_payload(*, issued_at: int, expires_at: int, context_hash: str | None = None) -> dict[str, Any]:
