@@ -171,7 +171,7 @@ def _envelope_v2(
             "app_id": "app",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs},
         "timebox": {"issued_at": issued_iso, "expires_at": expires_iso},
@@ -195,7 +195,7 @@ def _envelope_v2(
 
 def test_regression_shield_conflict_can_never_flip_to_allow() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
