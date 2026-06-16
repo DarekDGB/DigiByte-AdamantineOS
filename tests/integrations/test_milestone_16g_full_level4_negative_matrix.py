@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from adamantine.v1.contracts.reason_ids import ReasonId
+CTX = "a" * 64
+
 from adamantine.v1.policy.final_policy_engine import (
     FinalPolicyEngineState,
     LocalPolicyGateResult,
@@ -18,6 +20,7 @@ class Evidence:
     accepted_as_evidence: bool = True
     final_approval: bool = False
     handoff_allowed: bool = True
+    context_hash: str = CTX
     dominant_reason_ids: tuple[str, ...] = (ReasonId.EVIDENCE_OK.value,)
     final_outcome: str | None = None
 
@@ -69,6 +72,7 @@ def run_engine(**overrides):
         "replay": gate("replay"),
         "wallet_policy": gate("wallet_policy"),
         "human": gate("human"),
+        "expected_context_hash": CTX,
     }
     args.update(overrides)
     return evaluate_final_policy_engine(**args)
@@ -295,6 +299,7 @@ def test_16g_non_string_object_attributes_are_ignored_but_shape_still_checked():
         accepted_as_evidence = True
         handoff_allowed = True
         final_approval = False
+        context_hash = CTX
 
         def __init__(self):
             self.__dict__[1] = "non-string-key"
@@ -307,7 +312,10 @@ def test_16g_non_string_object_attributes_are_ignored_but_shape_still_checked():
 
 def test_16g_slot_only_object_without_mapping_state_fails_closed():
     class SlotOnlyEvidence:
-        __slots__ = ()
+        __slots__ = ("context_hash",)
+
+        def __init__(self):
+            self.context_hash = CTX
 
     result = run_engine(wsqk_v2=SlotOnlyEvidence())
 
