@@ -39,6 +39,7 @@ def _run(name: str) -> dict:
         require_protected_call=policy.require_protected_call,
         require_full_mode=policy.require_full_mode,
         require_qid_replay_proof=True,
+        shield_runtime_boundary=policy.shield_runtime_boundary,
     )
     return orchestrate_execution_v2(payload=payload, now=NOW, executor=executor, nonce_store=store, policy=policy)
 
