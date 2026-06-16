@@ -56,3 +56,16 @@ Output is a lowercase hex string of length 64.
 - Ordering MUST be stable (sorted by key).
 - Unknown fields are included only if present in `fields` input (core does not invent fields).
 - Callers MUST ensure `fields` values are strings; adapters must validate this at the boundary.
+
+## Human-confirmation binding
+
+For execution request v2, `payload.body.ui_confirmed` is an untrusted runtime signal unless it is also committed into the deterministic context.
+
+A human confirmation is accepted only when both conditions are true:
+
+1. `payload.body.ui_confirmed` is exactly `true`.
+2. `context.fields.ui_confirmed` is exactly the string `"true"`.
+
+Because `context.fields` is part of the canonical context hash input, `context.fields.ui_confirmed = "true"` is bound to the same `context_hash` that WSQK, Q-ID, Adaptive Core, and Shield evidence are expected to reference.
+
+Payload-only confirmation is not authority. If `payload.body.ui_confirmed` is true but `context.fields.ui_confirmed` is missing, false, non-string, or any value other than `"true"`, the human gate must fail closed.
