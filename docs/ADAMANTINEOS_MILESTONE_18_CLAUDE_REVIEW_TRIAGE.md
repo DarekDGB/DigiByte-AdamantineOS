@@ -24,7 +24,7 @@ No AdamantineOS tag is allowed while Milestone 18 remains open.
 | ID | Severity | Finding | Milestone 18 decision | Resolution in this patch |
 | --- | --- | --- | --- | --- |
 | F1 | HIGH | Audited final policy engine was not on the live runtime decision path. | Accepted. Fix with Option A. | `orchestrator_v2` now invokes `evaluate_final_policy_engine` before executor execution. Runtime tests prove final-policy DENY blocks executor. |
-| F2 | MEDIUM | No cross-evidence context binding inside the final policy engine. | Accepted. Fix. | `evaluate_final_policy_engine(..., expected_context_hash=...)` now denies mismatched/missing evidence context when a runtime context hash is supplied. |
+| F2 | MEDIUM | No cross-evidence context binding inside the final policy engine. | Accepted. Fix. | `evaluate_final_policy_engine(..., expected_context_hash=...)` now requires the runtime context hash and denies mismatched or missing evidence context on every evaluation. |
 | F3 | LOW | `final_approval` bypass guard used strict identity (`is True`). | Accepted. Fix. | Any truthy upstream `final_approval` now fails closed as authority bypass. |
 | F4 | LOW | Hard DENY could be reported as `HUMAN_REVIEW_REQUIRED`. | Accepted. Fix. | Evidence/local hard DENY now dominates human-review signals. |
 | F5 | LOW | Hidden-authority scan missed `__slots__` objects and some nested containers. | Accepted. Fix. | Scanner now handles mapping, list, tuple, set, `__dict__`, and `__slots__` evidence. |
