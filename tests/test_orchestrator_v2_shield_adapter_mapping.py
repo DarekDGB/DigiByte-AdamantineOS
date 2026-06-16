@@ -118,7 +118,7 @@ def _envelope_v2(*, now: int, context_hash: str, shield_payload: dict[str, Any],
             "app_id": "app",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {
             "class": "user",
@@ -155,7 +155,7 @@ def _envelope_v2(*, now: int, context_hash: str, shield_payload: dict[str, Any],
 
 def test_orchestrator_maps_shield_adapter_invalid_to_eqc_invalid_shield_bundle() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
 
     shield = _shield_bundle(context_hash=ctx_hash, required_layers=list(REQUIRED_SHIELD_LAYERS_V3))
     # Break deterministic ordering: signals must be sorted by (layer, signal_id).
@@ -178,7 +178,7 @@ def test_orchestrator_maps_shield_adapter_invalid_to_eqc_invalid_shield_bundle()
 
 def test_orchestrator_maps_shield_version_mismatch_to_eqc_invalid_shield_bundle() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
 
     shield = _shield_bundle(context_hash=ctx_hash, required_layers=list(REQUIRED_SHIELD_LAYERS_V3))
     shield["v"] = "shield_bundle_v2"  # version mismatch
@@ -200,7 +200,7 @@ def test_orchestrator_maps_shield_version_mismatch_to_eqc_invalid_shield_bundle(
 
 def test_orchestrator_preserves_unknown_external_reason_from_shield_adapter() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
 
     shield = _shield_bundle(context_hash=ctx_hash, required_layers=list(REQUIRED_SHIELD_LAYERS_V3))
     for s in shield["signals"]:
