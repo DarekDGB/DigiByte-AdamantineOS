@@ -306,6 +306,7 @@ def test_claude_f3_truthy_final_approval_and_slots_are_authority_bypass() -> Non
         adaptive_core=Evidence(),
         ai_gateway=Evidence(),
         **gates(),
+        expected_context_hash="a" * 64,
     )
     assert result.state == FinalPolicyEngineState.DENY_AUTHORITY_BYPASS
 
@@ -325,6 +326,7 @@ def test_claude_f4_deny_dominates_over_human_review_signal() -> None:
         adaptive_core=Evidence(),
         ai_gateway=Evidence(),
         **gates(),
+        expected_context_hash="a" * 64,
     )
     assert result.state == FinalPolicyEngineState.DENY_EVIDENCE_REJECTED
     assert result.outcome == "DENY"
@@ -351,6 +353,7 @@ def test_claude_f5_set_container_scan_branch_is_locked() -> None:
         adaptive_core=Evidence(),
         ai_gateway=Evidence(),
         **gates(),
+        expected_context_hash="a" * 64,
     )
     assert result.state == FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION
 
@@ -363,6 +366,7 @@ def test_claude_f6_human_review_requires_exact_status_not_substring() -> None:
         adaptive_core=Evidence(),
         ai_gateway=Evidence(),
         **gates(),
+        expected_context_hash="a" * 64,
     )
     assert result.state == FinalPolicyEngineState.ALLOW_FINAL_ADAMANTINEOS_DECISION
 
@@ -375,6 +379,7 @@ def test_claude_f7_unknown_reason_ids_are_sanitized_at_engine_layer() -> None:
         adaptive_core=Evidence(),
         ai_gateway=Evidence(),
         **gates(),
+        expected_context_hash="a" * 64,
     )
     assert result.reason_id is ReasonId.UNKNOWN_EXTERNAL_REASON
     assert result.dominant_reason_ids == (ReasonId.UNKNOWN_EXTERNAL_REASON.value,)
@@ -390,6 +395,7 @@ def test_engine_sanitizes_non_string_local_gate_reason() -> None:
         replay=LocalPolicyGateResult("replay", False, object()),  # type: ignore[arg-type]
         wallet_policy=LocalPolicyGateResult("wallet_policy", True, ReasonId.EVIDENCE_OK),
         human=LocalPolicyGateResult("human", True, ReasonId.EVIDENCE_OK),
+        expected_context_hash="a" * 64,
     )
     assert result.reason_id is not ReasonId.OK_ALLOW
     assert result.dominant_reason_ids == (ReasonId.UNKNOWN_EXTERNAL_REASON.value,)
@@ -403,6 +409,7 @@ def test_string_slots_hidden_authority_branch_is_locked() -> None:
         adaptive_core=Evidence(),
         ai_gateway=Evidence(),
         **gates(),
+        expected_context_hash="a" * 64,
     )
     assert result.state == FinalPolicyEngineState.DENY_AUTHORITY_BYPASS
 
