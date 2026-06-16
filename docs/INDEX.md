@@ -13,7 +13,7 @@ The `v3.0.0` release connects Shield components, Shield Orchestrator v3.2 receip
 
 - Shield components: Guardian Wallet, ADN, Sentinel AI, DQSN, QWG
 - Shield Orchestrator v3.2 receipt boundary
-- Shield runtime boundary lock: production uses Orchestrator receipt-only; legacy bundle mode is test-only until the Step 5 runtime route is wired
+- Shield runtime boundary lock: production uses Orchestrator receipt-only by default; legacy bundle mode is explicit test-only compatibility
 - WSQK v2 posture / policy evidence
 - Q-ID identity / session evidence
 - Adaptive Core advisory policy evidence
@@ -38,7 +38,7 @@ Architecture and system design documents.
 
 Documents describing governance interactions.
 
--   Adaptive Core ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ Adamantine Governance Flow
+-   Adaptive Core ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Adamantine Governance Flow
 -   Governance Review Contract
 
 ------------------------------------------------------------------------
@@ -60,7 +60,7 @@ Artifact schemas and interface definitions.
 AdamantineOS follows strict architectural guardrails:
 
 -   deterministic behavior
--   failÃÂÃÂ¢ÃÂÃÂÃÂÃÂclosed validation
+-   failÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂclosed validation
 -   canonical serialization
 -   explicit invariants
 -   no silent fallback
