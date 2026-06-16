@@ -69,12 +69,12 @@ class RiskPolicy:
     # If enabled, protected executions MUST supply a valid Q-ID replay proof.
     require_qid_replay_proof: bool = False
 
-    # Post-v3.0.0 AOS-M-002A Shield runtime boundary lock.
-    # LEGACY_BUNDLE_V3_TEST_ONLY remains only for existing local compatibility
-    # tests until AOS-M-002B wires the full receipt path. Production hardening
-    # selects ORCHESTRATOR_RECEIPT_V3_2 and fails closed on bundle-shaped Shield
-    # evidence.
-    shield_runtime_boundary: ShieldRuntimeBoundary = ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY
+    # Post-v3.0.0 AOS-RT-002 production Shield runtime boundary lock.
+    # The production-safe default is the Orchestrator v3.2 receipt boundary.
+    # LEGACY_BUNDLE_V3_TEST_ONLY remains available only when explicitly selected
+    # by old fixture harnesses or compatibility tests; plain RiskPolicy() must not
+    # silently select the TEST-ONLY path.
+    shield_runtime_boundary: ShieldRuntimeBoundary = ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2
 
     def validate(self) -> None:
         if self.policy_pack is not None:
