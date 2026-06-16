@@ -9,7 +9,7 @@ from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution import orchestrator_v2 as orch_mod
 from adamantine.v1.execution.executor import Executor
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
 
 class _NoopExecutor(Executor):
@@ -21,7 +21,7 @@ NOW = 1770148800  # 2026-02-03T20:00:00Z
 
 
 def _policy() -> RiskPolicy:
-    p = RiskPolicy()
+    p = RiskPolicy(shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY)
     p.validate()
     return p
 
