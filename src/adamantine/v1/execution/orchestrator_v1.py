@@ -1,3 +1,14 @@
+"""Deprecated internal compatibility orchestrator for execution_request_v1.
+
+AOS-RT-004 lock:
+- This module is retained only for legacy fixture compatibility and regression tests.
+- It is not a public production entrypoint and is not exported from
+  ``adamantine.v1.execution``.
+- New wallet/runtime integrations must use the v2 runtime host and
+  ``orchestrator_v2`` final decision boundary.
+- Direct production imports of this module are unsupported.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Callable, Mapping, cast
@@ -24,6 +35,9 @@ from adamantine.v1.policy.final_policy_engine import (
 )
 from adamantine.v1.policy.risk_policy import RiskPolicy
 
+
+ORCHESTRATOR_V1_DEPRECATED_INTERNAL_ONLY = True
+ORCHESTRATOR_V1_PUBLIC_ENTRYPOINT = False
 
 
 class _V1FinalPolicyEvidence:
@@ -208,13 +222,18 @@ def orchestrate_execution_v1(
     policy: RiskPolicy | None = None,
 ) -> dict[str, Any]:
     """
-    Execution Orchestrator v1.
+    Deprecated internal compatibility path for execution_request_v1.
+
+    AOS-RT-004 lock:
+    - retained for legacy fixtures and regression tests only
+    - not exported as a public production runtime surface
+    - new integrations must use the v2 runtime host / orchestrator_v2 path
 
     Invariants:
     - Always returns execution_response_v1
     - Never raises
     - Deny-by-default
-    - ALLOW path: EQC -> WSQK(proof) -> TVA -> executor
+    - ALLOW path: EQC -> WSQK(proof) -> TVA -> final policy -> executor
     """
     # Fail-closed: normalize payload for safe error handling in ALL exception paths.
     p: Mapping[str, Any] = payload if isinstance(payload, Mapping) else {}
