@@ -151,7 +151,7 @@ def _envelope_v2(
             "app_id": "app",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs},
         "timebox": {"issued_at": issued_iso, "expires_at": expires_iso},
@@ -188,7 +188,7 @@ class CountingNonceStore(NonceStore):
 
 def test_runtime_host_deny_never_calls_executor() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = CountingExecutor()
     store = CountingNonceStore()
     policy = _policy(min_score=85)
@@ -211,7 +211,7 @@ def test_runtime_host_deny_never_calls_executor() -> None:
 
 def test_runtime_host_allow_calls_executor_exactly_once() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = CountingExecutor()
     store = CountingNonceStore()
     policy = _policy(min_score=85)
@@ -233,7 +233,7 @@ def test_runtime_host_allow_calls_executor_exactly_once() -> None:
 
 def test_runtime_host_determinism_multi_run() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     policy = _policy(min_score=85)
 
     payload = _envelope_v2(
