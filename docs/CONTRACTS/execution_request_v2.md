@@ -55,6 +55,30 @@ If the policy latch `require_qid_replay_proof` is enabled, replay proof becomes 
 
 ---
 
+
+## 3.2 Human Confirmation Binding
+
+`payload.body.ui_confirmed` MUST NOT be treated as authority by itself. Runtime payload fields are untrusted unless bound into the request context.
+
+For a human-confirmed request to pass the final human gate, the request MUST include:
+
+```json
+"context": {
+  "fields": {
+    "ui_confirmed": "true"
+  }
+},
+"payload": {
+  "body": {
+    "ui_confirmed": true
+  }
+}
+```
+
+The context field is a string because `context.fields` is the canonical hash input. The payload field remains a boolean because it represents the runtime UI event. Both must agree.
+
+If the payload says `ui_confirmed: true` but the context field is missing or not exactly `"true"`, AdamantineOS must deny at the human gate.
+
 ## 4. Determinism Requirements
 
 For identical inputs, Adamantine MUST produce:
