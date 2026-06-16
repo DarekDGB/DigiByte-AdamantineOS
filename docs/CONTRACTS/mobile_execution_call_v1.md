@@ -111,12 +111,18 @@ Evidence is **input only**. Adamantine consumes evidence (e.g. Q-ID proof, Adapt
 
 ## 6. Implementation Anchors
 
-Code entrypoints for this contract:
+Code anchors for this legacy contract:
 
 - Request validation: `src/adamantine/v1/execution/envelope_v1.py`
 - Response builder: `src/adamantine/v1/execution/response_v1.py`
-- Orchestrator: `src/adamantine/v1/execution/orchestrator_v1.py`
+- Legacy compatibility harness: `src/adamantine/v1/execution/orchestrator_v1.py`
 - Contract wrapper validator: `src/adamantine/v1/execution/mobile_call_v1.py` (added in Phase D)
+
+### AOS-RT-004 legacy-entrypoint lock
+
+`orchestrator_v1.py` is retained only for legacy fixture compatibility and regression tests. It is not a production integration entrypoint and must not be presented to wallet integrators as the live AdamantineOS decision boundary.
+
+Production integrations must use the v2 runtime host and the `orchestrator_v2` final decision boundary.
 
 ---
 
