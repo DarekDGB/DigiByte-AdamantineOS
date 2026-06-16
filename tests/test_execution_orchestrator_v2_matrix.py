@@ -138,7 +138,7 @@ def _envelope_v2(
             "app_id": "app",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs},
         "timebox": {"issued_at": issued_iso, "expires_at": expires_iso},
@@ -172,7 +172,7 @@ def _d(resp: dict[str, Any], *path: str) -> Any:
 
 def test_allow_path_multi_evidence() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
@@ -199,7 +199,7 @@ def test_allow_path_multi_evidence() -> None:
 
 def test_deny_if_missing_any_required_shield_layer() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
@@ -225,7 +225,7 @@ def test_deny_if_missing_any_required_shield_layer() -> None:
 
 def test_deny_if_unknown_required_layer_present() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
@@ -251,7 +251,7 @@ def test_deny_if_unknown_required_layer_present() -> None:
 
 def test_deny_if_duplicate_required_layer_present() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
@@ -275,7 +275,7 @@ def test_deny_if_duplicate_required_layer_present() -> None:
 
 def test_deny_if_required_layers_wrong_order() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
@@ -300,7 +300,7 @@ def test_deny_if_required_layers_wrong_order() -> None:
 
 def test_deny_if_oracle_score_below_threshold() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
@@ -323,7 +323,7 @@ def test_deny_if_oracle_score_below_threshold() -> None:
 
 def test_deny_if_shield_context_hash_mismatch() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
@@ -347,7 +347,7 @@ def test_deny_if_shield_context_hash_mismatch() -> None:
 
 def test_determinism_same_input_same_output() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     executor = RecordingExecutor()
     store = InMemoryNonceStore()
     policy = _policy(min_score=85)
