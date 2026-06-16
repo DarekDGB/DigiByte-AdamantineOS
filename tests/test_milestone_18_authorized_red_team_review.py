@@ -139,7 +139,7 @@ def _envelope_v2(
             "app_id": "app",
             "session_id": "s1",
             "action": "send",
-            "fields": {"asset": "DGB", "amount": "1"},
+            "fields": {"asset": "DGB", "amount": "1", "ui_confirmed": "true"},
         },
         "authority": {"class": "user", "scope": {"policy_pack": "default"}, "proofs": proofs},
         "timebox": {"issued_at": issued_iso, "expires_at": expires_iso},
@@ -213,7 +213,7 @@ def gates() -> dict[str, LocalPolicyGateResult]:
 
 def test_claude_f1_live_runtime_invokes_final_policy_before_executor(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -501,7 +501,7 @@ def test_claude_n2_legacy_v1_executes_only_after_final_policy(monkeypatch) -> No
 
 def test_claude_n1_eqc_deny_reaches_final_policy_engine(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -557,7 +557,7 @@ def test_claude_n2_v1_final_policy_reason_sanitizes_bad_values() -> None:
 
 def test_milestone_18_outer_tva_error_path_remains_fail_closed_for_bad_wsqk_v2_scope() -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -601,7 +601,7 @@ def _observe_v2_engine(monkeypatch, observed: dict[str, Any]) -> None:
 
 def test_milestone_18_option2_qid_reject_reaches_final_policy_engine(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -630,7 +630,7 @@ def test_milestone_18_option2_qid_reject_reaches_final_policy_engine(monkeypatch
 
 def test_milestone_18_option2_shield_reject_reaches_final_policy_engine(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -658,7 +658,7 @@ def test_milestone_18_option2_shield_reject_reaches_final_policy_engine(monkeypa
 
 def test_milestone_18_option2_wsqk_reject_reaches_final_policy_engine(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -686,7 +686,7 @@ def test_milestone_18_option2_wsqk_reject_reaches_final_policy_engine(monkeypatc
 
 def test_milestone_18_option2_replay_gate_reject_reaches_final_policy_engine(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -715,7 +715,7 @@ def test_milestone_18_option2_replay_gate_reject_reaches_final_policy_engine(mon
 
 def test_milestone_18_option2_human_gate_reject_reaches_final_policy_engine(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
@@ -744,7 +744,7 @@ def test_milestone_18_option2_human_gate_reject_reaches_final_policy_engine(monk
 
 def test_milestone_18_n8_reject_branch_unexpected_engine_allow_fails_closed(monkeypatch) -> None:
     now = 1706990400
-    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1"})
+    ctx_hash = compute_context_hash(wallet_id="w1", action="send", fields={"asset": "DGB", "amount": "1", "ui_confirmed": "true"})
     payload = _envelope_v2(
         now=now,
         context_hash=ctx_hash,
