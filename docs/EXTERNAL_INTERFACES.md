@@ -47,6 +47,13 @@ Adamantine exposes a **single execution boundary**.
 
 If a request cannot be fully validated, it is **rejected deterministically**.
 
+### 3.1 Production runtime entrypoint discipline
+
+The deprecated `execution/orchestrator_v1.py` module is an internal legacy compatibility harness only. It is retained for historical fixtures and regression tests, but it is not exported as an external production runtime surface.
+
+Production integrations MUST use the v2 runtime host and the `orchestrator_v2` final decision boundary. Integrators MUST NOT import `orchestrator_v1.py` directly as a live execution approval path.
+
+
 ---
 
 ## 4. Input Validation Rules
