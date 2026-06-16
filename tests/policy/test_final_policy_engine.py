@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from adamantine.v1.contracts.reason_ids import ReasonId
+CTX = "a" * 64
+
 from adamantine.v1.policy.final_policy_engine import (
     FinalPolicyEngineState,
     LocalPolicyGateResult,
@@ -18,6 +20,7 @@ class Evidence:
     accepted_as_evidence: bool = True
     final_approval: bool = False
     handoff_allowed: bool = True
+    context_hash: str = CTX
     dominant_reason_ids: tuple[str, ...] = (ReasonId.EVIDENCE_OK.value,)
     final_outcome: str | None = None
 
@@ -42,6 +45,7 @@ def run_engine(**overrides):
         "qid": allow_evidence(),
         "adaptive_core": allow_evidence(),
         "ai_gateway": allow_evidence(),
+        "expected_context_hash": CTX,
         **gates,
     }
     args.update(overrides)
@@ -297,3 +301,15 @@ def test_non_string_dominant_reasons_are_ignored():
 
     assert result.reason_id == ReasonId.UNKNOWN_EXTERNAL_REASON
     assert result.dominant_reason_ids == (ReasonId.UNKNOWN_EXTERNAL_REASON.value,)
+
+
+def test_expected_context_hash_malformed_fails_closed_before_evidence_trust():
+    result = run_engine(expected_context_hash="not-a-sha256-context")
+
+    assert result.state == FinalPolicyEngineState.DENY_CONTEXT_MISMATCH
+    assert result.outcome == "DENY"
+    assert result.reason_id == ReasonId.EQC_CONFLICTING_EVIDENCE
+    assert result.stopped_at == "expected_context_hash"
+    assert result.evaluation_order == ("expected_context_hash",)
+    assert result.dominant_reason_ids == ("EXPECTED_CONTEXT_HASH_REQUIRED",)
+    assert result.final_approval is False
