@@ -1,5 +1,5 @@
 {
-  "full_allow.json": "953ad02293017c0b72c7db34dfbe6cdcdc0b30e1a947e29ddd95c8573d620733",
-  "legacy_deny.json": "b1f4a7012dd813390aaafc6e1175197e32e25120a52bc9c3ecd024afbd0d20a1",
-  "minimal_deny.json": "8d16c15b7dc4f7fc68e550dc5cb03e1983402858c7da0924c99f2cf3f5f8feb4"
+  "full_allow.json": "f872757259b525da87df4594144f0c7be393587feaa5384ea11413eea22b49ff",
+  "legacy_deny.json": "39b59cc8071dbac7c218c409e92835d0e0797afe19dcb265f7ccb6c97c0085c9",
+  "minimal_deny.json": "0fb5186328edb4d59eba22a6a3bfc19781842154fcc69444f857f465e1f20928"
 }
