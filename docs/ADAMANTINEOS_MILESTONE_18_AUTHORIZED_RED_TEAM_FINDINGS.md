@@ -41,7 +41,7 @@ test_claude_f1_live_runtime_invokes_final_policy_before_executor
 
 Status: **fixed in hardening**
 
-The final policy engine now accepts an `expected_context_hash` and denies mismatched/missing evidence context when supplied.
+The final policy engine now requires an `expected_context_hash` and denies mismatched or missing evidence context on every evaluation.
 
 Regression proof:
 
