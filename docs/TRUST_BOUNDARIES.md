@@ -24,6 +24,13 @@ Everything outside a contract boundary is **untrusted input**.
 - Runtime glue, wallet UI, and adapter shortcuts remain untrusted and MUST NOT self-assert freshness.
 - Missing, stale, ambiguous, or unverifiable replay-registry state must fail closed.
 
+
+5) Wallet UI → AdamantineOS human gate
+- `payload.body.ui_confirmed` is untrusted as a standalone plaintext flag.
+- A true payload flag is accepted only when `context.fields.ui_confirmed` is exactly the string `"true"`.
+- The bound context field is part of `context_hash`; therefore the confirmation must be covered by the same evidence/authority chain as the rest of the request context.
+- Payload-only, missing, mismatched, or unbound confirmation fails closed with `DENY_AUTHORITY_INSUFFICIENT`.
+
 ## Non-goals (current)
 
 No runtime boundaries yet (clients, OS keychain, signing devices). Those come later once contracts are locked.
