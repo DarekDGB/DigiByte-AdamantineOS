@@ -21,7 +21,7 @@ from adamantine.v1.integrations.shield_orchestrator_receipt_verifier import (
     _classify_base_error,
 )
 from adamantine.v1.integrations.shield_v3_adapter import _is_hex_64
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
 
 @dataclass(frozen=True)
@@ -136,7 +136,7 @@ def test_tva_error_denial_does_not_report_full_protection(monkeypatch: pytest.Mo
         now=1706990410,
         executor=lambda *_args, **_kw: {"ok": True},
         nonce_store=lambda *_args, **_kw: False,
-        policy=RiskPolicy(),
+        policy=RiskPolicy(shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY),
     )
 
     assert out["status"] == "deny"
