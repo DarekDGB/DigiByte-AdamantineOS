@@ -17,6 +17,8 @@ The selected production boundary is:
 ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2
 ```
 
+As of the `AOS-RT-002` post-v3.0.0 hardening fix, this is also the default selected by plain `RiskPolicy()`. Production callers no longer receive the legacy bundle route unless they explicitly request the test-only boundary.
+
 This means `payload.evidence.shield` must be a Shield Orchestrator receipt with:
 
 ```text
@@ -38,9 +40,9 @@ The old Shield bundle boundary is explicitly named:
 ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY
 ```
 
-This mode exists only to keep pre-hardening compatibility tests and old local fixtures deterministic while the receipt-only runtime route is wired in `AOS-M-002B`.
+This mode exists only to keep pre-hardening compatibility tests and old local fixtures deterministic. It is not the default and must be selected explicitly with `shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY`.
 
-It must not be described as the production Shield handoff boundary.
+It must not be described as the production Shield handoff boundary, and integrators must not construct production execution policies that rely on this legacy bundle route.
 
 ---
 
@@ -89,4 +91,6 @@ The Step 4 and Step 5 regression tests must prove:
 - verified receipt evidence can continue to WSQK, EQC, TVA, human, and final policy gates
 - verified receipt evidence does not call the legacy Shield bundle parser in receipt-only mode
 - legacy bundle mode is explicitly named test-only
+- plain RiskPolicy() selects ORCHESTRATOR_RECEIPT_V3_2
+- RiskPolicy(policy_pack=...) without an explicit boundary still rejects legacy bundle-shaped Shield evidence
 ```
