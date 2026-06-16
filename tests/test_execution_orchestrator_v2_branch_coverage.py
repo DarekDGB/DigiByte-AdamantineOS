@@ -11,7 +11,7 @@ from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
 from adamantine.v1.eqc.context_hash import compute_context_hash
 from adamantine.v1.execution.executor import Executor
 from adamantine.v1.execution import orchestrator_v2 as orch_mod
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
 
 class _NoopExecutor(Executor):
@@ -27,7 +27,7 @@ def _iso(ts: int) -> str:
 
 
 def _policy() -> RiskPolicy:
-    p = RiskPolicy(min_overall_score=85)
+    p = RiskPolicy(min_overall_score=85, shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY)
     p.validate()
     return p
 
