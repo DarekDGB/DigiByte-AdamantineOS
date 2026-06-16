@@ -14,7 +14,7 @@ from adamantine.v1.execution.orchestrator_v2 import orchestrate_execution_v2
 
 
 NOW = 1706990400
-CTX_HASH = "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b"
+CTX_HASH = "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5"
 
 
 def _fixture_dir() -> Path:
