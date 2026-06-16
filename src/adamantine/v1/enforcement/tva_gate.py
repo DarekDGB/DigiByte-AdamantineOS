@@ -33,9 +33,11 @@ def _enforce_wsqk_v2_quantum_posture(
     if not isinstance(authority, WSQKAuthorityV2):
         raise TVAError(ReasonId.TVA_WSQK_V2_REQUIRED.value)
 
+    authority_families = canonical_required_evidence_families(authority.required_evidence_families)
+
     if required_evidence_families is not None:
         expected_families = canonical_required_evidence_families(required_evidence_families)
-        if authority.required_evidence_families != expected_families:
+        if authority_families != expected_families:
             raise TVAError(ReasonId.TVA_WSQK_V2_EVIDENCE_FAMILY_MISMATCH.value)
 
     if required_quantum_posture is not None:
@@ -51,7 +53,7 @@ def _enforce_wsqk_v2_quantum_posture(
         issued_at=authority.issued_at,
         expires_at=authority.expires_at,
         nonce=authority.nonce,
-        required_evidence_families=authority.required_evidence_families,
+        required_evidence_families=authority_families,
         quantum_posture=authority.quantum_posture,
     )
     if authority.proof_bindings_hash != expected_hash:
@@ -69,7 +71,7 @@ def enforce_tva(
     required_quantum_posture: str | None = None,
 ) -> None:
     """
-    TVA (Truth Vector Authority) â final enforcement gate (fail-closed).
+    TVA (Truth Vector Authority) Ã¢ÂÂ final enforcement gate (fail-closed).
 
     Execution is allowed ONLY if:
       - context exists
