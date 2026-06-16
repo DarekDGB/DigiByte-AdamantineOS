@@ -237,11 +237,11 @@ TVA enforcement remains opt-in for WSQK v2 so existing WSQK v1 callers remain co
 When a caller provides explicit WSQK v2 quantum requirements, TVA MUST:
 
 - deny WSQK v1 authority with `TVA_WSQK_V2_REQUIRED`;
-- compare required evidence families as a sorted canonical set;
+- canonicalize both authority-stored and caller-required evidence families before comparing them as a sorted canonical set;
 - deny evidence-family mismatch with `TVA_WSQK_V2_EVIDENCE_FAMILY_MISMATCH`;
 - compare quantum posture exactly;
 - deny posture mismatch with `TVA_WSQK_V2_QUANTUM_POSTURE_MISMATCH`;
-- recompute `proof_bindings_hash` from canonical authority fields;
+- recompute `proof_bindings_hash` from canonical authority fields, including the canonicalized family set;
 - deny hash tampering with `TVA_WSQK_V2_PROOF_BINDINGS_HASH_MISMATCH`.
 
 TVA MUST run these checks before nonce acceptance so tampered v2 authority does not consume a nonce.
