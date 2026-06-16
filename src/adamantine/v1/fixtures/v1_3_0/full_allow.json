@@ -4,7 +4,7 @@
     "proofs": {
       "wsqk": {
         "action": "send",
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
         "expires_at": 1706990460,
         "issued_at": 1706990400,
         "nonce": "n1",
@@ -21,7 +21,8 @@
     "device_id": "d1",
     "fields": {
       "amount": "1",
-      "asset": "DGB"
+      "asset": "DGB",
+      "ui_confirmed": "true"
     },
     "session_id": "s1",
     "wallet_id": "w1"
@@ -39,7 +40,7 @@
     "evidence": {
       "oracle": {
         "ac_iface_version": "adaptive_core_oracle_v3",
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
         "expires_at": 1706990405,
         "external_source_id": "ac-prod-1",
         "generated_at": 1706990399,
@@ -57,18 +58,18 @@
         ]
       },
       "qid": {
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
         "device_binding": "device-1",
         "expires_at": 1706990410,
         "issued_at": 1706990390,
         "issuer_version": "qid-v0",
-        "proof_hash": "a8822fa38a4695c7c09154f6237ce7c3523fee0acefaf35f5799c1517a1090e3",
+        "proof_hash": "3e6293faf449546749f3b7fea31beca92db0b9b39c6f6d04a5f236a6f4b2cc14",
         "qid_iface_version": "qid-session-v0",
         "subject": "did:example:123"
       },
       "shield": {
         "bundle_id": "b1",
-        "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+        "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
         "expires_at": 1706990460,
         "issued_at": 1706990400,
         "meta": {},
@@ -83,7 +84,7 @@
         "signals": [
           {
             "confidence": 90,
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
             "expires_at": 1706990460,
             "facts": {
               "k": "v"
@@ -99,7 +100,7 @@
           },
           {
             "confidence": 90,
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
             "expires_at": 1706990460,
             "facts": {
               "k": "v"
@@ -115,7 +116,7 @@
           },
           {
             "confidence": 90,
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
             "expires_at": 1706990460,
             "facts": {
               "k": "v"
@@ -131,7 +132,7 @@
           },
           {
             "confidence": 90,
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
             "expires_at": 1706990460,
             "facts": {
               "k": "v"
@@ -147,7 +148,7 @@
           },
           {
             "confidence": 90,
-            "context_hash": "f329ebc5291948197986496ffea7b1bc13bf0a7f35682849fab31e1f9eb4fb3b",
+            "context_hash": "3d92615f920ff2b0529e0967ce92a957e8616c785969961c5c21746e0488cce5",
             "expires_at": 1706990460,
             "facts": {
               "k": "v"
