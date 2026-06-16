@@ -20,3 +20,15 @@ Adamantine is built around strict separation:
 
 ## Execution (future)
 Execution is outside the foundation scope. It must only run after TVA passes.
+
+
+## Human Confirmation
+Human confirmation is a local gate, not upstream authority.
+
+The final allow path requires a runtime UI confirmation event and a matching context-bound confirmation value:
+
+- runtime event: `payload.body.ui_confirmed` is exactly `true`
+- bound context: `context.fields.ui_confirmed` is exactly `"true"`
+
+The bound context value participates in `context_hash`. A payload-only flag cannot promote evidence to final approval.
+
