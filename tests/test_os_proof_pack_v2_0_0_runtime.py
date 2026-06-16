@@ -13,7 +13,7 @@ from adamantine.v1.execution.fixture_harness import (
     load_canonical_json,
     verify_manifest_strict_v2_0_0_runtime,
 )
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 from adamantine.v2.runtime_host.host import run_mobile_execution_call_v2
 
 NOW = 1706990400
@@ -45,7 +45,11 @@ def _default_policy() -> RiskPolicy:
         allowed_external_reason_ids=allowed,
         external_reason_map=reason_map,
     )
-    return RiskPolicy(min_overall_score=85, policy_pack=pack)
+    return RiskPolicy(
+        min_overall_score=85,
+        policy_pack=pack,
+        shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY,
+    )
 
 
 def _run_request(name: str) -> dict[str, Any]:
