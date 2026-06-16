@@ -21,6 +21,7 @@ The `v3.0.0` release connects Shield components, Shield Orchestrator v3.2 receip
 - Replay / nonce freshness gate
 - Human review exact-context gate
 - Final allow / deny / review decision
+- Deprecated v1 orchestrator is internal legacy compatibility only; production integrations use the v2 runtime host / orchestrator_v2 boundary
 
 ------------------------------------------------------------------------
 
@@ -38,7 +39,7 @@ Architecture and system design documents.
 
 Documents describing governance interactions.
 
--   Adaptive Core ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Adamantine Governance Flow
+-   Adaptive Core ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Adamantine Governance Flow
 -   Governance Review Contract
 
 ------------------------------------------------------------------------
@@ -60,7 +61,7 @@ Artifact schemas and interface definitions.
 AdamantineOS follows strict architectural guardrails:
 
 -   deterministic behavior
--   failÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂclosed validation
+-   failÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂclosed validation
 -   canonical serialization
 -   explicit invariants
 -   no silent fallback
