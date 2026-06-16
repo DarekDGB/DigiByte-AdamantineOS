@@ -21,7 +21,7 @@ from adamantine.v1.contracts.shield import ExternalReasonMap, ExternalReasonMapE
 from adamantine.v1.enforcement.nonce_store import InMemoryNonceStore
 from adamantine.v1.execution.executor import RecordingExecutor
 from adamantine.v1.execution.orchestrator_v2 import orchestrate_execution_v2
-from adamantine.v1.policy.risk_policy import RiskPolicy
+from adamantine.v1.policy.risk_policy import RiskPolicy, ShieldRuntimeBoundary
 
 
 class CanonicalJSONError(Exception):
@@ -84,7 +84,11 @@ def _default_policy() -> RiskPolicy:
         allowed_external_reason_ids=allowed,
         external_reason_map=reason_map,
     )
-    return RiskPolicy(min_overall_score=85, policy_pack=pack)
+    return RiskPolicy(
+        min_overall_score=85,
+        policy_pack=pack,
+        shield_runtime_boundary=ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY,
+    )
 
 
 def _fixture_dir(pack_dirname: str) -> Path:
