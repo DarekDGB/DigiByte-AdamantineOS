@@ -39,7 +39,7 @@ Architecture and system design documents.
 
 Documents describing governance interactions.
 
--   Adaptive Core ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Adamantine Governance Flow
+-   Adaptive Core ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Adamantine Governance Flow
 -   Governance Review Contract
 
 ------------------------------------------------------------------------
@@ -61,7 +61,7 @@ Artifact schemas and interface definitions.
 AdamantineOS follows strict architectural guardrails:
 
 -   deterministic behavior
--   failÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂclosed validation
+-   failÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂclosed validation
 -   canonical serialization
 -   explicit invariants
 -   no silent fallback
@@ -100,3 +100,8 @@ Final release-gate and proof documents for the AdamantineOS v3.0.0 tag boundary.
 -   [v3.0.0 Release Notes](ADAMANTINEOS_V3_0_0_RELEASE_NOTES.md)
 
 Milestone 19 records the final release-gate proof set and release-stamped state for the approved `v3.0.0` tag. AdamantineOS must only be tagged after this release-stamp update is copied back, CI remains green, and the final copied-repo ZIP is inspected.
+
+
+## Step 8.6 Receipt Denylist Wiring
+
+Shield receipt denylisting is wired through trusted `RiskPolicy.rejected_shield_receipt_hashes` only. Untrusted request payloads cannot supply or modify the denylist. Denylisted receipt hashes fail closed as stale/replay-risk Shield evidence before EQC continuation.
