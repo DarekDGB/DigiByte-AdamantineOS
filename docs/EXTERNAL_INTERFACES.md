@@ -235,6 +235,22 @@ An authority that stores the same valid family set in a different order does not
 
 ---
 
+### 8.7 Shield receipt denylist policy wiring
+
+AdamantineOS wires the Shield Orchestrator receipt denylist through trusted policy configuration only:
+
+```text
+RiskPolicy(rejected_shield_receipt_hashes=(...))
+```
+
+The denylist MUST NOT be sourced from `payload.body`, request evidence, UI state, bridge metadata, or any other untrusted runtime input. It is an integrator-controlled policy/config hook for receipt hashes that have been revoked, replay-risked, or otherwise rejected by trusted external governance or monitoring.
+
+Each denylisted value must be a unique lowercase 64-character SHA-256 hex string. Malformed or duplicate entries fail closed during policy validation.
+
+When a verified Shield receipt hash appears in the policy denylist, AdamantineOS rejects the Shield gate as `REJECTED_REPLAY_RISK` / `EQC_SHIELD_STALE` before continuing to EQC or final approval. A denylisted receipt can never become accepted Shield evidence.
+
+---
+
 ## 9. Observability Constraints
 
 External interfaces may emit **non-sensitive observability data**.
