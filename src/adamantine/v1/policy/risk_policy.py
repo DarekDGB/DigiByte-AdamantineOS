@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import re
 
 from adamantine.v1.contracts.policy_pack import PolicyPack
 from adamantine.v1.contracts.shield import ExternalReasonMap
@@ -76,6 +77,13 @@ class RiskPolicy:
     # silently select the TEST-ONLY path.
     shield_runtime_boundary: ShieldRuntimeBoundary = ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2
 
+    # Post-v3.0.0 AOS-RT-008 trusted Shield receipt denylist.
+    # This is injected only from trusted integrator policy/config, never from the
+    # untrusted execution request payload. It allows an integrator to fail-close
+    # specific receipt hashes that have been revoked, replay-risked, or otherwise
+    # rejected outside the deterministic verifier.
+    rejected_shield_receipt_hashes: tuple[str, ...] = ()
+
     def validate(self) -> None:
         if self.policy_pack is not None:
             if not isinstance(self.policy_pack, PolicyPack):
@@ -109,6 +117,19 @@ class RiskPolicy:
 
         if not isinstance(self.shield_runtime_boundary, ShieldRuntimeBoundary):
             raise ValueError("shield_runtime_boundary must be ShieldRuntimeBoundary")
+
+        if not isinstance(self.rejected_shield_receipt_hashes, tuple):
+            raise ValueError("rejected_shield_receipt_hashes must be tuple[str, ...]")
+
+        seen_receipt_hashes: set[str] = set()
+        for receipt_hash in self.rejected_shield_receipt_hashes:
+            if not isinstance(receipt_hash, str):
+                raise ValueError("rejected_shield_receipt_hashes entries must be str")
+            if re.fullmatch(r"[0-9a-f]{64}", receipt_hash) is None:
+                raise ValueError("rejected_shield_receipt_hashes entries must be lowercase sha256 hex")
+            if receipt_hash in seen_receipt_hashes:
+                raise ValueError("rejected_shield_receipt_hashes must not contain duplicates")
+            seen_receipt_hashes.add(receipt_hash)
 
     def effective_allowed_external_reason_ids(self) -> tuple[str, ...]:
         """
