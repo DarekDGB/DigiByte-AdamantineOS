@@ -6,15 +6,39 @@ import adamantine.v1.execution as execution_surface
 import adamantine.v1.execution.orchestrator_v1 as legacy_v1
 
 
-def test_aos_rt_003_no_truncated_pytest_files_remain() -> None:
-    repo_root = Path(__file__).resolve().parents[1]
-    truncated = sorted(
+def _truncated_pytest_files(repo_root: Path) -> list[str]:
+    tests_root = repo_root / "tests"
+    return sorted(
         path.relative_to(repo_root).as_posix()
-        for path in (repo_root / "tests").glob("test_*.p*")
-        if path.suffix != ".py"
+        for path in tests_root.rglob("test_*.p*")
+        if path.suffix != ".py" and "__pycache__" not in path.parts
     )
 
-    assert truncated == []
+
+def test_aos_rt_003_no_truncated_pytest_files_remain() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+
+    assert _truncated_pytest_files(repo_root) == []
+
+
+def test_aos_rt_003_guard_recurses_into_nested_test_directories(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    nested_tests = repo_root / "tests" / "integrations"
+    nested_tests.mkdir(parents=True)
+    truncated_stub = nested_tests / "test_nested_escape.p"
+    truncated_stub.write_text("def test_escape():\n    assert False\n", encoding="utf-8")
+
+    assert _truncated_pytest_files(repo_root) == ["tests/integrations/test_nested_escape.p"]
+
+
+def test_aos_rt_003_guard_ignores_python_bytecode_cache(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    cache_dir = repo_root / "tests" / "__pycache__"
+    cache_dir.mkdir(parents=True)
+    bytecode_cache = cache_dir / "test_example.cpython-313.pyc"
+    bytecode_cache.write_bytes(b"not-source")
+
+    assert _truncated_pytest_files(repo_root) == []
 
 
 def test_aos_rt_004_orchestrator_v1_is_marked_internal_deprecated() -> None:
