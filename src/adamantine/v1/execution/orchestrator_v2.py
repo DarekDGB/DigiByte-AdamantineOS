@@ -886,6 +886,7 @@ def orchestrate_execution_v2(
                 req.evidence_shield,
                 expected_context_hash=req.context.context_hash,
                 expected_request_id=req.request_id,
+                rejected_receipt_hashes=pol.rejected_shield_receipt_hashes,
             )
             shield_evidence_for_policy = _runtime_evidence_from_shield_receipt(
                 result=receipt_result,
