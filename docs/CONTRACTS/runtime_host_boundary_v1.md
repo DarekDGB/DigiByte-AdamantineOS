@@ -69,7 +69,7 @@ The runtime host **MUST**:
 A compliant reference host can be as small as:
 
 - **Input:** `MobileExecutionCall v2` payload (mapping / dict)
-- **Dependencies:** injected `Executor` (callable or interface), required `NonceStore`, an integrator-provided `qid_verifier` for Q-ID v2 evidence, and a trusted replay registry/nonce authority when Q-ID replay freshness is claimed
+- **Dependencies:** injected `Executor` (callable or interface), required `NonceStore`, trusted `RiskPolicy`, an integrator-provided `qid_verifier` for Q-ID v2 evidence, and a trusted replay registry/nonce authority when Q-ID replay freshness is claimed
 - **Behavior:**
   1. Parse call
   2. Run `orchestrator_v2` to obtain an `execution_response_v2`
@@ -94,6 +94,7 @@ The runtime host **MUST NEVER**:
 - inject a no-op, placeholder, test stub, UI callback, or permissive adapter as `qid_verifier`
 - accept Shape-A Q-ID evidence from untrusted external transport, UI input, wallet glue, bridge payloads, or network-facing APIs without a separate authenticity boundary
 - treat Q-ID `fresh = true` or `registry_commitment` as trustworthy when they were produced by untrusted runtime glue instead of a stateful replay registry
+- source `RiskPolicy.rejected_shield_receipt_hashes` from request payload, UI state, bridge metadata, or any untrusted runtime input
 
 ---
 
@@ -106,8 +107,15 @@ A compliant integration **MUST** be provable with tests that lock:
 - hostile runtime attempts to override decision fields are ignored/fail-closed
 - Q-ID replay freshness is not accepted as a real guarantee unless it is sourced from a trusted replay registry/nonce authority
 - Q-ID v2 evidence uses Q-ID's real verifier wrapper and a forged/tampered signature is denied end-to-end before parsing/trusting the session proof
+- Shield receipt hashes listed in trusted `RiskPolicy.rejected_shield_receipt_hashes` are rejected before EQC continuation
 - Shape-A Q-ID evidence is accepted only from trusted in-process boundaries, never directly from untrusted transport
 - determinism across repeated runs (recommended 50–100 runs)
+
+## 6.1 Shield Receipt Denylist Policy
+
+The runtime host may inject a trusted `RiskPolicy` carrying `rejected_shield_receipt_hashes`. This tuple is the only supported runtime path for Shield receipt denylisting. AdamantineOS validates the tuple as unique lowercase SHA-256 receipt hashes and passes it into the Shield Orchestrator receipt verifier.
+
+A denied receipt hash is mapped fail-closed to `REJECTED_REPLAY_RISK` / `EQC_SHIELD_STALE`. The host MUST NOT let untrusted request input alter this policy value.
 
 See also:
 - `docs/V2_RUNTIME_UNTRUSTED_MODEL.md`
