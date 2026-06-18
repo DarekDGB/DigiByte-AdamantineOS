@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 from adamantine.v1.contracts.shield_orchestrator_receipt import (
+    _classify_component_verdicts,
     canonical_sha256,
     reject_direct_component_verdict,
     validate_shield_orchestrator_receipt,
@@ -139,6 +140,32 @@ def legacy_receipt() -> dict[str, object]:
 def test_adamantine_accepts_only_valid_orchestrator_receipt():
     good = receipt()
     assert validate_shield_orchestrator_receipt(good, expected_context_hash=CTX) == good
+
+
+
+
+def test_classification_mirrors_orchestrator_skipped_to_deny_for_parity():
+    verdicts = _component_verdicts()
+    verdicts[0]["decision"] = "SKIPPED"
+
+    outcome, reason_ids, handoff = _classify_component_verdicts(verdicts)
+
+    assert outcome == "DENY"
+    assert reason_ids == ["ORCH_ERROR_MISSING_REQUIRED_VERDICT"]
+    assert handoff == {
+        "handoff_allowed": False,
+        "handoff_reason": "ORCH_ERROR_MISSING_REQUIRED_VERDICT",
+    }
+
+
+def test_skipped_component_still_rejected_before_classification():
+    item = receipt()
+    item["component_verdicts"][0]["decision"] = "SKIPPED"  # type: ignore[index]
+    item["receipt_hash"] = ""
+    item["receipt_hash"] = canonical_sha256(item)  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="component verdict invalid"):
+        validate_shield_orchestrator_receipt(item, expected_context_hash=CTX)
 
 
 def test_adamantine_rejects_legacy_receipt_component_summary():
