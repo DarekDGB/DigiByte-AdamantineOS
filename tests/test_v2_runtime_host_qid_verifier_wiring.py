@@ -15,7 +15,7 @@ class _NoopExecutor(Executor):
 def test_run_mobile_execution_call_v2_passes_qid_verifier(monkeypatch) -> None:
     seen: dict[str, Any] = {}
 
-    def _fake_orchestrator(*, payload: Any, now: int, executor: Executor, nonce_store, qid_verifier=None, policy=None):  # type: ignore[no-untyped-def]
+    def _fake_orchestrator(*, payload: Any, now: int, executor: Executor, nonce_store, qid_verifier=None, policy=None, **kwargs):  # type: ignore[no-untyped-def]
         seen["qid_verifier"] = qid_verifier
         return {"status": "deny", "reason_id": "X"}
 
@@ -38,7 +38,7 @@ def test_run_mobile_execution_call_v2_passes_qid_verifier(monkeypatch) -> None:
 def test_runtime_host_v2_handle_passes_qid_verifier(monkeypatch) -> None:
     seen: dict[str, Any] = {}
 
-    def _fake_orchestrator(*, payload: Any, now: int, executor: Executor, nonce_store, qid_verifier=None, policy=None):  # type: ignore[no-untyped-def]
+    def _fake_orchestrator(*, payload: Any, now: int, executor: Executor, nonce_store, qid_verifier=None, policy=None, **kwargs):  # type: ignore[no-untyped-def]
         seen["qid_verifier"] = qid_verifier
         return {"status": "deny", "reason_id": "X"}
 
