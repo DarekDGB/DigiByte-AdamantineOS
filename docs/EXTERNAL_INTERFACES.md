@@ -51,6 +51,8 @@ If a request cannot be fully validated, it is **rejected deterministically**.
 
 The deprecated `execution/orchestrator_v1.py` module is an internal legacy compatibility harness only. It is retained for historical fixtures and regression tests, but it is not exported as an external production runtime surface.
 
+`orchestrator_v1.py` uses a deliberately weaker legacy posture: it can synthesize placeholder evidence such as `v1:no_shield_contract`, `v1:qid_absent_allowed`, `v1:risk_absent_allowed`, and `v1:ai_gateway_not_required` so historical v1 fixtures can continue to exercise the final policy engine. These synthetic evidence objects are not proof of live Shield, Q-ID, Adaptive Core, or AI Gateway protection.
+
 Production integrations MUST use the v2 runtime host and the `orchestrator_v2` final decision boundary. Integrators MUST NOT import `orchestrator_v1.py` directly as a live execution approval path.
 
 
