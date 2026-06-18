@@ -5,6 +5,7 @@ from pathlib import Path
 import adamantine.v1.execution as execution_surface
 import adamantine.v1.execution.boundary as boundary
 import adamantine.v1.execution.orchestrator_v1 as legacy_v1
+import adamantine.v1.execution.orchestrator_v2 as runtime_v2
 
 
 def _truncated_pytest_files(repo_root: Path) -> list[str]:
@@ -120,6 +121,35 @@ def test_step10_3_run_with_tva_docs_lock_out_direct_integrator_use() -> None:
         "does not evaluate the full final policy engine",
         "Integrators MUST NOT call `run_with_tva` directly",
         "Production integrations MUST use `RuntimeHostV2` / `orchestrator_v2`",
+        "ALLOW_FINAL_ADAMANTINEOS_DECISION",
+    )
+
+    for phrase in required_phrases:
+        assert phrase in combined_docs
+
+
+def test_step10_4_ai_gateway_v2_runtime_marker_is_advisory_only() -> None:
+    assert runtime_v2.AI_GATEWAY_V2_RUNTIME_ADVISORY_SOURCE == "ai_gateway:not_required_for_runtime_path"
+    assert "advisory/evidence-only" in runtime_v2.AI_GATEWAY_V2_RUNTIME_ADVISORY_POSTURE
+    assert "cannot approve or deny execution" in runtime_v2.AI_GATEWAY_V2_RUNTIME_ADVISORY_POSTURE
+
+
+def test_step10_4_ai_gateway_advisory_posture_is_documented() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+
+    external = (repo_root / "docs" / "EXTERNAL_INTERFACES.md").read_text(encoding="utf-8")
+    mobile_v1 = (repo_root / "docs" / "CONTRACTS" / "mobile_execution_call_v1.md").read_text(encoding="utf-8")
+    source = (repo_root / "src" / "adamantine" / "v1" / "execution" / "orchestrator_v2.py").read_text(encoding="utf-8")
+
+    combined_docs = "\n".join((external, mobile_v1, source))
+    required_phrases = (
+        "AI Gateway v2 runtime advisory posture",
+        "ai_gateway:not_required_for_runtime_path",
+        "advisory evidence-only marker",
+        "not active AI Gateway enforcement",
+        "cannot approve execution",
+        "cannot deny execution",
+        "must not be described as live AI Gateway protection",
         "ALLOW_FINAL_ADAMANTINEOS_DECISION",
     )
 
