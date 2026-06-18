@@ -214,6 +214,27 @@ ShieldRuntimeBoundary.LEGACY_BUNDLE_V3_TEST_ONLY
 
 A production integration MUST NOT rely on the legacy bundle path, MUST NOT treat Shield evidence as final approval, and MUST fail closed if the receipt boundary cannot verify the receipt.
 
+#### 8.1.1 Authenticated Shield/Oracle evidence latch
+
+Shield receipt hashes and Adaptive Core oracle fields prove deterministic integrity and context binding. They do **not** prove trusted origin by themselves. A hostile client can construct a self-consistent object unless the runtime also verifies the external signer or trust anchor.
+
+For any integration that wants to claim active Shield / Oracle protection, the runtime policy MUST enable:
+
+```text
+RiskPolicy(require_authenticated_external_evidence=True)
+```
+
+When this latch is enabled, `orchestrator_v2` fails closed unless the integrator injects both:
+
+```text
+shield_receipt_verifier(payload, expected_context_hash)
+oracle_verifier(payload, expected_context_hash)
+```
+
+These verifier callables MUST validate the trusted Shield Orchestrator / Adaptive Core signer or an equivalent authenticated transport binding over the evidence and the same `context_hash`. Missing verifier callables fail closed with `SHIELD_AUTHENTICITY_VERIFIER_MISSING` or `ORACLE_AUTHENTICITY_VERIFIER_MISSING`. Verifier rejection fails closed before a self-hashed ALLOW receipt or oracle object can become accepted evidence.
+
+If `require_authenticated_external_evidence` is not enabled, Shield and Oracle objects remain integrity-checked, context-bound, evidence-only inputs. They MUST NOT be described as live active protection against a hostile client.
+
 ### 8.2 Q-ID authenticity verifier requirement
 
 Q-ID `proof_hash` values are self-hashes. They prove payload integrity, not issuer authenticity.
