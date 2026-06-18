@@ -32,7 +32,25 @@ Shield remains **evidence only**. AdamantineOS final approval can only happen af
 
 ---
 
-## 2. Legacy bundle status
+## 2. Active Shield authenticity gate
+
+A Shield Orchestrator receipt self-hash proves deterministic integrity of the receipt body. It does not prove that a trusted Shield Orchestrator produced the receipt.
+
+Any runtime that wants to claim active Shield protection MUST run with:
+
+```text
+RiskPolicy(require_authenticated_external_evidence=True)
+```
+
+and MUST inject a real `shield_receipt_verifier(payload, expected_context_hash)` callable into `RuntimeHostV2` / `orchestrator_v2`. The verifier is responsible for validating the external Shield Orchestrator signature, signer roster, or equivalent trusted transport binding over the receipt and the same `context_hash`.
+
+The same live-protection profile also requires `oracle_verifier(payload, expected_context_hash)` for Adaptive Core oracle evidence. Without both verifiers, AdamantineOS fails closed before the Shield/Oracle evidence can be accepted.
+
+Without this authenticated-evidence latch, the receipt boundary remains deterministic, fail-closed, context-bound, and evidence-only, but it is not a public âShield liveâ protection claim against a hostile client.
+
+---
+
+## 3. Legacy bundle status
 
 The old Shield bundle boundary is explicitly named:
 
@@ -46,7 +64,7 @@ It must not be described as the production Shield handoff boundary, and integrat
 
 ---
 
-## 3. AOS-M-002A runtime behavior
+## 4. AOS-M-002A runtime behavior
 
 When `ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2` is selected:
 
@@ -60,7 +78,7 @@ This lock prevents integrators from mistaking Shield receipt acceptance for Adam
 
 ---
 
-## 4. AOS-M-002B runtime continuation route
+## 5. AOS-M-002B runtime continuation route
 
 `AOS-M-002B` wires the primary v2 runtime continuation path so a valid Shield Orchestrator v3.2 receipt can feed the normal final policy order without reverting to the legacy bundle parser.
 
@@ -80,7 +98,7 @@ No external Shield output may skip replay, wallet policy, human confirmation, or
 
 ---
 
-## 5. Regression lock
+## 6. Regression lock
 
 The Step 4 and Step 5 regression tests must prove:
 
