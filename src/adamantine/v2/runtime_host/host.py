@@ -16,6 +16,8 @@ def run_mobile_execution_call_v2(
     executor: Executor,
     nonce_store: NonceStore,
     qid_verifier: Callable[[Mapping[str, Any]], None] | None = None,
+    shield_receipt_verifier: Callable[[Mapping[str, Any], str], None] | None = None,
+    oracle_verifier: Callable[[Mapping[str, Any], str], None] | None = None,
     policy: RiskPolicy | None = None,
 ) -> dict[str, Any]:
     """
@@ -23,7 +25,7 @@ def run_mobile_execution_call_v2(
 
     This is intentionally a THIN wrapper:
     - runtime provides payload + now (explicit injection)
-    - host injects executor + nonce_store (+ optional policy + required qid_verifier for Q-ID v2 evidence)
+    - host injects executor + nonce_store (+ optional policy + required verifiers for authenticated evidence)
     - orchestrator_v2 is the single decision authority
     - host MUST NOT mutate decision, reason_id, context_hash, or protection_mode
 
@@ -31,6 +33,10 @@ def run_mobile_execution_call_v2(
     - qid_verifier may be None only so the orchestrator can return a
       deterministic fail-closed response. Any call carrying Q-ID v2
       evidence must inject a real verifier supplied by the integrator.
+    - shield_receipt_verifier and oracle_verifier may be None only when the
+      policy is explicitly operating in integrity-only/evidence-only mode. A
+      policy that requires authenticated external evidence fails closed unless
+      real verifier callables are injected by the integrator.
     """
     if type(now) is not int:
         raise TypeError("now must be int (unix seconds)")
@@ -41,6 +47,8 @@ def run_mobile_execution_call_v2(
         executor=executor,
         nonce_store=nonce_store,
         qid_verifier=qid_verifier,
+        shield_receipt_verifier=shield_receipt_verifier,
+        oracle_verifier=oracle_verifier,
         policy=policy,
     )
 
@@ -57,6 +65,10 @@ class RuntimeHostV2:
     policy: RiskPolicy | None = None
     # None is a deterministic fail-closed configuration for Q-ID v2 evidence.
     qid_verifier: Callable[[Mapping[str, Any]], None] | None = None
+    # None is also deterministic fail-closed when policy requires authenticated
+    # Shield/Oracle external evidence.
+    shield_receipt_verifier: Callable[[Mapping[str, Any], str], None] | None = None
+    oracle_verifier: Callable[[Mapping[str, Any], str], None] | None = None
 
     def handle(self, *, payload: Any, now: int) -> dict[str, Any]:
         return run_mobile_execution_call_v2(
@@ -65,5 +77,7 @@ class RuntimeHostV2:
             executor=self.executor,
             nonce_store=self.nonce_store,
             qid_verifier=self.qid_verifier,
+            shield_receipt_verifier=self.shield_receipt_verifier,
+            oracle_verifier=self.oracle_verifier,
             policy=self.policy,
         )
