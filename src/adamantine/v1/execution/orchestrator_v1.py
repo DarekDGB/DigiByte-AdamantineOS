@@ -1,12 +1,17 @@
 """Deprecated internal compatibility orchestrator for execution_request_v1.
 
-AOS-RT-004 lock:
+AOS-RT-004 / Step 10.2 legacy-posture lock:
 - This module is retained only for legacy fixture compatibility and regression tests.
 - It is not a public production entrypoint and is not exported from
   ``adamantine.v1.execution``.
 - New wallet/runtime integrations must use the v2 runtime host and
   ``orchestrator_v2`` final decision boundary.
 - Direct production imports of this module are unsupported.
+- This v1 compatibility path synthesizes legacy placeholder evidence for
+  Shield, absent Q-ID, absent Adaptive Core, and AI Gateway. That weaker
+  legacy posture exists only so historical v1 fixtures can keep exercising
+  the final policy engine. It MUST NOT be described as active Shield/Q-ID/
+  Adaptive runtime protection and MUST NOT be used for production approval.
 """
 
 from __future__ import annotations
@@ -224,10 +229,14 @@ def orchestrate_execution_v1(
     """
     Deprecated internal compatibility path for execution_request_v1.
 
-    AOS-RT-004 lock:
+    AOS-RT-004 / Step 10.2 lock:
     - retained for legacy fixtures and regression tests only
     - not exported as a public production runtime surface
     - new integrations must use the v2 runtime host / orchestrator_v2 path
+    - synthesizes legacy placeholder evidence for missing Shield / Q-ID /
+      Adaptive / AI Gateway inputs so old v1 tests can continue to exercise
+      final-policy ordering
+    - MUST NOT be used or documented as live production protection
 
     Invariants:
     - Always returns execution_response_v1
