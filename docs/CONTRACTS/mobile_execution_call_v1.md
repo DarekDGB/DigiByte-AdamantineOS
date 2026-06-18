@@ -126,6 +126,12 @@ The v1 harness may synthesize accepted placeholder evidence for absent Shield, Q
 
 Production integrations must use the v2 runtime host and the `orchestrator_v2` final decision boundary.
 
+### Step 10.3 TVA-only harness lock
+
+`execution/boundary.py::run_with_tva` is retained only as an internal TVA-only test harness for foundation-era regression tests. It enforces TVA and then calls the supplied executor, so it does not represent the full AdamantineOS final policy boundary.
+
+Integrators MUST NOT call `run_with_tva` directly from wallet, bridge, AI gateway, or runtime glue code. Production execution must enter through `RuntimeHostV2` / `orchestrator_v2`, where the final policy engine must return `ALLOW_FINAL_ADAMANTINEOS_DECISION` before any executor call.
+
 ---
 
 ## 7. Change Control
