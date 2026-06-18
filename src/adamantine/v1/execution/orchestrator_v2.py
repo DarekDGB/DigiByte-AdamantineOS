@@ -47,6 +47,40 @@ AI_GATEWAY_V2_RUNTIME_ADVISORY_POSTURE = (
     "the request did not enter through an AI Gateway ingress and cannot approve or deny execution."
 )
 
+ExternalEvidenceVerifier = Callable[[Mapping[str, Any], str], None]
+
+
+def _call_external_evidence_verifier(
+    *,
+    verifier: ExternalEvidenceVerifier | None,
+    payload: Mapping[str, Any],
+    expected_context_hash: str,
+    boundary_name: str,
+    missing_reason_id: ReasonId,
+    invalid_reason_id: ReasonId,
+) -> None:
+    """Run an integrator-supplied authenticity verifier fail-closed.
+
+    Self-hashes prove that an evidence object is internally consistent; they do
+    not prove that a trusted Shield Orchestrator or Adaptive Core oracle
+    produced it. Active/live protection mode therefore requires the runtime to
+    inject a verifier that validates the external signature/trust anchor over
+    the evidence and binds it to the request context hash.
+    """
+
+    if verifier is None:
+        raise AdapterError(
+            missing_reason_id,
+            f"{boundary_name}_verifier is required when authenticated external evidence is required",
+        )
+
+    try:
+        verifier(payload, expected_context_hash)
+    except AdapterError:
+        raise
+    except Exception as ex:
+        raise AdapterError(invalid_reason_id, f"{boundary_name}_verifier error: {ex}") from ex
+
 
 @dataclass(frozen=True, slots=True)
 class _RuntimeFinalPolicyEvidence:
@@ -636,6 +670,8 @@ def orchestrate_execution_v2(
     executor: Executor,
     nonce_store: NonceStore,
     qid_verifier: Callable[[Mapping[str, Any]], None] | None = None,
+    shield_receipt_verifier: ExternalEvidenceVerifier | None = None,
+    oracle_verifier: ExternalEvidenceVerifier | None = None,
     policy: RiskPolicy | None = None,
 ) -> dict[str, Any]:
     p: Mapping[str, Any] = payload if isinstance(payload, Mapping) else {}
@@ -851,6 +887,16 @@ def orchestrate_execution_v2(
         # Oracle / Adaptive Core evidence. Rejections are now passed through
         # the final policy engine as adaptive_core evidence failures.
         try:
+            if getattr(pol, "require_authenticated_external_evidence", False):
+                _call_external_evidence_verifier(
+                    verifier=oracle_verifier,
+                    payload=req.evidence_oracle,
+                    expected_context_hash=req.context.context_hash,
+                    boundary_name="oracle",
+                    missing_reason_id=ReasonId.ORACLE_AUTHENTICITY_VERIFIER_MISSING,
+                    invalid_reason_id=ReasonId.EQC_INVALID_RISK_REPORT,
+                )
+
             oracle = parse_adaptive_core_oracle_v3(
                 payload=req.evidence_oracle,
                 now=now,
@@ -887,6 +933,16 @@ def orchestrate_execution_v2(
         shield_evidence_for_policy: _RuntimeFinalPolicyEvidence
 
         if pol.shield_runtime_boundary is ShieldRuntimeBoundary.ORCHESTRATOR_RECEIPT_V3_2:
+            if getattr(pol, "require_authenticated_external_evidence", False):
+                _call_external_evidence_verifier(
+                    verifier=shield_receipt_verifier,
+                    payload=req.evidence_shield,
+                    expected_context_hash=req.context.context_hash,
+                    boundary_name="shield_receipt",
+                    missing_reason_id=ReasonId.SHIELD_AUTHENTICITY_VERIFIER_MISSING,
+                    invalid_reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                )
+
             receipt_result = verify_shield_orchestrator_receipt(
                 req.evidence_shield,
                 expected_context_hash=req.context.context_hash,
