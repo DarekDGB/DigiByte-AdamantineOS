@@ -216,6 +216,19 @@ If Shield evidence results in DENY, then:
 
 This is regression-locked permanently.
 
+### 10.4 Live Shield Requires Authenticated External Evidence
+
+A self-hashed Shield receipt or Adaptive Core oracle object is not an origin proof. It is only deterministic, context-bound evidence unless the runtime enables `RiskPolicy(require_authenticated_external_evidence=True)` and injects real `shield_receipt_verifier` and `oracle_verifier` callables.
+
+When this latch is enabled:
+
+- missing Shield receipt verifier must fail closed with `SHIELD_AUTHENTICITY_VERIFIER_MISSING`
+- missing Oracle verifier must fail closed with `ORACLE_AUTHENTICITY_VERIFIER_MISSING`
+- verifier rejection must deny before self-hashed ALLOW evidence can continue
+- accepted Shield evidence still has `final_approval=False` and cannot bypass the final policy engine
+
+Without this latch, Shield and Oracle evidence remain integrity-checked evidence only and must not be described as active live protection against a hostile client.
+
 ---
 
 ## 11. Cross-Repo Compatibility Invariants
