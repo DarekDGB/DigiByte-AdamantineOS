@@ -64,3 +64,30 @@ def test_aos_rt_004_integrator_docs_lock_v1_out_of_production() -> None:
     assert "Production integrations MUST use the v2 runtime host" in external
     assert "AOS-RT-004 legacy-entrypoint lock" in mobile_v1
     assert "not a production integration entrypoint" in mobile_v1
+
+
+def test_step10_2_orchestrator_v1_synthetic_evidence_is_documented() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+
+    external = (repo_root / "docs" / "EXTERNAL_INTERFACES.md").read_text(encoding="utf-8")
+    mobile_v1 = (repo_root / "docs" / "CONTRACTS" / "mobile_execution_call_v1.md").read_text(encoding="utf-8")
+    module_doc = legacy_v1.__doc__ or ""
+    runtime_doc = legacy_v1.orchestrate_execution_v1.__doc__ or ""
+
+    required_phrases = (
+        "synthesize",
+        "v1:no_shield_contract",
+        "v1:qid_absent_allowed",
+        "v1:risk_absent_allowed",
+        "v1:ai_gateway_not_required",
+        "not active Shield/Q-ID/Adaptive/AI-Gateway protection",
+    )
+
+    combined_docs = "\n".join((external, mobile_v1))
+    for phrase in required_phrases:
+        assert phrase in combined_docs
+
+    assert "synthesizes legacy placeholder evidence" in module_doc
+    assert "MUST NOT be described as active Shield/Q-ID" in module_doc
+    assert "synthesizes legacy placeholder evidence" in runtime_doc
+    assert "MUST NOT be used or documented as live production protection" in runtime_doc
