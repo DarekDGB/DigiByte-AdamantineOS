@@ -132,6 +132,12 @@ Production integrations must use the v2 runtime host and the `orchestrator_v2` f
 
 Integrators MUST NOT call `run_with_tva` directly from wallet, bridge, AI gateway, or runtime glue code. Production execution must enter through `RuntimeHostV2` / `orchestrator_v2`, where the final policy engine must return `ALLOW_FINAL_ADAMANTINEOS_DECISION` before any executor call.
 
+### Step 10.4 AI Gateway advisory marker lock
+
+The v2 runtime may feed the final policy engine `ai_gateway:not_required_for_runtime_path` when the request is not an AI Gateway ingress. This is an advisory evidence-only marker, not active AI Gateway enforcement.
+
+The marker cannot approve execution, cannot deny execution, and must not be described as live AI Gateway protection. Production approval still requires `RuntimeHostV2` / `orchestrator_v2` and `ALLOW_FINAL_ADAMANTINEOS_DECISION`.
+
 ---
 
 ## 7. Change Control
