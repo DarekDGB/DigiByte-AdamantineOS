@@ -15,6 +15,14 @@ from adamantine.v1.execution.executor import Executor
 from adamantine.v1.execution.response_v1 import build_execution_response_v1
 
 
+RUN_WITH_TVA_INTERNAL_TEST_ONLY = True
+RUN_WITH_TVA_PUBLIC_ENTRYPOINT = False
+RUN_WITH_TVA_WARNING = (
+    "run_with_tva is an internal TVA-only test harness; production integrations MUST use "
+    "RuntimeHostV2 / orchestrator_v2 and the final policy engine boundary."
+)
+
+
 def run_with_tva(
     *,
     executor: Executor,
@@ -28,10 +36,14 @@ def run_with_tva(
     required_quantum_posture: str | None = None,
 ) -> str:
     """
-    The execution boundary.
+    Internal TVA-only test harness.
 
-    This function is the only permitted path to real execution.
-    It enforces TVA first. If TVA passes, it calls the executor.
+    This function intentionally enforces only TVA before calling the executor.
+    It is retained for historical foundation tests and local harness proofs only.
+    It is not a production integration entrypoint and MUST NOT be presented as
+    the live AdamantineOS execution boundary. Production integrations must use
+    RuntimeHostV2 / orchestrator_v2, where execution occurs only after the
+    final policy engine returns ALLOW.
     """
     enforce_tva(
         context,
