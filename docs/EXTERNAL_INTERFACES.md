@@ -58,6 +58,15 @@ Production integrations MUST use the v2 runtime host and the `orchestrator_v2` f
 
 ---
 
+
+### 3.2 Internal TVA-only harness lock
+
+`execution/boundary.py::run_with_tva` is an internal TVA-only test harness retained for historical foundation tests and local deterministic proofs.
+
+It enforces TVA and then calls the supplied executor. Because it does not evaluate the full final policy engine, it is not a production integration entrypoint and must not be imported by wallets, AI gateways, bridge glue, or external runtime adapters as a live approval path.
+
+Production integrations MUST use `RuntimeHostV2` / `orchestrator_v2`, where execution is reached only after the final policy engine returns `ALLOW_FINAL_ADAMANTINEOS_DECISION`.
+
 ## 4. Input Validation Rules
 
 ### 4.1 Strict Decoding
