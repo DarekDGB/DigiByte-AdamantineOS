@@ -282,6 +282,11 @@ def _classify_component_verdicts(verdicts: list[dict[str, Any]]) -> tuple[str, l
             "handoff_allowed": False,
             "handoff_reason": "ORCH_HUMAN_REVIEW_ESCALATE_PRESENT",
         }
+    if "SKIPPED" in decisions:
+        return "DENY", ["ORCH_ERROR_MISSING_REQUIRED_VERDICT"], {
+            "handoff_allowed": False,
+            "handoff_reason": "ORCH_ERROR_MISSING_REQUIRED_VERDICT",
+        }
     return "ALLOW", ["ORCH_OK_ALL_COMPONENTS_ALLOW"], {
         "handoff_allowed": True,
         "handoff_reason": "ORCH_OK_ALL_COMPONENTS_ALLOW",
