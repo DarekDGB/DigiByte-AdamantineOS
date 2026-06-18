@@ -122,6 +122,8 @@ Code anchors for this legacy contract:
 
 `orchestrator_v1.py` is retained only for legacy fixture compatibility and regression tests. It is not a production integration entrypoint and must not be presented to wallet integrators as the live AdamantineOS decision boundary.
 
+The v1 harness may synthesize accepted placeholder evidence for absent Shield, Q-ID, Adaptive Core, and AI Gateway inputs (`v1:no_shield_contract`, `v1:qid_absent_allowed`, `v1:risk_absent_allowed`, `v1:ai_gateway_not_required`). This is a legacy compatibility behavior only. It is not active Shield/Q-ID/Adaptive/AI-Gateway protection and must not be used as a production approval path.
+
 Production integrations must use the v2 runtime host and the `orchestrator_v2` final decision boundary.
 
 ---
