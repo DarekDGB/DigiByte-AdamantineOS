@@ -140,7 +140,13 @@ class ShieldReceiptComponentVerdictError(ShieldReceiptError):
 def canonical_json(payload: dict[str, Any]) -> str:
     if not isinstance(payload, dict):
         raise ValueError("payload must be dict")
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
 
 
 def canonical_sha256(payload: dict[str, Any]) -> str:
