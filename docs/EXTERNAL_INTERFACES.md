@@ -67,6 +67,14 @@ It enforces TVA and then calls the supplied executor. Because it does not evalua
 
 Production integrations MUST use `RuntimeHostV2` / `orchestrator_v2`, where execution is reached only after the final policy engine returns `ALLOW_FINAL_ADAMANTINEOS_DECISION`.
 
+### 3.3 AI Gateway v2 runtime advisory posture
+
+The v2 runtime path uses `ai_gateway:not_required_for_runtime_path` as an explicit advisory marker when a request did not enter through an AI Gateway ingress.
+
+This marker is evidence-only. It is not active AI Gateway enforcement, it cannot approve execution, and it cannot deny execution. It exists only so the final policy engine receives a complete evidence shape for the non-AI runtime path.
+
+Integrators MUST NOT describe this marker as live AI Gateway protection. Production approval still comes only from `RuntimeHostV2` / `orchestrator_v2` after the final policy engine returns `ALLOW_FINAL_ADAMANTINEOS_DECISION`.
+
 ## 4. Input Validation Rules
 
 ### 4.1 Strict Decoding
