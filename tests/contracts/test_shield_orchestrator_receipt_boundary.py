@@ -144,6 +144,21 @@ def test_adamantine_accepts_only_valid_orchestrator_receipt():
 
 
 
+
+
+def test_adamantine_receipt_hash_vector_stays_stable_with_strict_json_nan_lock():
+    item = receipt()
+
+    assert item["receipt_hash"] == "c282da0d9aa6587116271012f82b2399974c0cbfd82dcb7a9545bcb957b4bdfc"
+    assert canonical_sha256({"ok": True, "n": 1, "s": "DigiByte"}) == "57191193452bcc05c491b175f9778d9aab8d1d6829fcf55756f1e0ea77967c14"
+
+
+def test_adamantine_receipt_hash_rejects_non_finite_json_numbers():
+    for value in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(ValueError, match="Out of range float values"):
+            canonical_sha256({"non_finite": value})
+
+
 def test_classification_mirrors_orchestrator_skipped_to_deny_for_parity():
     verdicts = _component_verdicts()
     verdicts[0]["decision"] = "SKIPPED"
