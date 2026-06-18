@@ -84,6 +84,14 @@ class RiskPolicy:
     # rejected outside the deterministic verifier.
     rejected_shield_receipt_hashes: tuple[str, ...] = ()
 
+    # Step 11.1 Shield-live authenticity latch.
+    # When enabled, v2 runtime cannot accept Shield receipt or Adaptive Core
+    # oracle evidence unless the integrator injects trusted external
+    # authenticity verifiers. This is the hard gate for any active Shield/live
+    # protection claim; without it, those objects remain integrity-checked
+    # evidence only.
+    require_authenticated_external_evidence: bool = False
+
     def validate(self) -> None:
         if self.policy_pack is not None:
             if not isinstance(self.policy_pack, PolicyPack):
@@ -117,6 +125,9 @@ class RiskPolicy:
 
         if not isinstance(self.shield_runtime_boundary, ShieldRuntimeBoundary):
             raise ValueError("shield_runtime_boundary must be ShieldRuntimeBoundary")
+
+        if not isinstance(self.require_authenticated_external_evidence, bool):
+            raise ValueError("require_authenticated_external_evidence must be bool")
 
         if not isinstance(self.rejected_shield_receipt_hashes, tuple):
             raise ValueError("rejected_shield_receipt_hashes must be tuple[str, ...]")
