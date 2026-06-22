@@ -1,0 +1,16 @@
+{
+  "adamantineos_handoff": {
+    "handoff_allowed": true
+  },
+  "component_verdicts": [],
+  "context_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "contract_version": 3,
+  "dominant_reason_ids": [
+    "ORCH_OK_ALL_COMPONENTS_ALLOW"
+  ],
+  "fail_closed": true,
+  "final_outcome": "ALLOW",
+  "receipt_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "request_id": "req-v3-downgrade",
+  "schema_version": "shield.receipt.v1"
+}
