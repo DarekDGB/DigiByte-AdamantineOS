@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
 import json
 import unicodedata
@@ -17,6 +19,8 @@ COMPONENT_VERDICT_DOMAIN = "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:po
 REQUIRED_ALGORITHMS = ("classical-ed25519", "ml-dsa")
 OPTIONAL_ALGORITHMS = ("fn-dsa",)
 ALLOWED_ALGORITHMS = REQUIRED_ALGORITHMS + OPTIONAL_ALGORITHMS
+REAL_SIGNATURE_ENCODING_PREFIX = "b64u:"
+_BASE64URL_ALPHABET = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 SUPPORTED_COMPONENTS = ("adn", "dqsn", "guardian_wallet", "qwg", "sentinel_ai")
 COMPONENT_ROLES = {
     "adn": "shield_component_adn",
@@ -196,6 +200,26 @@ def _require_hash(value: Any, *, field: str) -> str:
     return clean
 
 
+def _require_signature_encoding(value: Any, *, field: str = "signature") -> str:
+    """Accept legacy deterministic test digests or explicit real signature encodings."""
+
+    clean = _require_non_empty_str(value, field=field)
+    if clean.startswith(REAL_SIGNATURE_ENCODING_PREFIX):
+        body = clean[len(REAL_SIGNATURE_ENCODING_PREFIX) :]
+        if not body:
+            raise ShieldV4ReceiptContractError(f"{field} b64u payload must be non-empty")
+        if "=" in body:
+            raise ShieldV4ReceiptContractError(f"{field} b64u payload must be unpadded")
+        if set(body) - _BASE64URL_ALPHABET:
+            raise ShieldV4ReceiptContractError(f"{field} b64u payload is invalid")
+        try:
+            decoded = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))
+        except (binascii.Error, ValueError) as exc:
+            raise ShieldV4ReceiptContractError(f"{field} b64u payload is invalid") from exc
+        return clean
+    return _require_hash(clean, field=field)
+
+
 def _require_str_list(value: Any, *, field: str, allow_empty: bool = False) -> list[str]:
     if not isinstance(value, list) or (not value and not allow_empty):
         raise ShieldV4ReceiptContractError(f"{field} must be non-empty list")
@@ -264,7 +288,7 @@ def _validate_signature_bundle_shape(
             raise ShieldV4ReceiptHashMismatchError("signature signed_payload_hash mismatch")
         if _require_non_empty_str(entry["domain_tag"], field="domain_tag") != expected_domain_tag:
             raise ShieldV4ReceiptContractError("signature domain tag mismatch")
-        _require_hash(entry["signature"], field="signature")
+        _require_signature_encoding(entry["signature"], field="signature")
     missing = set(REQUIRED_ALGORITHMS) - seen_algorithms
     if missing:
         raise ShieldV4ReceiptContractError("signature policy requirements not satisfied")
