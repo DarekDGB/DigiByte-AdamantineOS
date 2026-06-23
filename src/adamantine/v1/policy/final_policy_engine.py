@@ -28,6 +28,7 @@ class FinalPolicyEngineState(str, Enum):
     DENY_GATE_SHAPE_INVALID = "DENY_GATE_SHAPE_INVALID"
     DENY_CONTEXT_MISMATCH = "DENY_CONTEXT_MISMATCH"
     DENY_REASON_ID_INVALID = "DENY_REASON_ID_INVALID"
+    DENY_SHIELD_V4_REQUIRED = "DENY_SHIELD_V4_REQUIRED"
 
 
 @dataclass(frozen=True)
@@ -103,6 +104,11 @@ _NESTED_AUTHORITY_CONTAINERS = frozenset({
 })
 _ALLOWED_NORMALIZED_AUTHORITY_FIELDS = frozenset({"final_approval", "handoff_allowed"})
 _CONTEXT_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+_SHIELD_V4_REQUIRED_SCHEMA_VERSION = "shield.receipt.v2"
+_SHIELD_V4_REQUIRED_CONTRACT_VERSION = 4
+_SHIELD_V4_REQUIRED_POLICY_VERSION = "policy.v1"
+_SHIELD_V4_REQUIRED_ALGORITHMS = frozenset({"classical-ed25519", "ml-dsa"})
+_SHIELD_V4_REQUIRED_COMPONENT_IDS = frozenset({"adn", "dqsn", "guardian_wallet", "qwg", "sentinel_ai"})
 
 
 def _is_context_hash(value: Any) -> bool:
@@ -246,12 +252,67 @@ def _evidence_indicates_human_review(evidence: Any) -> bool:
     )
 
 
+def _verified_algorithms(summary: Any) -> frozenset[str]:
+    algorithms = frozenset(
+        str(algorithm)
+        for algorithm in getattr(summary, "get", lambda _key, _default=None: _default)("verified_algorithms", ())
+        if isinstance(algorithm, str) and algorithm.strip()
+    )
+    return algorithms
+
+
+def _summary_satisfies_required_algorithms(summary: Any) -> bool:
+    satisfied = isinstance(summary, Mapping) and _SHIELD_V4_REQUIRED_ALGORITHMS.issubset(_verified_algorithms(summary))
+    return satisfied
+
+
+def _component_summaries_satisfy_v4(components: Any) -> bool:
+    component_ids: set[str] = set()
+    summaries_ok = isinstance(components, Iterable) and not isinstance(components, (str, bytes, Mapping))
+    if summaries_ok:
+        for component in components:
+            if not isinstance(component, Mapping) or not _summary_satisfies_required_algorithms(component):
+                summaries_ok = False
+                break
+            component_id = component.get("component_id")
+            if not isinstance(component_id, str):
+                summaries_ok = False
+                break
+            component_ids.add(component_id)
+    return summaries_ok and frozenset(component_ids) == _SHIELD_V4_REQUIRED_COMPONENT_IDS
+
+
+def _shield_v4_requirement_failure(evidence: Any) -> str | None:
+    receipt = getattr(evidence, "receipt", None)
+    summary = getattr(evidence, "verification_summary", None)
+    failure: str | None = None
+    if getattr(evidence, "verified", False) is not True:
+        failure = "SHIELD_V4_VERIFIED_RESULT_REQUIRED"
+    elif not isinstance(receipt, Mapping):
+        failure = "SHIELD_V4_RECEIPT_REQUIRED"
+    elif (
+        receipt.get("schema_version") != _SHIELD_V4_REQUIRED_SCHEMA_VERSION
+        or receipt.get("contract_version") != _SHIELD_V4_REQUIRED_CONTRACT_VERSION
+    ):
+        failure = "SHIELD_V4_DOWNGRADE_REJECTED"
+    elif not isinstance(summary, Mapping):
+        failure = "SHIELD_V4_VERIFICATION_SUMMARY_REQUIRED"
+    elif summary.get("policy_version") != _SHIELD_V4_REQUIRED_POLICY_VERSION:
+        failure = "SHIELD_V4_POLICY_REQUIRED"
+    elif not _summary_satisfies_required_algorithms(summary.get("orchestrator")):
+        failure = "SHIELD_V4_ORCHESTRATOR_SIGNATURE_SUMMARY_REQUIRED"
+    elif not _component_summaries_satisfy_v4(summary.get("components")):
+        failure = "SHIELD_V4_COMPONENT_SIGNATURE_SUMMARY_REQUIRED"
+    return failure
+
+
 def _evaluate_evidence_gate(
     *,
     gate: str,
     evidence: Any,
     evaluation_order: tuple[str, ...],
     expected_context_hash: str,
+    shield_v4_required: bool = False,
 ) -> FinalPolicyEngineResult | None:
     if evidence is None:
         return _result(
@@ -292,6 +353,18 @@ def _evaluate_evidence_gate(
             evaluation_order=evaluation_order,
             dominant_reason_ids=_dominant_reasons(evidence, ReasonId.DENY_POLICY),
         )
+
+    if gate == "shield" and shield_v4_required:
+        shield_v4_failure = _shield_v4_requirement_failure(evidence)
+        if shield_v4_failure is not None:
+            return _result(
+                state=FinalPolicyEngineState.DENY_SHIELD_V4_REQUIRED,
+                outcome="DENY",
+                reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                stopped_at="shield",
+                evaluation_order=evaluation_order,
+                dominant_reason_ids=(shield_v4_failure,),
+            )
 
     if getattr(evidence, "handoff_allowed", False) is not True:
         return _result(
@@ -380,6 +453,7 @@ def evaluate_final_policy_engine(
     wallet_policy: LocalPolicyGateResult,
     human: LocalPolicyGateResult,
     expected_context_hash: str,
+    shield_v4_required: bool = False,
 ) -> FinalPolicyEngineResult:
     """Evaluate the locked local AdamantineOS final policy order.
 
@@ -394,6 +468,11 @@ def evaluate_final_policy_engine(
     ``expected_context_hash`` is required. Omitting it is impossible at the
     signature level, and passing a malformed value fails closed before any
     evidence gate can become trusted.
+
+    When ``shield_v4_required`` is true, the Shield gate must be a verified
+    Shield v4 receipt-verifier result with v4 receipt schema, policy,
+    Orchestrator signature summary, and all five component signature summaries.
+    A normalized v3 Shield result cannot satisfy this mode.
     """
 
     if not _is_context_hash(expected_context_hash):
@@ -404,6 +483,16 @@ def evaluate_final_policy_engine(
             stopped_at="expected_context_hash",
             evaluation_order=("expected_context_hash",),
             dominant_reason_ids=("EXPECTED_CONTEXT_HASH_REQUIRED",),
+        )
+
+    if type(shield_v4_required) is not bool:
+        return _result(
+            state=FinalPolicyEngineState.DENY_SHIELD_V4_REQUIRED,
+            outcome="DENY",
+            reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            stopped_at="shield_v4_required",
+            evaluation_order=("shield_v4_required",),
+            dominant_reason_ids=("SHIELD_V4_REQUIRED_MODE_INVALID",),
         )
 
     evidence_by_gate = {
@@ -421,6 +510,7 @@ def evaluate_final_policy_engine(
             evidence=evidence_by_gate[gate],
             evaluation_order=visited,
             expected_context_hash=expected_context_hash,
+            shield_v4_required=shield_v4_required,
         )
         if failure is not None:
             return failure
