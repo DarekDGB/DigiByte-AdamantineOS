@@ -19,6 +19,7 @@ from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
     _require_hash,
     _require_non_empty_str,
     _require_positive_int,
+    _require_signature_encoding,
     _require_str_list,
     _validate_component_signature_results,
     _validate_signature_bundle_shape,
@@ -251,6 +252,14 @@ def test_shield_v4_contract_rejects_signature_bundle_shape_and_policy_errors() -
         with pytest.raises((ShieldV4ReceiptContractError, ShieldV4ReceiptHashMismatchError), match=message):
             _validate_signature_bundle_shape(bad_bundle, expected_signed_payload_hash=expected_hash, expected_domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN)
 
+    b64u_bundle = copy.deepcopy(bundle)
+    b64u_bundle["signatures"][0]["signature"] = "b64u:YWJj"
+    assert _validate_signature_bundle_shape(
+        b64u_bundle,
+        expected_signed_payload_hash=expected_hash,
+        expected_domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN,
+    )["signatures"][0]["signature"] == "b64u:YWJj"
+
     duplicate_algo = copy.deepcopy(bundle)
     duplicate_algo["signatures"][1]["algorithm"] = duplicate_algo["signatures"][0]["algorithm"]
     with pytest.raises(ShieldV4ReceiptContractError, match="duplicate"):
@@ -309,6 +318,18 @@ def test_shield_v4_helper_guards_are_fail_closed() -> None:
         _require_hash("g" * 64, field="hash")
     with pytest.raises(ShieldV4ReceiptContractError, match="lowercase"):
         _require_hash("A" * 64, field="hash")
+    assert _require_signature_encoding("0" * 64, field="signature") == "0" * 64
+    assert _require_signature_encoding("b64u:YWJj", field="signature") == "b64u:YWJj"
+    with pytest.raises(ShieldV4ReceiptContractError, match="non-empty"):
+        _require_signature_encoding("b64u:", field="signature")
+    with pytest.raises(ShieldV4ReceiptContractError, match="unpadded"):
+        _require_signature_encoding("b64u:YWJj=", field="signature")
+    with pytest.raises(ShieldV4ReceiptContractError, match="invalid"):
+        _require_signature_encoding("b64u:****", field="signature")
+    with pytest.raises(ShieldV4ReceiptContractError, match="invalid"):
+        _require_signature_encoding("b64u:A", field="signature")
+    with pytest.raises(ShieldV4ReceiptContractError, match="64-character"):
+        _require_signature_encoding("not-b64u", field="signature")
     with pytest.raises(ShieldV4ReceiptContractError, match="list"):
         _require_str_list("bad", field="items")  # type: ignore[arg-type]
     with pytest.raises(ShieldV4ReceiptContractError, match="entry"):
