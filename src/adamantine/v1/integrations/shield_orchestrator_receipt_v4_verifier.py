@@ -1,0 +1,610 @@
+from __future__ import annotations
+
+import hmac
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Callable, Iterable, Mapping
+
+from adamantine.v1.contracts.reason_ids import ReasonId
+from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
+    ALLOWED_ALGORITHMS,
+    COMPONENT_ROLES,
+    COMPONENT_VERDICT_DOMAIN,
+    ORCHESTRATOR_RECEIPT_DOMAIN,
+    REQUIRED_ALGORITHMS,
+    ShieldV4ReceiptAuthorityBypassError,
+    ShieldV4ReceiptContractError,
+    ShieldV4ReceiptDowngradeError,
+    ShieldV4ReceiptHashMismatchError,
+    validate_shield_v4_receipt_contract,
+)
+
+KEY_REGISTRY_SCHEMA_VERSION = "shield.key_registry.v1"
+ACTIVE = "active"
+REVOKED = "revoked"
+ORCHESTRATOR_ROLE = "shield_orchestrator"
+SUPPORTED_ROLES = tuple(COMPONENT_ROLES.values()) + (ORCHESTRATOR_ROLE,)
+COMPONENT_SIGNATURE_PREFIXES = {
+    "adn": "TEST-ONLY-ADN-SIGNATURE",
+    "dqsn": "TEST-ONLY-DQSN-SIGNATURE",
+    "guardian_wallet": "TEST-ONLY-GUARDIAN-WALLET-SIGNATURE",
+    "qwg": "TEST-ONLY-QWG-SIGNATURE",
+    "sentinel_ai": "TEST-ONLY-SENTINEL-AI-SIGNATURE",
+}
+
+
+class ShieldV4ReceiptVerificationState(str, Enum):
+    """Stable AdamantineOS states for Shield v4 cryptographic evidence verification."""
+
+    VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS = "VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS"
+    VERIFIED_DENY_DOMINATES = "VERIFIED_DENY_DOMINATES"
+    VERIFIED_HUMAN_REVIEW_REQUIRED = "VERIFIED_HUMAN_REVIEW_REQUIRED"
+    REJECTED_INVALID_RECEIPT = "REJECTED_INVALID_RECEIPT"
+    REJECTED_CONTEXT_MISMATCH = "REJECTED_CONTEXT_MISMATCH"
+    REJECTED_REQUEST_MISMATCH = "REJECTED_REQUEST_MISMATCH"
+    REJECTED_TAMPERED_RECEIPT = "REJECTED_TAMPERED_RECEIPT"
+    REJECTED_DOWNGRADE = "REJECTED_DOWNGRADE"
+    REJECTED_AUTHORITY_BYPASS = "REJECTED_AUTHORITY_BYPASS"
+    REJECTED_SIGNATURE_POLICY = "REJECTED_SIGNATURE_POLICY"
+    REJECTED_SIGNATURE_INVALID = "REJECTED_SIGNATURE_INVALID"
+    REJECTED_KEY_REGISTRY = "REJECTED_KEY_REGISTRY"
+    REJECTED_REPLAY_RISK = "REJECTED_REPLAY_RISK"
+    REJECTED_FRESHNESS_WINDOW = "REJECTED_FRESHNESS_WINDOW"
+
+
+@dataclass(frozen=True)
+class ShieldV4ReceiptVerificationResult:
+    """Fail-closed Shield v4 verifier result.
+
+    A verified ALLOW is still evidence only. It never becomes AdamantineOS final
+    approval, never signs transactions, and never broadcasts.
+    """
+
+    state: ShieldV4ReceiptVerificationState
+    reason_id: ReasonId
+    verified: bool
+    accepted_as_evidence: bool
+    final_approval: bool
+    final_outcome: str | None
+    context_hash: str | None
+    request_id: str | None
+    receipt_hash: str | None
+    handoff_allowed: bool
+    dominant_reason_ids: tuple[str, ...]
+    receipt: Mapping[str, Any] | None = None
+    verification_summary: Mapping[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class TrustedShieldV4Key:
+    role: str
+    key_id: str
+    key_version: int
+    algorithm: str
+    not_before: str
+    not_after: str
+    status: str
+    public_key: str
+
+
+@dataclass(frozen=True)
+class TrustedShieldV4KeyRegistry:
+    schema_version: str
+    registry_version: int
+    entries: tuple[TrustedShieldV4Key, ...]
+
+
+@dataclass(frozen=True)
+class _VerifierRejection(Exception):
+    state: ShieldV4ReceiptVerificationState
+    reason_id: ReasonId
+    message: str
+
+
+def _string_or_none(payload: Any, key: str) -> str | None:
+    if isinstance(payload, Mapping) and isinstance(payload.get(key), str):
+        return str(payload[key])
+    return None
+
+
+def _rejected(
+    *,
+    state: ShieldV4ReceiptVerificationState,
+    reason_id: ReasonId,
+    payload: Any,
+    dominant_reason: str | None = None,
+) -> ShieldV4ReceiptVerificationResult:
+    return ShieldV4ReceiptVerificationResult(
+        state=state,
+        reason_id=reason_id,
+        verified=False,
+        accepted_as_evidence=False,
+        final_approval=False,
+        final_outcome=None,
+        context_hash=_string_or_none(payload, "context_hash"),
+        request_id=_string_or_none(payload, "request_id"),
+        receipt_hash=_string_or_none(payload, "receipt_hash"),
+        handoff_allowed=False,
+        dominant_reason_ids=(dominant_reason or state.value,),
+        receipt=None,
+        verification_summary=None,
+    )
+
+
+def _require_non_empty_str(value: Any, *, field: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            f"{field} must be non-empty string",
+        )
+    return value.strip()
+
+
+def _require_positive_int(value: Any, *, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            f"{field} must be positive integer",
+        )
+    return value
+
+
+def _parse_utc(value: Any, *, field: str) -> datetime:
+    clean = _require_non_empty_str(value, field=field)
+    if not clean.endswith("Z"):
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_FRESHNESS_WINDOW,
+            ReasonId.EQC_SHIELD_STALE,
+            f"{field} must end in Z",
+        )
+    try:
+        parsed = datetime.fromisoformat(clean[:-1] + "+00:00")
+    except ValueError as exc:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_FRESHNESS_WINDOW,
+            ReasonId.EQC_SHIELD_STALE,
+            f"{field} must be valid RFC3339 UTC",
+        ) from exc
+    return parsed.astimezone(timezone.utc)
+
+
+def load_trusted_shield_v4_key_registry(raw: Mapping[str, Any]) -> TrustedShieldV4KeyRegistry:
+    if not isinstance(raw, Mapping):
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "trusted key registry must be mapping",
+        )
+    if set(raw.keys()) != {"schema_version", "registry_version", "entries"}:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "trusted key registry fields must match schema",
+        )
+    if raw["schema_version"] != KEY_REGISTRY_SCHEMA_VERSION:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "trusted key registry schema mismatch",
+        )
+    registry_version = _require_positive_int(raw["registry_version"], field="registry_version")
+    if not isinstance(raw["entries"], list) or not raw["entries"]:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "trusted key registry entries must be non-empty list",
+        )
+    entries: list[TrustedShieldV4Key] = []
+    seen: set[tuple[str, int, str, str]] = set()
+    for entry in raw["entries"]:
+        if not isinstance(entry, Mapping):
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "trusted key entry must be mapping",
+            )
+        if set(entry.keys()) != {"role", "key_id", "key_version", "algorithm", "not_before", "not_after", "status", "public_key"}:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "trusted key entry fields must match schema",
+            )
+        role = _require_non_empty_str(entry["role"], field="role")
+        if role not in SUPPORTED_ROLES:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "trusted key role unsupported",
+            )
+        key_id = _require_non_empty_str(entry["key_id"], field="key_id")
+        key_version = _require_positive_int(entry["key_version"], field="key_version")
+        algorithm = _require_non_empty_str(entry["algorithm"], field="algorithm")
+        if algorithm not in ALLOWED_ALGORITHMS:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "trusted key algorithm unsupported",
+            )
+        not_before = _require_non_empty_str(entry["not_before"], field="not_before")
+        not_after = _require_non_empty_str(entry["not_after"], field="not_after")
+        if _parse_utc(not_before, field="key.not_before") >= _parse_utc(not_after, field="key.not_after"):
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "trusted key validity window invalid",
+            )
+        status = _require_non_empty_str(entry["status"], field="status")
+        if status not in {ACTIVE, REVOKED}:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "trusted key status unsupported",
+            )
+        public_key = _require_non_empty_str(entry["public_key"], field="public_key")
+        identity = (role, key_version, algorithm, key_id)
+        if identity in seen:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "duplicate trusted key entry",
+            )
+        seen.add(identity)
+        entries.append(
+            TrustedShieldV4Key(
+                role=role,
+                key_id=key_id,
+                key_version=key_version,
+                algorithm=algorithm,
+                not_before=not_before,
+                not_after=not_after,
+                status=status,
+                public_key=public_key,
+            )
+        )
+    return TrustedShieldV4KeyRegistry(KEY_REGISTRY_SCHEMA_VERSION, registry_version, tuple(entries))
+
+
+def _find_key(
+    registry: TrustedShieldV4KeyRegistry,
+    *,
+    role: str,
+    key_id: str,
+    key_version: int,
+    algorithm: str,
+    verification_time: str,
+    artifact_not_before: str,
+    artifact_not_after: str,
+) -> TrustedShieldV4Key:
+    verification_dt = _parse_utc(verification_time, field="verification_time")
+    artifact_start = _parse_utc(artifact_not_before, field="artifact_not_before")
+    artifact_end = _parse_utc(artifact_not_after, field="artifact_not_after")
+    if artifact_start >= artifact_end:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_FRESHNESS_WINDOW,
+            ReasonId.EQC_SHIELD_STALE,
+            "artifact validity window invalid",
+        )
+    for entry in registry.entries:
+        if (entry.role, entry.key_id, entry.key_version, entry.algorithm) == (role, key_id, key_version, algorithm):
+            if entry.status != ACTIVE:
+                raise _VerifierRejection(
+                    ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                    ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                    "trusted key revoked",
+                )
+            key_start = _parse_utc(entry.not_before, field="key_not_before")
+            key_end = _parse_utc(entry.not_after, field="key_not_after")
+            if not (key_start <= verification_dt <= key_end):
+                raise _VerifierRejection(
+                    ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                    ReasonId.EQC_SHIELD_STALE,
+                    "trusted key not valid at verification time",
+                )
+            if not (key_start <= artifact_start <= key_end and key_start <= artifact_end <= key_end):
+                raise _VerifierRejection(
+                    ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                    ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                    "artifact outside trusted key validity window",
+                )
+            return entry
+    raise _VerifierRejection(
+        ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+        ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+        "trusted key not found",
+    )
+
+
+def _verify_test_only_signature(entry: Mapping[str, Any], key: TrustedShieldV4Key) -> bool:
+    if key.role == ORCHESTRATOR_ROLE:
+        expected = hmac.new(
+            key.public_key.encode("utf-8"),
+            f"{entry['domain_tag']}|{entry['signed_payload_hash']}|{entry['algorithm']}|{entry['key_id']}|{entry['key_version']}".encode("utf-8"),
+            "sha256",
+        ).hexdigest()
+        return hmac.compare_digest(str(entry["signature"]), expected)
+    component_id = next((candidate for candidate, role in COMPONENT_ROLES.items() if role == key.role), "")
+    prefix = COMPONENT_SIGNATURE_PREFIXES.get(component_id)
+    if prefix is None:
+        return False
+    import hashlib
+
+    expected = hashlib.sha256(
+        f"{prefix}\n{key.public_key}\n{entry['algorithm']}\n{entry['signed_payload_hash']}".encode("utf-8")
+    ).hexdigest()
+    return hmac.compare_digest(str(entry["signature"]), expected)
+
+
+SignatureVerifier = Callable[[Mapping[str, Any], TrustedShieldV4Key], bool]
+
+
+def _verify_bundle(
+    bundle: Mapping[str, Any],
+    *,
+    expected_signed_payload_hash: str,
+    expected_domain_tag: str,
+    required_role: str,
+    registry: TrustedShieldV4KeyRegistry,
+    verification_time: str,
+    artifact_not_before: str,
+    artifact_not_after: str,
+    signature_verifier: SignatureVerifier,
+) -> dict[str, Any]:
+    seen_algorithms: set[str] = set()
+    seen_keys: set[tuple[str, int]] = set()
+    results: list[dict[str, Any]] = []
+    signatures = bundle["signatures"]
+    for entry in signatures:
+        algorithm = str(entry["algorithm"])
+        if algorithm in seen_algorithms:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "duplicate signature algorithm",
+            )
+        seen_algorithms.add(algorithm)
+        key_id = str(entry["key_id"])
+        key_version = int(entry["key_version"])
+        key_identity = (key_id, key_version)
+        if key_identity in seen_keys:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "duplicate signature key entry",
+            )
+        seen_keys.add(key_identity)
+        if entry["signed_payload_hash"] != expected_signed_payload_hash:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_TAMPERED_RECEIPT,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "signature hash mismatch",
+            )
+        if entry["domain_tag"] != expected_domain_tag:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "signature domain mismatch",
+            )
+        key = _find_key(
+            registry,
+            role=required_role,
+            key_id=key_id,
+            key_version=key_version,
+            algorithm=algorithm,
+            verification_time=verification_time,
+            artifact_not_before=artifact_not_before,
+            artifact_not_after=artifact_not_after,
+        )
+        if not signature_verifier(entry, key):
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "signature verification failed",
+            )
+        results.append({"algorithm": algorithm, "key_id": key_id, "key_version": key_version, "verified": True})
+    missing = set(REQUIRED_ALGORITHMS) - seen_algorithms
+    if missing:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "signature policy requirements not satisfied",
+        )
+    return {"required_algorithms": list(REQUIRED_ALGORITHMS), "verified_algorithms": [r["algorithm"] for r in results], "results": results}
+
+
+def _enforce_registry_versions(
+    receipt: Mapping[str, Any],
+    *,
+    registry: TrustedShieldV4KeyRegistry,
+    minimum_key_registry_version: int,
+) -> None:
+    if registry.registry_version < minimum_key_registry_version:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "trusted key registry rollback rejected",
+        )
+    if receipt["key_registry_version"] != registry.registry_version:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "receipt key registry version mismatch",
+        )
+    for component in receipt["component_verdicts"]:
+        if component["key_registry_version"] != registry.registry_version:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_KEY_REGISTRY,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "component key registry version mismatch",
+            )
+
+
+def _enforce_freshness(receipt: Mapping[str, Any], *, verification_time: str) -> None:
+    now = _parse_utc(verification_time, field="verification_time")
+    not_before = _parse_utc(receipt["not_before"], field="receipt.not_before")
+    not_after = _parse_utc(receipt["not_after"], field="receipt.not_after")
+    if not_before >= not_after:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_FRESHNESS_WINDOW,
+            ReasonId.EQC_SHIELD_STALE,
+            "receipt freshness window invalid",
+        )
+    if not (not_before <= now <= not_after):
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_FRESHNESS_WINDOW,
+            ReasonId.EQC_SHIELD_STALE,
+            "receipt outside freshness window",
+        )
+    for component in receipt["component_verdicts"]:
+        component_start = _parse_utc(component["not_before"], field="component.not_before")
+        component_end = _parse_utc(component["not_after"], field="component.not_after")
+        if component_start >= component_end or not (component_start <= now <= component_end):
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_FRESHNESS_WINDOW,
+                ReasonId.EQC_SHIELD_STALE,
+                "component outside freshness window",
+            )
+
+
+def _verify_component_bundles(
+    receipt: Mapping[str, Any],
+    *,
+    registry: TrustedShieldV4KeyRegistry,
+    verification_time: str,
+    signature_verifier: SignatureVerifier,
+) -> list[dict[str, Any]]:
+    summaries: list[dict[str, Any]] = []
+    for component in receipt["component_verdicts"]:
+        role = COMPONENT_ROLES[str(component["component_id"])]
+        verification = _verify_bundle(
+            component["signature_bundle"],
+            expected_signed_payload_hash=str(component["signed_payload_hash"]),
+            expected_domain_tag=COMPONENT_VERDICT_DOMAIN,
+            required_role=role,
+            registry=registry,
+            verification_time=verification_time,
+            artifact_not_before=str(component["not_before"]),
+            artifact_not_after=str(component["not_after"]),
+            signature_verifier=signature_verifier,
+        )
+        summaries.append({"component_id": component["component_id"], "component_role": role, **verification})
+    return summaries
+
+
+def _state_for_final_outcome(final_outcome: str) -> tuple[ShieldV4ReceiptVerificationState, ReasonId]:
+    if final_outcome == "DENY":
+        return ShieldV4ReceiptVerificationState.VERIFIED_DENY_DOMINATES, ReasonId.DENY_POLICY
+    if final_outcome == "HUMAN_REVIEW_REQUIRED":
+        return ShieldV4ReceiptVerificationState.VERIFIED_HUMAN_REVIEW_REQUIRED, ReasonId.DENY_AUTHORITY_INSUFFICIENT
+    return ShieldV4ReceiptVerificationState.VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS, ReasonId.EVIDENCE_OK
+
+
+def _classify_contract_error(exc: ValueError) -> tuple[ShieldV4ReceiptVerificationState, ReasonId, str]:
+    if isinstance(exc, ShieldV4ReceiptDowngradeError):
+        return ShieldV4ReceiptVerificationState.REJECTED_DOWNGRADE, ReasonId.EQC_INVALID_SHIELD_BUNDLE, "SHIELD_V4_DOWNGRADE_REJECTED"
+    if isinstance(exc, ShieldV4ReceiptHashMismatchError):
+        return ShieldV4ReceiptVerificationState.REJECTED_TAMPERED_RECEIPT, ReasonId.EQC_INVALID_SHIELD_BUNDLE, "SHIELD_V4_HASH_MISMATCH"
+    if isinstance(exc, ShieldV4ReceiptAuthorityBypassError):
+        return ShieldV4ReceiptVerificationState.REJECTED_AUTHORITY_BYPASS, ReasonId.EQC_INVALID_SHIELD_BUNDLE, "SHIELD_V4_AUTHORITY_BYPASS"
+    if isinstance(exc, ShieldV4ReceiptContractError) and "context" in str(exc).lower():
+        return ShieldV4ReceiptVerificationState.REJECTED_CONTEXT_MISMATCH, ReasonId.EQC_SHIELD_CONTEXT_HASH_MISMATCH, "SHIELD_V4_CONTEXT_MISMATCH"
+    return ShieldV4ReceiptVerificationState.REJECTED_INVALID_RECEIPT, ReasonId.EQC_INVALID_SHIELD_BUNDLE, "SHIELD_V4_INVALID_RECEIPT"
+
+
+def verify_shield_v4_orchestrator_receipt(
+    receipt: Any,
+    *,
+    expected_context_hash: str,
+    expected_request_id: str,
+    trusted_key_registry: Mapping[str, Any],
+    verification_time: str,
+    seen_request_ids: Iterable[str] = (),
+    rejected_receipt_hashes: Iterable[str] = (),
+    minimum_key_registry_version: int = 1,
+    signature_verifier: SignatureVerifier = _verify_test_only_signature,
+) -> ShieldV4ReceiptVerificationResult:
+    """Verify a Shield v4 Orchestrator receipt as evidence only.
+
+    The verifier is deterministic and fail-closed. Replay state, time, trusted key
+    registry, and signature verifier are injected by the caller. The default
+    signature verifier is TEST-ONLY deterministic logic for the v4 contract phase.
+    """
+
+    try:
+        valid = validate_shield_v4_receipt_contract(receipt, expected_context_hash=expected_context_hash)
+    except ValueError as exc:
+        state, reason_id, dominant = _classify_contract_error(exc)
+        return _rejected(state=state, reason_id=reason_id, payload=receipt, dominant_reason=dominant)
+
+    if not isinstance(expected_request_id, str) or not expected_request_id.strip():
+        return _rejected(
+            state=ShieldV4ReceiptVerificationState.REJECTED_INVALID_RECEIPT,
+            reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            payload=valid,
+            dominant_reason="EXPECTED_REQUEST_ID_INVALID",
+        )
+    if valid["request_id"] != expected_request_id:
+        return _rejected(
+            state=ShieldV4ReceiptVerificationState.REJECTED_REQUEST_MISMATCH,
+            reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            payload=valid,
+            dominant_reason="SHIELD_V4_REQUEST_ID_MISMATCH",
+        )
+    receipt_hash = str(valid["receipt_hash"])
+    if valid["request_id"] in set(seen_request_ids) or receipt_hash in set(rejected_receipt_hashes):
+        return _rejected(
+            state=ShieldV4ReceiptVerificationState.REJECTED_REPLAY_RISK,
+            reason_id=ReasonId.EQC_SHIELD_STALE,
+            payload=valid,
+            dominant_reason="SHIELD_V4_REPLAY_REJECTED",
+        )
+
+    try:
+        registry = load_trusted_shield_v4_key_registry(trusted_key_registry)
+        _enforce_registry_versions(valid, registry=registry, minimum_key_registry_version=minimum_key_registry_version)
+        _enforce_freshness(valid, verification_time=verification_time)
+        component_summaries = _verify_component_bundles(
+            valid,
+            registry=registry,
+            verification_time=verification_time,
+            signature_verifier=signature_verifier,
+        )
+        orchestrator_summary = _verify_bundle(
+            valid["signature_bundle"],
+            expected_signed_payload_hash=str(valid["signed_payload_hash"]),
+            expected_domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN,
+            required_role=ORCHESTRATOR_ROLE,
+            registry=registry,
+            verification_time=verification_time,
+            artifact_not_before=str(valid["not_before"]),
+            artifact_not_after=str(valid["not_after"]),
+            signature_verifier=signature_verifier,
+        )
+    except _VerifierRejection as exc:
+        return _rejected(state=exc.state, reason_id=exc.reason_id, payload=valid, dominant_reason=exc.message)
+
+    final_outcome = str(valid["final_outcome"])
+    state, reason_id = _state_for_final_outcome(final_outcome)
+    verification_summary = {
+        "key_registry_version": registry.registry_version,
+        "policy_version": "policy.v1",
+        "orchestrator": orchestrator_summary,
+        "components": component_summaries,
+    }
+    return ShieldV4ReceiptVerificationResult(
+        state=state,
+        reason_id=reason_id,
+        verified=True,
+        accepted_as_evidence=True,
+        final_approval=False,
+        final_outcome=final_outcome,
+        context_hash=str(valid["context_hash"]),
+        request_id=str(valid["request_id"]),
+        receipt_hash=receipt_hash,
+        handoff_allowed=bool(valid["adamantineos_handoff"]["handoff_allowed"]),
+        dominant_reason_ids=tuple(str(reason_id) for reason_id in valid["dominant_reason_ids"]),
+        receipt=valid,
+        verification_summary=verification_summary,
+    )
