@@ -44,6 +44,29 @@ src/adamantine/v1/integrations/shield_v4_real_crypto_backend.py
 The adapter is intentionally verify-only. It contains no signing method because
 AdamantineOS must not become a Shield signer or transaction signer.
 
+The optional OQS ML-DSA verify-only backend lives in:
+
+```text
+src/adamantine/v1/integrations/shield_v4_oqs_mldsa_backend.py
+```
+
+It lazily imports `oqs` only when used, so normal CI and non-OQS deployments do not
+silently depend on local machine crypto state. If OQS is missing, disabled, or lacks
+the locked mechanism, AdamantineOS fails closed.
+
+## OQS ML-DSA mapping
+
+For Shield v4 `policy.v1`, the optional OQS backend maps:
+
+```text
+Shield algorithm: ml-dsa
+OQS mechanism:    ML-DSA-65
+```
+
+The mechanism is deliberately locked for this backend. A caller cannot silently swap
+`ML-DSA-44`, `ML-DSA-87`, Falcon/FN-DSA, or another mechanism behind the Shield
+policy name.
+
 ## Frozen real-signature input
 
 Every real signature is verified over the exact byte string:
@@ -65,6 +88,23 @@ Rules:
 - `signed_payload_hash` must be lowercase SHA-256 hex;
 - `domain_tag` must be one of the frozen Shield v4 signing domains;
 - `algorithm`, `key_id`, and `key_version` must match the trusted registry entry.
+
+## Binary encoding lock
+
+Real ML-DSA signatures and public keys are binary. AdamantineOS real backend adapters
+use explicit unpadded base64url encoding with the prefix:
+
+```text
+b64u:<unpadded-base64url-bytes>
+```
+
+Rules:
+
+- real binary signatures use `b64u:`;
+- real OQS public keys use `b64u:` in the trust registry;
+- padding characters (`=`) are rejected;
+- malformed base64url is rejected before calling a crypto backend;
+- historical 64-character deterministic test digests remain test fixtures only.
 
 ## Fail-closed material boundary
 
