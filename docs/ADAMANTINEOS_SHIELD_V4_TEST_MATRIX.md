@@ -1,10 +1,10 @@
 # AdamantineOS Shield v4 Test Matrix
 
 Author attribution: DarekDGB
-Status: Shield v4 V4.7D documentation lock
-Scope: AdamantineOS Shield v4 contract, verifier, and final-policy v4-required tests
+Status: Shield v4 V4.8G real-backend integration hardening lock
+Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests, and real-backend verifier interface proofs
 
-## 1. Current V4.7 test files
+## 1. Current Shield v4 test files
 
 | Area | Test file | Purpose |
 | --- | --- | --- |
@@ -12,6 +12,10 @@ Scope: AdamantineOS Shield v4 contract, verifier, and final-policy v4-required t
 | Verifier and trust registry | `tests/integrations/test_shield_orchestrator_receipt_v4_verifier.py` | Locks verifier acceptance/rejection, trusted key registry behavior, replay rejection, freshness, key role binding, and signature-summary behavior. |
 | Final policy v4-required mode | `tests/policy/test_final_policy_engine_shield_v4_required.py` | Locks AdamantineOS final policy enforcement when `shield_v4_required=True`. |
 | Documentation lock | `tests/test_adamantineos_shield_v4_docs_lock.py` | Locks required Shield v4 documentation and boundary wording. |
+| Real backend interface contract | `tests/integrations/test_shield_v4_real_crypto_backend_contract.py` | Locks real verifier backend input validation, `b64u:` material, strict bool returns, and fail-closed backend exception behavior. |
+| OQS ML-DSA adapter contract | `tests/integrations/test_shield_v4_oqs_mldsa_backend.py` | Locks optional OQS `ML-DSA-65` verify-only adapter behavior with deterministic fakes and native-exception wrapping. |
+| V4.8G real-backend interface integration | `tests/integrations/test_shield_v4_real_backend_integration_hardening.py` | Locks real-backend interface wiring with deterministic backends, test-only fallback rejection, tamper rejection, and evidence-only AdamantineOS behavior. |
+| V4.8G live liboqs gated proof | `tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py` | Skipped by default; in a dedicated `SHIELD_V4_REAL_OQS=1` job with installed `oqs`/liboqs, proves live `ML-DSA-65` verify-only behavior and wrong-length fail-closed handling. |
 
 ## 2. Contract matrix
 
@@ -48,6 +52,9 @@ Scope: AdamantineOS Shield v4 contract, verifier, and final-policy v4-required t
 | Wrong key role | Rejected fail-closed | verifier key-role tests |
 | Tampered Orchestrator signature | Rejected fail-closed | verifier signature tests |
 | Tampered component signature | Rejected fail-closed | verifier signature tests |
+| Real-backend verifier exception | Rejected fail-closed through Shield v4 error hierarchy | `test_shield_v48g_verifier_catches_signature_backend_exceptions_and_non_bool_results` |
+| Truthy non-bool verifier result | Rejected fail-closed; no truthy coercion | `test_shield_v48g_real_backend_truthy_non_bool_result_rejected` |
+| Test-only verifier fallback in real mode | Rejected fail-closed | `test_shield_v48g_rejects_test_only_fallback_for_real_fixture` |
 
 ## 4. Final policy v4-required matrix
 
@@ -75,7 +82,17 @@ Scope: AdamantineOS Shield v4 contract, verifier, and final-policy v4-required t
 
 FN-DSA/Falcon must never be treated as ML-DSA and must never override failure of a required path.
 
-## 6. Negative tests still carried into later phases
+## 6. Real backend proof levels
+
+| Proof level | CI behavior | Claim allowed |
+| --- | --- | --- |
+| Default package CI | Uses deterministic verifier backends and fake OQS modules | Proves interface contract, fail-closed behavior, parser hardening, and AdamantineOS evidence-only integration. |
+| Gated live liboqs job | Requires `SHIELD_V4_REAL_OQS=1`, installed `oqs`/liboqs, JUnit output, and `scripts/assert_real_oqs_junit_not_skipped.py` with `skipped == 0` | Proves live liboqs `ML-DSA-65` verification through the AdamantineOS verify-only backend. |
+| V4.10 release gate | Final multi-repo proof pack | Release-grade public claims about real-backend proof. |
+
+AdamantineOS remains verify-only for this path. The real-backend adapter has no `sign_message`, no private-key resolver, and no private-key reference.
+
+## 7. Negative tests still carried into later phases
 
 The following remain important for the full Shield v4 release gate and multi-repo harness:
 
@@ -89,4 +106,4 @@ The following remain important for the full Shield v4 release gate and multi-rep
 - signature valid but signed payload hash mismatch across the integration harness
 - replay/stale receipt rejected by injected replay state across the integration harness
 
-These are planned for V4.8 and the final release proof pack. This V4.7D document does not claim those later release gates are complete.
+V4.8G covers the real-backend interface-contract hardening and gated live-liboqs proof hooks. Final public release claims remain gated by the V4.10 proof pack and a live-liboqs job that passes with `skipped == 0`.
