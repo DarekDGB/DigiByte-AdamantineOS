@@ -132,7 +132,19 @@ Preferred order:
 
 A future production PQC backend must preserve this cheap-to-expensive ordering.
 
-## 10. Out of scope
+## 10. Real backend proof over-claim threats
+
+Threat: deterministic fake-backend CI is described as proof that live liboqs ML-DSA has run.
+
+Required controls:
+
+- default CI is described as interface-contract and fail-closed proof only;
+- live liboqs ML-DSA verification is an optional gated job using `SHIELD_V4_REAL_OQS=1`;
+- the gated job must use a JUnit not-skipped guard so import-skipped OQS tests cannot read as a pass;
+- release-grade real-backend proof remains part of the V4.10 proof pack before public release claims.
+
+
+## 11. Out of scope
 
 Shield v4 does not modify DigiByte consensus.
 
@@ -142,7 +154,7 @@ Shield v4 does not broadcast wallet transactions.
 
 Shield v4 does not replace user confirmation, wallet policy, replay gates, or AdamantineOS final policy.
 
-## 11. Current phase status
+## 12. Current phase status
 
 V4.7D locks the AdamantineOS-side threat model after the contract, verifier, and final-policy v4-required gate were added.
 
