@@ -465,3 +465,47 @@ def test_shield_v4_verifier_remaining_fail_closed_edges() -> None:
         public_key="pk",
     )
     assert _verify_test_only_signature({"signature": "bad", "domain_tag": "x", "signed_payload_hash": "y", "algorithm": "z", "key_id": "k", "key_version": 1}, unknown_role_key) is False
+
+
+def test_v48g_shield_v4_verifier_wraps_signature_verifier_exceptions_fail_closed() -> None:
+    valid = load_fixture("valid_allow_signed_receipt.json")
+
+    class NativeVerifierError(RuntimeError):
+        pass
+
+    def raising_signature_verifier(_entry, _key):
+        raise NativeVerifierError("native verifier crash")
+
+    result = verify(valid, signature_verifier=raising_signature_verifier)
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.dominant_reason_ids == ("signature verifier failed closed",)
+
+    registry = load_trusted_shield_v4_key_registry(trusted_registry())
+    with pytest.raises(_VerifierRejection, match="signature verifier failed closed") as excinfo:
+        _verify_bundle(
+            valid["signature_bundle"],
+            expected_signed_payload_hash=valid["signed_payload_hash"],
+            expected_domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN,
+            required_role=ORCHESTRATOR_ROLE,
+            registry=registry,
+            verification_time=VERIFICATION_TIME,
+            artifact_not_before=valid["not_before"],
+            artifact_not_after=valid["not_after"],
+            signature_verifier=raising_signature_verifier,
+        )
+    assert isinstance(excinfo.value.__cause__, NativeVerifierError)
+
+
+def test_v48g_shield_v4_verifier_rejects_truthy_non_bool_signature_verifier_result() -> None:
+    valid = load_fixture("valid_allow_signed_receipt.json")
+
+    def truthy_non_bool_signature_verifier(_entry, _key):
+        return 1
+
+    result = verify(valid, signature_verifier=truthy_non_bool_signature_verifier)
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.dominant_reason_ids == ("signature verifier must return bool",)
