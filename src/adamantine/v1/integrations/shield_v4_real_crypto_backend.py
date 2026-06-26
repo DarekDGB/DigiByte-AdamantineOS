@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 from collections.abc import Callable, Mapping
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
     ALLOWED_ALGORITHMS,
@@ -16,6 +16,8 @@ REAL_CRYPTO_SIGNATURE_INPUT_PREFIX = "DGB-SHIELD-V4-REAL-CRYPTO-SIGNATURE-INPUT"
 REAL_SIGNATURE_ENCODING_PREFIX = "b64u:"
 _BASE64URL_ALPHABET = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 _ALLOWED_DOMAIN_TAGS = frozenset({COMPONENT_VERDICT_DOMAIN, ORCHESTRATOR_RECEIPT_DOMAIN})
+_SIGNATURE_ENTRY_FIELDS = frozenset({"algorithm", "key_id", "key_version", "signed_payload_hash", "domain_tag", "signature"})
+_T = TypeVar("_T")
 _TEST_ONLY_MARKERS = ("test-only",)
 _TEST_ONLY_PREFIXES = ("test-",)
 
@@ -58,9 +60,20 @@ RealCryptoSignatureVerifier = Callable[[Mapping[str, Any], TrustedShieldV4Key], 
 
 
 def _require_non_empty_str(value: Any, *, field: str) -> str:
-    if not isinstance(value, str) or not value.strip():
+    if not isinstance(value, str) or not value:
         raise ShieldV4RealCryptoBackendError(f"{field} must be non-empty string")
-    return value.strip()
+    if value != value.strip():
+        raise ShieldV4RealCryptoBackendError(f"{field} must not contain surrounding whitespace")
+    return value
+
+
+def _call_backend_operation(operation: str, callback: Callable[[], _T]) -> _T:
+    try:
+        return callback()
+    except ShieldV4RealCryptoBackendError:
+        raise
+    except Exception as exc:
+        raise ShieldV4RealCryptoBackendError(f"real crypto backend {operation} failed closed") from exc
 
 
 def _require_positive_int(value: Any, *, field: str) -> int:
@@ -127,9 +140,12 @@ def decode_binary_signature_material(encoded: Any, *, field: str = "signature") 
     if set(body) - _BASE64URL_ALPHABET:
         raise ShieldV4RealCryptoBackendError(f"{field} b64u payload is invalid")
     try:
-        return base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))
+        decoded = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))
     except (binascii.Error, ValueError) as exc:
         raise ShieldV4RealCryptoBackendError(f"{field} b64u payload is invalid") from exc
+    if not decoded:  # pragma: no cover - base64url cannot reach this after the body check.
+        raise ShieldV4RealCryptoBackendError(f"{field} b64u payload must decode to non-empty bytes")
+    return decoded
 
 
 def build_real_crypto_signature_input(
@@ -162,7 +178,10 @@ def build_real_crypto_signature_input(
 
 
 def _require_backend_supports_algorithm(backend: ShieldV4RealCryptoVerifierBackend, algorithm: str) -> None:
-    supported = tuple(getattr(backend, "supported_algorithms", ()))
+    try:
+        supported = tuple(getattr(backend, "supported_algorithms", ()))
+    except Exception as exc:
+        raise ShieldV4RealCryptoBackendError("real crypto backend algorithm discovery failed closed") from exc
     if algorithm not in supported:
         raise ShieldV4RealCryptoBackendUnavailable("real crypto backend does not support required algorithm")
 
@@ -175,12 +194,18 @@ def verify_signature_entry_with_real_backend(
 ) -> bool:
     """Verify one Shield v4 signature entry with AdamantineOS real crypto backend."""
 
+    if not isinstance(entry, Mapping):
+        raise ShieldV4RealCryptoBackendError("signature entry must be mapping")
+    if set(entry.keys()) != _SIGNATURE_ENTRY_FIELDS:
+        raise ShieldV4RealCryptoBackendError("signature entry fields must match required schema")
     reject_test_only_key_material(key)
     algorithm = _require_supported_algorithm(entry.get("algorithm"))
     key_id = _require_non_empty_str(entry.get("key_id"), field="key_id")
     key_version = _require_positive_int(entry.get("key_version"), field="key_version")
     if (key.algorithm, key.key_id, key.key_version) != (algorithm, key_id, key_version):
         raise ShieldV4RealCryptoBackendError("signature entry does not match trusted key")
+    public_key = _require_non_empty_str(key.public_key, field="public_key")
+    decode_binary_signature_material(public_key, field="public_key")
     _require_backend_supports_algorithm(backend, algorithm)
     message = build_real_crypto_signature_input(
         algorithm=algorithm,
@@ -190,14 +215,19 @@ def verify_signature_entry_with_real_backend(
         key_version=key_version,
     )
     signature = _require_non_empty_str(entry.get("signature"), field="signature")
-    return bool(
-        backend.verify_signature(
+    decode_binary_signature_material(signature, field="signature")
+    verified = _call_backend_operation(
+        "verify",
+        lambda: backend.verify_signature(
             algorithm=algorithm,
-            public_key=key.public_key,
+            public_key=public_key,
             message=message,
             signature=signature,
-        )
+        ),
     )
+    if not isinstance(verified, bool):
+        raise ShieldV4RealCryptoBackendError("real crypto backend verify must return bool")
+    return verified
 
 
 def make_real_crypto_signature_verifier(
