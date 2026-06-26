@@ -397,7 +397,21 @@ def _verify_bundle(
             artifact_not_before=artifact_not_before,
             artifact_not_after=artifact_not_after,
         )
-        if not signature_verifier(entry, key):
+        try:
+            verified = signature_verifier(entry, key)
+        except Exception as exc:
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "signature verifier failed closed",
+            ) from exc
+        if not isinstance(verified, bool):
+            raise _VerifierRejection(
+                ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID,
+                ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+                "signature verifier must return bool",
+            )
+        if not verified:
             raise _VerifierRejection(
                 ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID,
                 ReasonId.EQC_INVALID_SHIELD_BUNDLE,
