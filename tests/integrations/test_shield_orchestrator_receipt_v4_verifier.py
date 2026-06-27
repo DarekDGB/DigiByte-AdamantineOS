@@ -141,6 +141,7 @@ def verify(receipt: Any, **overrides: Any):
         "expected_request_id": default_request_id,
         "trusted_key_registry": trusted_registry(),
         "verification_time": VERIFICATION_TIME,
+        "signature_verifier": _verify_test_only_signature,
     }
     params.update(overrides)
     return verify_shield_v4_orchestrator_receipt(receipt, **params)
@@ -159,6 +160,42 @@ def test_shield_v4_verifier_accepts_allow_and_never_grants_final_approval() -> N
     assert result.verification_summary is not None
     assert result.verification_summary["orchestrator"]["verified_algorithms"] == ["classical-ed25519", "ml-dsa"]
     assert len(result.verification_summary["components"]) == 5
+
+
+
+
+def test_v48g_r4_shield_v4_verifier_requires_explicit_signature_backend() -> None:
+    valid = load_fixture("valid_allow_signed_receipt.json")
+
+    result = verify_shield_v4_orchestrator_receipt(
+        valid,
+        expected_context_hash=CTX,
+        expected_request_id="req-v4-final",
+        trusted_key_registry=trusted_registry(),
+        verification_time=VERIFICATION_TIME,
+    )
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.dominant_reason_ids == ("SIGNATURE_BACKEND_NOT_CONFIGURED",)
+    assert result.final_approval is False
+
+
+def test_v48g_r4_shield_v4_verifier_cross_checks_component_signature_results() -> None:
+    receipt = load_fixture("valid_allow_signed_receipt.json")
+    receipt["component_signature_results"][0]["verified_algorithms"] = [
+        "classical-ed25519",
+        "ml-dsa",
+        "fn-dsa",
+    ]
+    sign_receipt(receipt)
+
+    result = verify(receipt)
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.dominant_reason_ids == ("component signature result mismatch",)
+    assert result.final_approval is False
 
 
 def test_shield_v4_verifier_accepts_deny_and_human_review_states() -> None:
