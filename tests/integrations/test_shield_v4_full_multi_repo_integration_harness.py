@@ -13,6 +13,7 @@ from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
 )
 from adamantine.v1.integrations.shield_orchestrator_receipt_v4_verifier import (
     ShieldV4ReceiptVerificationState,
+    _verify_test_only_signature,
     verify_shield_v4_orchestrator_receipt,
 )
 
@@ -37,6 +38,7 @@ def verify_fixture(receipt: dict, fixture: dict, **overrides):
         "expected_request_id": fixture["expected_request_id"],
         "trusted_key_registry": fixture["trusted_key_registry"],
         "verification_time": fixture["verification_time"],
+        "signature_verifier": _verify_test_only_signature,
     }
     params.update(overrides)
     return verify_shield_v4_orchestrator_receipt(receipt, **params)
