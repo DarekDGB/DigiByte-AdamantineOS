@@ -80,13 +80,22 @@ OQS/liboqs dependency. The dedicated job must set `SHIELD_V4_REAL_OQS=1`, instal
 ```text
 SHIELD_V4_REAL_OQS=1 PYTHONPATH=src python -m pytest \
   tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py \
+  tests/integrations/test_shield_v48g_real_oqs_full_chain.py \
   --override-ini addopts='' \
   --junitxml=.artifacts/v48g-real-oqs.xml
 python scripts/assert_real_oqs_junit_not_skipped.py .artifacts/v48g-real-oqs.xml
 ```
 
 The guard fails if the real-OQS job collects zero tests, skips any testcase, or records any
-failure/error. A public claim that live liboqs ML-DSA verified through AdamantineOS requires
+failure/error.
+
+V4.8G-R4 adds a second gated proof module that injects real liboqs ML-DSA signatures into every component verdict and the Orchestrator receipt, then verifies the full receipt through AdamantineOS with a hybrid verifier. The classical path remains deterministic TEST-ONLY evidence in that focused proof; the ML-DSA path is live liboqs when the gated workflow is green and the JUnit guard reports zero skipped tests.
+
+AdamantineOS also requires callers to inject a signature verifier explicitly. An unconfigured signature backend is rejected as `SIGNATURE_BACKEND_NOT_CONFIGURED`; the verifier does not silently fall back to TEST-ONLY logic.
+
+AdamantineOS independently re-verifies component signatures and rejects receipts whose embedded `component_signature_results` drift from the independently computed summaries.
+
+A public claim that live liboqs ML-DSA verified through AdamantineOS requires
 that gated job to pass with `skipped == 0`; release-grade real-backend proof remains a
 V4.10 release gate.
 
