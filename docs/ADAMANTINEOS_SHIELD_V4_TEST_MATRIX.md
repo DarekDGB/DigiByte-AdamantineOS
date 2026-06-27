@@ -1,7 +1,7 @@
 # AdamantineOS Shield v4 Test Matrix
 
 Author attribution: DarekDGB
-Status: Shield v4 V4.8G real-backend integration hardening lock
+Status: Shield v4 V4.8G-R4 real-backend audit cleanup lock
 Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests, and real-backend verifier interface proofs
 
 ## 1. Current Shield v4 test files
@@ -16,6 +16,7 @@ Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests
 | OQS ML-DSA adapter contract | `tests/integrations/test_shield_v4_oqs_mldsa_backend.py` | Locks optional OQS `ML-DSA-65` verify-only adapter behavior with deterministic fakes and native-exception wrapping. |
 | V4.8G real-backend interface integration | `tests/integrations/test_shield_v4_real_backend_integration_hardening.py` | Locks real-backend interface wiring with deterministic backends, test-only fallback rejection, tamper rejection, and evidence-only AdamantineOS behavior. |
 | V4.8G live liboqs gated proof | `tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py` | Skipped by default; in a dedicated `SHIELD_V4_REAL_OQS=1` job with installed `oqs`/liboqs, proves live `ML-DSA-65` verify-only behavior and wrong-length fail-closed handling. |
+| V4.8G-R4 live liboqs full-receipt proof | `tests/integrations/test_shield_v48g_real_oqs_full_chain.py` | Skipped by default; in the dedicated real-OQS job, injects live liboqs ML-DSA signatures into all component verdicts plus the Orchestrator receipt and verifies the full receipt through AdamantineOS. |
 
 ## 2. Contract matrix
 
@@ -54,7 +55,8 @@ Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests
 | Tampered component signature | Rejected fail-closed | verifier signature tests |
 | Real-backend verifier exception | Rejected fail-closed through Shield v4 error hierarchy | `test_shield_v48g_verifier_catches_signature_backend_exceptions_and_non_bool_results` |
 | Truthy non-bool verifier result | Rejected fail-closed; no truthy coercion | `test_shield_v48g_real_backend_truthy_non_bool_result_rejected` |
-| Test-only verifier fallback in real mode | Rejected fail-closed | `test_shield_v48g_rejects_test_only_fallback_for_real_fixture` |
+| Unconfigured signature backend | Rejected fail-closed as `SIGNATURE_BACKEND_NOT_CONFIGURED` | `test_v48g_r4_shield_v4_verifier_requires_explicit_signature_backend` and `test_v48g_r4_adamantineos_rejects_unconfigured_signature_backend_for_real_fixture` |
+| Embedded `component_signature_results` drift from independent AdamantineOS verification | Rejected fail-closed | `test_v48g_r4_shield_v4_verifier_cross_checks_component_signature_results` |
 
 ## 4. Final policy v4-required matrix
 
@@ -87,7 +89,7 @@ FN-DSA/Falcon must never be treated as ML-DSA and must never override failure of
 | Proof level | CI behavior | Claim allowed |
 | --- | --- | --- |
 | Default package CI | Uses deterministic verifier backends and fake OQS modules | Proves interface contract, fail-closed behavior, parser hardening, and AdamantineOS evidence-only integration. |
-| Gated live liboqs job | Requires `SHIELD_V4_REAL_OQS=1`, installed `oqs`/liboqs, JUnit output, and `scripts/assert_real_oqs_junit_not_skipped.py` with `skipped == 0` | Proves live liboqs `ML-DSA-65` verification through the AdamantineOS verify-only backend. |
+| Gated live liboqs job | Requires `SHIELD_V4_REAL_OQS=1`, installed `oqs`/liboqs, JUnit output, and `scripts/assert_real_oqs_junit_not_skipped.py` with `skipped == 0` | Proves live liboqs `ML-DSA-65` verification through the AdamantineOS verify-only backend and the V4.8G-R4 full-receipt ML-DSA path. |
 | V4.10 release gate | Final multi-repo proof pack | Release-grade public claims about real-backend proof. |
 
 AdamantineOS remains verify-only for this path. The real-backend adapter has no `sign_message`, no private-key resolver, and no private-key reference.
