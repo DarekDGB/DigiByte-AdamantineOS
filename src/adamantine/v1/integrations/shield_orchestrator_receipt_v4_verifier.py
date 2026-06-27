@@ -507,6 +507,37 @@ def _verify_component_bundles(
     return summaries
 
 
+def _cross_check_component_signature_results(
+    receipt: Mapping[str, Any],
+    component_summaries: list[dict[str, Any]],
+) -> None:
+    """Reject Orchestrator self-attested component summaries that drift from re-verification."""
+
+    expected = sorted(
+        (
+            {
+                "component_id": str(summary["component_id"]),
+                "component_role": str(summary["component_role"]),
+                "verified": True,
+                "verified_algorithms": list(summary["verified_algorithms"]),
+                "signature_policy": "policy.v1",
+            }
+            for summary in component_summaries
+        ),
+        key=lambda item: item["component_id"],
+    )
+    claimed = sorted(
+        (dict(item) for item in receipt["component_signature_results"]),
+        key=lambda item: str(item["component_id"]),
+    )
+    if claimed != expected:
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "component signature result mismatch",
+        )
+
+
 def _state_for_final_outcome(final_outcome: str) -> tuple[ShieldV4ReceiptVerificationState, ReasonId]:
     if final_outcome == "DENY":
         return ShieldV4ReceiptVerificationState.VERIFIED_DENY_DOMINATES, ReasonId.DENY_POLICY
@@ -537,13 +568,14 @@ def verify_shield_v4_orchestrator_receipt(
     seen_request_ids: Iterable[str] = (),
     rejected_receipt_hashes: Iterable[str] = (),
     minimum_key_registry_version: int = 1,
-    signature_verifier: SignatureVerifier = _verify_test_only_signature,
+    signature_verifier: SignatureVerifier | None = None,
 ) -> ShieldV4ReceiptVerificationResult:
     """Verify a Shield v4 Orchestrator receipt as evidence only.
 
     The verifier is deterministic and fail-closed. Replay state, time, trusted key
-    registry, and signature verifier are injected by the caller. The default
-    signature verifier is TEST-ONLY deterministic logic for the v4 contract phase.
+    registry, and signature verifier are injected by the caller. No production-facing
+    default verifier is provided; callers must explicitly inject a real backend or
+    the test-only verifier used by fixture tests.
     """
 
     try:
@@ -566,6 +598,13 @@ def verify_shield_v4_orchestrator_receipt(
             payload=valid,
             dominant_reason="SHIELD_V4_REQUEST_ID_MISMATCH",
         )
+    if signature_verifier is None:
+        return _rejected(
+            state=ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID,
+            reason_id=ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            payload=valid,
+            dominant_reason="SIGNATURE_BACKEND_NOT_CONFIGURED",
+        )
     receipt_hash = str(valid["receipt_hash"])
     if valid["request_id"] in set(seen_request_ids) or receipt_hash in set(rejected_receipt_hashes):
         return _rejected(
@@ -585,6 +624,7 @@ def verify_shield_v4_orchestrator_receipt(
             verification_time=verification_time,
             signature_verifier=signature_verifier,
         )
+        _cross_check_component_signature_results(valid, component_summaries)
         orchestrator_summary = _verify_bundle(
             valid["signature_bundle"],
             expected_signed_payload_hash=str(valid["signed_payload_hash"]),
