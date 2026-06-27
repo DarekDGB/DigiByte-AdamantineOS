@@ -12,6 +12,7 @@ on:
       - "src/adamantine/v1/contracts/shield_orchestrator_receipt_v4.py"
       - "tests/integrations/test_shield_v4_oqs_mldsa_backend.py"
       - "tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py"
+      - "tests/integrations/test_shield_v48g_real_oqs_full_chain.py"
       - "scripts/assert_real_oqs_junit_not_skipped.py"
       - "docs/ADAMANTINEOS_SHIELD_V4_REAL_CRYPTO_BACKEND.md"
       - "docs/ADAMANTINEOS_SHIELD_V4_THREAT_MODEL.md"
@@ -25,6 +26,7 @@ on:
       - "src/adamantine/v1/contracts/shield_orchestrator_receipt_v4.py"
       - "tests/integrations/test_shield_v4_oqs_mldsa_backend.py"
       - "tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py"
+      - "tests/integrations/test_shield_v48g_real_oqs_full_chain.py"
       - "scripts/assert_real_oqs_junit_not_skipped.py"
       - "docs/ADAMANTINEOS_SHIELD_V4_REAL_CRYPTO_BACKEND.md"
       - "docs/ADAMANTINEOS_SHIELD_V4_THREAT_MODEL.md"
@@ -79,8 +81,10 @@ jobs:
         run: |
           PYTHONPATH=src python -m pytest --override-ini addopts='' \
             tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py \
+            tests/integrations/test_shield_v48g_real_oqs_full_chain.py \
             -q --junitxml=shield-v4-real-oqs-results.xml
 
       - name: Assert real liboqs proof was not skipped
+        if: always()
         run: |
           python scripts/assert_real_oqs_junit_not_skipped.py shield-v4-real-oqs-results.xml
