@@ -1,7 +1,7 @@
 # AdamantineOS Shield v4 Threat Model
 
 Author attribution: DarekDGB
-Status: Shield v4 V4.7D documentation lock
+Status: Shield v4 V4.8G-R4 audit cleanup lock
 Scope: AdamantineOS-side Shield v4 receipt verification and final-policy boundary
 
 ## 1. Security objective
@@ -61,6 +61,8 @@ The verifier and final policy engine must defend against:
 - rolling back a key registry to reactivate revoked authority
 - injecting `sign`, `broadcast`, `override`, or `final_approval` fields
 - causing expensive PQC verification before cheap structural rejection
+- relying on an implicit TEST-ONLY verifier when no signature backend is configured
+- forging or drifting embedded `component_signature_results` away from AdamantineOS independent verification
 
 ## 5. Required fail-closed rules
 
@@ -83,6 +85,8 @@ AdamantineOS must deny when:
 - the expected context hash does not match
 - the expected request id does not match
 - any component signature summary is missing or incomplete
+- embedded `component_signature_results` do not match the independently computed AdamantineOS component verification summaries
+- no explicit signature verifier backend is configured for receipt verification
 - any upstream artifact tries to carry final execution authority
 
 ## 6. Algorithm threat controls
@@ -141,6 +145,7 @@ Required controls:
 - default CI is described as interface-contract and fail-closed proof only;
 - live liboqs ML-DSA verification is an optional gated job using `SHIELD_V4_REAL_OQS=1`;
 - the gated job must use a JUnit not-skipped guard so import-skipped OQS tests cannot read as a pass;
+- V4.8G-R4 adds an optional gated full-receipt proof that injects live liboqs ML-DSA signatures into every component verdict and the Orchestrator receipt, then verifies the receipt through AdamantineOS;
 - release-grade real-backend proof remains part of the V4.10 proof pack before public release claims.
 
 
@@ -156,6 +161,6 @@ Shield v4 does not replace user confirmation, wallet policy, replay gates, or Ad
 
 ## 12. Current phase status
 
-V4.7D locks the AdamantineOS-side threat model after the contract, verifier, and final-policy v4-required gate were added.
+V4.8G-R4 locks the AdamantineOS-side audit cleanup for real-backend proof boundaries. The verifier now rejects an unconfigured signature backend instead of silently falling back to TEST-ONLY verification, and independently cross-checks embedded `component_signature_results` against AdamantineOS-computed component verification summaries.
 
-This is not the final Shield v4 release gate. The remaining phases still require full multi-repo harness testing, compatibility documentation, proof-pack closure, and final release status.
+This is not the final Shield v4 release gate. The remaining phases still require FN-DSA hybrid evidence work, compatibility documentation, proof-pack closure, live real-OQS workflow evidence with `skipped == 0`, and final release status.
