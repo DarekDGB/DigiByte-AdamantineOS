@@ -118,7 +118,7 @@ def test_v48g_adamantineos_real_fixture_uses_b64u_and_no_test_only_material() ->
         assert not signature["key_id"].startswith("test-")
 
 
-def test_v48g_adamantineos_rejects_test_only_verifier_fallback_for_real_fixture() -> None:
+def test_v48g_r4_adamantineos_rejects_unconfigured_signature_backend_for_real_fixture() -> None:
     fixture = load_fixture()
     result = verify_shield_v4_orchestrator_receipt(
         fixture["receipt"],
@@ -131,7 +131,7 @@ def test_v48g_adamantineos_rejects_test_only_verifier_fallback_for_real_fixture(
 
     assert result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID
     assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
-    assert result.dominant_reason_ids == ("signature verification failed",)
+    assert result.dominant_reason_ids == ("SIGNATURE_BACKEND_NOT_CONFIGURED",)
     assert result.final_approval is False
 
 
