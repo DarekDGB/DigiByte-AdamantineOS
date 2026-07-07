@@ -1,7 +1,7 @@
 # AdamantineOS Shield v4 PQC Verifier
 
 Author attribution: DarekDGB
-Status: Shield v4 V4.7D documentation lock
+Status: Shield v4 V4.8H-D FN-DSA verify-only lock
 Scope: AdamantineOS-side Shield v4 verifier contract, not a Shield v4 release claim
 
 ## 1. Boundary statement
@@ -23,8 +23,10 @@ The Shield v4 AdamantineOS boundary is currently split across these files:
 - `src/adamantine/v1/fixtures/shield_v4/deny_signed_receipt.json`
 - `src/adamantine/v1/fixtures/shield_v4/tampered_signature_deny.json`
 - `src/adamantine/v1/fixtures/shield_v4/v3_downgrade_rejected.json`
+- `src/adamantine/v1/fixtures/shield_v4/full_multi_repo_v4_fn_dsa_allow_flow.json`
+- `src/adamantine/v1/fixtures/shield_v4/fn_dsa_signed_message_draft_profile_kat.json`
 
-The current verifier uses TEST-ONLY deterministic signature checks for the contract phase. Production PQC backend wiring must preserve the same schema, canonicalization, domain separation, policy, trust-registry, and fail-closed behavior.
+The current verifier uses TEST-ONLY deterministic signature checks for the contract phase and real-backend message construction for the verify-only boundary. Production PQC backend wiring must preserve the same schema, canonicalization, domain separation, policy, trust-registry, standard-profile binding, and fail-closed behavior.
 
 ## 3. Required Shield v4 receipt contract
 
@@ -52,7 +54,7 @@ Policy `policy.v1` requires strict AND semantics for:
 
 `fn-dsa` means FN-DSA, based on Falcon. FN-DSA/Falcon is separate from ML-DSA and must never be described as ML-DSA.
 
-`fn-dsa` is optional evidence only in the current policy. It must never override failure of a required signature path.
+`fn-dsa` is optional evidence only in the current policy. It must never override failure of a required signature path. AdamantineOS accepts absence of FN-DSA in this policy version, but if FN-DSA is present it must verify independently or the receipt is rejected fail-closed. The current locked FN-DSA profile is `fips206-draft-falcon1024-v1`, representing draft Falcon-1024 profile separation only; it is not a public final FIPS 206 claim.
 
 The verifier must reject:
 
@@ -62,6 +64,8 @@ The verifier must reject:
 - unsupported algorithms
 - a weaker embedded policy than the verifier-required policy
 - signature bundles that behave as first-valid-wins instead of strict AND
+- unsupported or flipped `standard_profile` values
+- present-but-invalid optional FN-DSA evidence
 
 ## 5. Domain separation and signed payload hashes
 
@@ -80,6 +84,7 @@ The verifier trust registry must bind each signature to:
 - key id
 - key version
 - algorithm
+- standard profile
 - validity window
 - active or revoked status
 - key registry version
@@ -88,7 +93,7 @@ A signature is rejected if:
 
 - the key is missing from the trusted registry
 - the key role does not match the artifact being verified
-- the key id, version, or algorithm does not match the registry
+- the key id, version, algorithm, or supported standard profile does not match the verifier contract
 - the key is revoked
 - the key is outside its validity window
 - the receipt or component verdict was produced outside the key validity window
@@ -115,7 +120,7 @@ The verifier requires all five Shield components:
 - `qwg`
 - `sentinel_ai`
 
-Each component must have a verified signature summary and each component summary must satisfy the required `policy.v1` algorithms.
+Each component must have a verified signature summary and each component summary must satisfy the required `policy.v1` algorithms. If a component includes optional FN-DSA evidence, AdamantineOS independently verifies it and rejects any embedded summary that claims FN-DSA without a matching verified signature, or hides FN-DSA that was actually present and verified.
 
 A valid Orchestrator receipt is not enough if component verification is missing, incomplete, unsigned, downgraded, or mismatched against the expected context hash.
 
@@ -162,7 +167,7 @@ The verifier must process checks cheap to expensive:
 6. receipt and signed payload hashes
 7. trust registry shape and version
 8. key role/id/version/algorithm binding
-9. test-only signature verification now, production PQC verification later
+9. standard-profile-bound test-only signature verification now, production PQC verification through the explicit verify-only backend later
 10. replay marking only after verification succeeds
 11. final policy engine gates
 
@@ -170,10 +175,12 @@ Malformed input must be rejected before expensive signature work.
 
 ## 12. Tests that lock this boundary
 
-The current V4.7 AdamantineOS tests are:
+The current AdamantineOS Shield v4 tests are:
 
 - `tests/contracts/test_shield_orchestrator_receipt_v4_contract.py`
 - `tests/integrations/test_shield_orchestrator_receipt_v4_verifier.py`
+- `tests/integrations/test_shield_v48h_fn_dsa_optional_evidence.py`
+- `tests/integrations/test_shield_v48h_fn_dsa_signed_message_kat.py`
 - `tests/policy/test_final_policy_engine_shield_v4_required.py`
 - `tests/test_adamantineos_shield_v4_docs_lock.py`
 
@@ -183,6 +190,6 @@ These tests lock contract validation, verifier behavior, trust-registry checks, 
 
 This document does not claim Shield v4 is released.
 
-Current status: AdamantineOS has a Shield v4 verifier boundary, fixtures, fail-closed trust-registry checks, and a v4-required final-policy gate.
+Current status: AdamantineOS has a Shield v4 verifier boundary, fixtures, fail-closed trust-registry checks, a v4-required final-policy gate, and V4.8H-D verify-only handling for optional FN-DSA/Falcon-1024 evidence.
 
-Remaining later phases include full multi-repo v4 integration harness, compatibility notes for Adaptive Core and AI Gateway, final proof pack, release status docs, and final release gate.
+Remaining later phases include the V4.8H-E full integration and negative matrix lock, compatibility notes for Adaptive Core and AI Gateway, final proof pack, release status docs, and final release gate.
