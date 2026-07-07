@@ -8,6 +8,8 @@ import pytest
 
 from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
     COMPONENT_VERDICT_DOMAIN,
+    DEFAULT_STANDARD_PROFILE_BY_ALGORITHM,
+    FIPS204_ML_DSA_65_PROFILE,
     ORCHESTRATOR_RECEIPT_DOMAIN,
 )
 from adamantine.v1.integrations.shield_orchestrator_receipt_v4_verifier import TrustedShieldV4Key
@@ -102,6 +104,7 @@ def _signature_for_public_key(*, algorithm: str, public_key: str, message: bytes
 def signature_for_key(key: TrustedShieldV4Key, *, domain_tag: str = ORCHESTRATOR_RECEIPT_DOMAIN) -> dict[str, Any]:
     message = build_real_crypto_signature_input(
         algorithm=key.algorithm,
+        standard_profile=DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[key.algorithm],
         domain_tag=domain_tag,
         signed_payload_hash=PAYLOAD_HASH,
         key_id=key.key_id,
@@ -109,6 +112,7 @@ def signature_for_key(key: TrustedShieldV4Key, *, domain_tag: str = ORCHESTRATOR
     )
     return {
         "algorithm": key.algorithm,
+        "standard_profile": DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[key.algorithm],
         "key_id": key.key_id,
         "key_version": key.key_version,
         "signed_payload_hash": PAYLOAD_HASH,
@@ -120,6 +124,7 @@ def signature_for_key(key: TrustedShieldV4Key, *, domain_tag: str = ORCHESTRATOR
 def test_v48c_adamantineos_real_crypto_signature_input_is_verify_only_and_frozen() -> None:
     encoded = build_real_crypto_signature_input(
         algorithm="ml-dsa",
+        standard_profile=FIPS204_ML_DSA_65_PROFILE,
         domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN,
         signed_payload_hash=PAYLOAD_HASH,
         key_id="shield_orchestrator-ml-dsa-v1",
@@ -131,6 +136,7 @@ def test_v48c_adamantineos_real_crypto_signature_input_is_verify_only_and_frozen
         f"{ORCHESTRATOR_RECEIPT_DOMAIN}\n"
         f"{PAYLOAD_HASH}\n"
         "ml-dsa\n"
+        f"{FIPS204_ML_DSA_65_PROFILE}\n"
         "shield_orchestrator-ml-dsa-v1\n"
         "1"
     ).encode("utf-8")
@@ -150,6 +156,7 @@ def test_v48c_adamantineos_real_crypto_signature_input_is_verify_only_and_frozen
         ({"key_id": " shield_orchestrator-ml-dsa-v1"}, "surrounding whitespace"),
         ({"key_version": 0}, "key_version"),
         ({"key_version": True}, "key_version"),
+        ({"standard_profile": "fips206-draft-falcon512-v1"}, "standard_profile"),
     ],
 )
 def test_v48c_adamantineos_real_crypto_signature_input_rejects_ambiguous_values(
@@ -158,6 +165,7 @@ def test_v48c_adamantineos_real_crypto_signature_input_rejects_ambiguous_values(
 ) -> None:
     base: dict[str, object] = {
         "algorithm": "ml-dsa",
+        "standard_profile": FIPS204_ML_DSA_65_PROFILE,
         "domain_tag": ORCHESTRATOR_RECEIPT_DOMAIN,
         "signed_payload_hash": PAYLOAD_HASH,
         "key_id": "shield_orchestrator-ml-dsa-v1",
