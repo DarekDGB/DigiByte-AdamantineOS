@@ -8,6 +8,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
+    ALGORITHM_STANDARD_PROFILES,
     ALLOWED_ALGORITHMS,
     COMPONENT_ROLES,
     COMPONENT_VERDICT_DOMAIN,
@@ -140,6 +141,17 @@ def _require_non_empty_str(value: Any, *, field: str) -> str:
             f"{field} must be non-empty string",
         )
     return value.strip()
+
+
+def _require_supported_standard_profile_for_signature(*, algorithm: str, standard_profile: Any) -> str:
+    clean = _require_non_empty_str(standard_profile, field="standard_profile")
+    if clean not in ALGORITHM_STANDARD_PROFILES.get(algorithm, ()):  # defensive even after contract validation.
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "unsupported Shield v4 signature standard_profile",
+        )
+    return clean
 
 
 def _require_positive_int(value: Any, *, field: str) -> int:
@@ -321,7 +333,7 @@ def _verify_test_only_signature(entry: Mapping[str, Any], key: TrustedShieldV4Ke
     if key.role == ORCHESTRATOR_ROLE:
         expected = hmac.new(
             key.public_key.encode("utf-8"),
-            f"{entry['domain_tag']}|{entry['signed_payload_hash']}|{entry['algorithm']}|{entry['key_id']}|{entry['key_version']}".encode("utf-8"),
+            f"{entry['domain_tag']}|{entry['signed_payload_hash']}|{entry['algorithm']}|{entry['standard_profile']}|{entry['key_id']}|{entry['key_version']}".encode("utf-8"),
             "sha256",
         ).hexdigest()
         return hmac.compare_digest(str(entry["signature"]), expected)
@@ -332,7 +344,7 @@ def _verify_test_only_signature(entry: Mapping[str, Any], key: TrustedShieldV4Ke
     import hashlib
 
     expected = hashlib.sha256(
-        f"{prefix}\n{key.public_key}\n{entry['algorithm']}\n{entry['signed_payload_hash']}".encode("utf-8")
+        f"{prefix}\n{key.public_key}\n{entry['algorithm']}\n{entry['standard_profile']}\n{entry['signed_payload_hash']}".encode("utf-8")
     ).hexdigest()
     return hmac.compare_digest(str(entry["signature"]), expected)
 
@@ -365,6 +377,10 @@ def _verify_bundle(
                 "duplicate signature algorithm",
             )
         seen_algorithms.add(algorithm)
+        standard_profile = _require_supported_standard_profile_for_signature(
+            algorithm=algorithm,
+            standard_profile=entry.get("standard_profile"),
+        )
         key_id = str(entry["key_id"])
         key_version = int(entry["key_version"])
         key_identity = (key_id, key_version)
@@ -417,7 +433,15 @@ def _verify_bundle(
                 ReasonId.EQC_INVALID_SHIELD_BUNDLE,
                 "signature verification failed",
             )
-        results.append({"algorithm": algorithm, "key_id": key_id, "key_version": key_version, "verified": True})
+        results.append(
+            {
+                "algorithm": algorithm,
+                "standard_profile": standard_profile,
+                "key_id": key_id,
+                "key_version": key_version,
+                "verified": True,
+            }
+        )
     missing = set(REQUIRED_ALGORITHMS) - seen_algorithms
     if missing:
         raise _VerifierRejection(
@@ -425,7 +449,12 @@ def _verify_bundle(
             ReasonId.EQC_INVALID_SHIELD_BUNDLE,
             "signature policy requirements not satisfied",
         )
-    return {"required_algorithms": list(REQUIRED_ALGORITHMS), "verified_algorithms": [r["algorithm"] for r in results], "results": results}
+    return {
+        "required_algorithms": list(REQUIRED_ALGORITHMS),
+        "verified_algorithms": [r["algorithm"] for r in results],
+        "verified_standard_profiles": [r["standard_profile"] for r in results],
+        "results": results,
+    }
 
 
 def _enforce_registry_versions(
@@ -507,6 +536,23 @@ def _verify_component_bundles(
     return summaries
 
 
+def _normalise_component_signature_result(item: Mapping[str, Any]) -> dict[str, Any]:
+    algorithms = item.get("verified_algorithms")
+    if not isinstance(algorithms, list) or any(not isinstance(algorithm, str) for algorithm in algorithms):
+        raise _VerifierRejection(
+            ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
+            ReasonId.EQC_INVALID_SHIELD_BUNDLE,
+            "component signature result mismatch",
+        )
+    return {
+        "component_id": str(item.get("component_id")),
+        "component_role": str(item.get("component_role")),
+        "verified": item.get("verified"),
+        "verified_algorithms": sorted(algorithms),
+        "signature_policy": item.get("signature_policy"),
+    }
+
+
 def _cross_check_component_signature_results(
     receipt: Mapping[str, Any],
     component_summaries: list[dict[str, Any]],
@@ -519,7 +565,7 @@ def _cross_check_component_signature_results(
                 "component_id": str(summary["component_id"]),
                 "component_role": str(summary["component_role"]),
                 "verified": True,
-                "verified_algorithms": list(summary["verified_algorithms"]),
+                "verified_algorithms": sorted(str(algorithm) for algorithm in summary["verified_algorithms"]),
                 "signature_policy": "policy.v1",
             }
             for summary in component_summaries
@@ -527,8 +573,8 @@ def _cross_check_component_signature_results(
         key=lambda item: item["component_id"],
     )
     claimed = sorted(
-        (dict(item) for item in receipt["component_signature_results"]),
-        key=lambda item: str(item["component_id"]),
+        (_normalise_component_signature_result(item) for item in receipt["component_signature_results"]),
+        key=lambda item: item["component_id"],
     )
     if claimed != expected:
         raise _VerifierRejection(
