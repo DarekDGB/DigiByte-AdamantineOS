@@ -1,7 +1,7 @@
 # AdamantineOS Shield v4 Test Matrix
 
 Author attribution: DarekDGB
-Status: Shield v4 V4.8G-R4 real-backend audit cleanup lock
+Status: Shield v4 V4.8H-D FN-DSA verify-only lock
 Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests, and real-backend verifier interface proofs
 
 ## 1. Current Shield v4 test files
@@ -17,6 +17,8 @@ Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests
 | V4.8G real-backend interface integration | `tests/integrations/test_shield_v4_real_backend_integration_hardening.py` | Locks real-backend interface wiring with deterministic backends, test-only fallback rejection, tamper rejection, and evidence-only AdamantineOS behavior. |
 | V4.8G live liboqs gated proof | `tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py` | Skipped by default; in a dedicated `SHIELD_V4_REAL_OQS=1` job with installed `oqs`/liboqs, proves live `ML-DSA-65` verify-only behavior and wrong-length fail-closed handling. |
 | V4.8G-R4 live liboqs full-receipt proof | `tests/integrations/test_shield_v48g_real_oqs_full_chain.py` | Skipped by default; in the dedicated real-OQS job, injects live liboqs ML-DSA signatures into all component verdicts plus the Orchestrator receipt and verifies the full receipt through AdamantineOS. |
+| V4.8H-D FN-DSA optional evidence | `tests/integrations/test_shield_v48h_fn_dsa_optional_evidence.py` | Locks AdamantineOS verify-only handling for optional FN-DSA/Falcon-1024 evidence, including cannot-rescue, wrong-role, duplicate, splice, unsupported-profile, and component-summary drift negatives. |
+| V4.8H-D FN-DSA signed-message KAT | `tests/integrations/test_shield_v48h_fn_dsa_signed_message_kat.py` | Locks the standard-profile-bound real-crypto message bytes for draft Falcon-1024 FN-DSA evidence. |
 
 ## 2. Contract matrix
 
@@ -57,6 +59,14 @@ Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests
 | Truthy non-bool verifier result | Rejected fail-closed; no truthy coercion | `test_shield_v48g_real_backend_truthy_non_bool_result_rejected` |
 | Unconfigured signature backend | Rejected fail-closed as `SIGNATURE_BACKEND_NOT_CONFIGURED` | `test_v48g_r4_shield_v4_verifier_requires_explicit_signature_backend` and `test_v48g_r4_adamantineos_rejects_unconfigured_signature_backend_for_real_fixture` |
 | Embedded `component_signature_results` drift from independent AdamantineOS verification | Rejected fail-closed | `test_v48g_r4_shield_v4_verifier_cross_checks_component_signature_results` |
+| FN-DSA absent with required signatures valid | Accepted as evidence | `test_v48h_adamantineos_accepts_fn_dsa_absent_and_valid_fn_dsa_present` |
+| FN-DSA present and valid with required signatures valid | Accepted as optional evidence | `test_v48h_adamantineos_accepts_fn_dsa_absent_and_valid_fn_dsa_present` |
+| FN-DSA valid but required signature invalid | Rejected fail-closed | `test_v48h_fn_dsa_cannot_rescue_required_orchestrator_signature_failure`, `test_v48h_fn_dsa_cannot_rescue_required_component_signature_failure` |
+| FN-DSA present but invalid | Rejected fail-closed | `test_v48h_present_invalid_fn_dsa_is_denied_even_when_required_signatures_are_valid` |
+| FN-DSA wrong key role or missing registry key | Rejected fail-closed | `test_v48h_fn_dsa_wrong_key_role_is_denied`, `test_v48h_fn_dsa_present_requires_matching_trust_registry_key` |
+| FN-DSA unsupported or flipped standard profile | Rejected fail-closed | `test_v48h_unsupported_or_flipped_fn_dsa_standard_profile_is_denied` |
+| FN-DSA splice or duplicate algorithm entry | Rejected fail-closed | `test_v48h_fn_dsa_cross_receipt_or_cross_role_splice_is_denied`, `test_v48h_duplicate_fn_dsa_entry_is_denied` |
+| FN-DSA summary falsely claimed or hidden | Rejected fail-closed | `test_v48h_component_signature_results_cannot_falsely_claim_or_hide_fn_dsa` |
 
 ## 4. Final policy v4-required matrix
 
@@ -80,9 +90,9 @@ Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests
 | --- | --- | --- |
 | `classical-ed25519` | classical test-only signature path | required in `policy.v1` |
 | `ml-dsa` | ML-DSA, formerly CRYSTALS-Dilithium | required in `policy.v1` |
-| `fn-dsa` | FN-DSA, based on Falcon | optional evidence only |
+| `fn-dsa` | FN-DSA, based on Falcon; locked draft profile `fips206-draft-falcon1024-v1` | optional evidence only |
 
-FN-DSA/Falcon must never be treated as ML-DSA and must never override failure of a required path.
+FN-DSA/Falcon must never be treated as ML-DSA and must never override failure of a required path. V4.8H-D does not claim a live FN-DSA/Falcon backend or final FIPS 206 proof.
 
 ## 6. Real backend proof levels
 
@@ -108,4 +118,4 @@ The following remain important for the full Shield v4 release gate and multi-rep
 - signature valid but signed payload hash mismatch across the integration harness
 - replay/stale receipt rejected by injected replay state across the integration harness
 
-V4.8G covers the real-backend interface-contract hardening and gated live-liboqs proof hooks. Final public release claims remain gated by the V4.10 proof pack and a live-liboqs job that passes with `skipped == 0`.
+V4.8G covers the real-backend interface-contract hardening and gated live-liboqs ML-DSA proof hooks. V4.8H-D covers AdamantineOS verify-only handling for optional FN-DSA/Falcon-1024 evidence. Final public release claims remain gated by the V4.10 proof pack and live workflow evidence with `skipped == 0` where applicable.
