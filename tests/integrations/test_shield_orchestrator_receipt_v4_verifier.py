@@ -13,6 +13,7 @@ from adamantine.v1.contracts.reason_ids import ReasonId
 from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
     COMPONENT_ROLES,
     COMPONENT_VERDICT_DOMAIN,
+    DEFAULT_STANDARD_PROFILE_BY_ALGORITHM,
     ORCHESTRATOR_RECEIPT_DOMAIN,
     receipt_hash,
     signed_payload_hash,
@@ -83,14 +84,16 @@ def sign_component(component: dict[str, Any]) -> None:
     role = COMPONENT_ROLES[component["component_id"]]
     signatures = []
     for algorithm in ("classical-ed25519", "ml-dsa"):
+        standard_profile = DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm]
         key_id = f"test-{role}-{algorithm}-v1"
         public_key = f"TEST-ONLY-PUBLIC-{role}-{algorithm}-v1"
         signature = hashlib.sha256(
-            f"{component_prefix(component['component_id'])}\n{public_key}\n{algorithm}\n{component_hash}".encode("utf-8")
+            f"{component_prefix(component['component_id'])}\n{public_key}\n{algorithm}\n{standard_profile}\n{component_hash}".encode("utf-8")
         ).hexdigest()
         signatures.append(
             {
                 "algorithm": algorithm,
+                "standard_profile": standard_profile,
                 "key_id": key_id,
                 "key_version": 1,
                 "signed_payload_hash": component_hash,
@@ -108,18 +111,20 @@ def sign_receipt(receipt: dict[str, Any]) -> None:
     receipt["signed_payload_hash"] = payload_hash
     signatures = []
     for algorithm in ("classical-ed25519", "ml-dsa"):
+        standard_profile = DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm]
         key_id = f"test-shield_orchestrator-{algorithm}-v1"
         public_key = f"TEST-ONLY-PUBLIC-shield_orchestrator-{algorithm}-v1"
         signatures.append(
             {
                 "algorithm": algorithm,
+                "standard_profile": standard_profile,
                 "key_id": key_id,
                 "key_version": 1,
                 "signed_payload_hash": payload_hash,
                 "domain_tag": ORCHESTRATOR_RECEIPT_DOMAIN,
                 "signature": hmac.new(
                     public_key.encode("utf-8"),
-                    f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{payload_hash}|{algorithm}|{key_id}|1".encode("utf-8"),
+                    f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{payload_hash}|{algorithm}|{standard_profile}|{key_id}|1".encode("utf-8"),
                     "sha256",
                 ).hexdigest(),
             }
@@ -374,7 +379,7 @@ def test_shield_v4_verifier_small_helper_edges() -> None:
         artifact_not_after="2026-06-21T00:05:00Z",
     )
     assert key.role == "shield_component_qwg"
-    assert _verify_test_only_signature({"signature": "bad", "domain_tag": "x", "signed_payload_hash": "y", "algorithm": "z", "key_id": "k", "key_version": 1}, key) is False
+    assert _verify_test_only_signature({"signature": "bad", "domain_tag": "x", "signed_payload_hash": "y", "algorithm": "z", "standard_profile": "bad-profile", "key_id": "k", "key_version": 1}, key) is False
 
 
 def test_shield_v4_verifier_private_policy_guards_are_fail_closed() -> None:
@@ -501,7 +506,7 @@ def test_shield_v4_verifier_remaining_fail_closed_edges() -> None:
         status=ACTIVE,
         public_key="pk",
     )
-    assert _verify_test_only_signature({"signature": "bad", "domain_tag": "x", "signed_payload_hash": "y", "algorithm": "z", "key_id": "k", "key_version": 1}, unknown_role_key) is False
+    assert _verify_test_only_signature({"signature": "bad", "domain_tag": "x", "signed_payload_hash": "y", "algorithm": "z", "standard_profile": "bad-profile", "key_id": "k", "key_version": 1}, unknown_role_key) is False
 
 
 def test_v48g_shield_v4_verifier_wraps_signature_verifier_exceptions_fail_closed() -> None:
