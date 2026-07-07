@@ -23,6 +23,7 @@ except Exception as exc:
 from adamantine.v1.contracts.reason_ids import ReasonId  # noqa: E402
 from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (  # noqa: E402
     COMPONENT_ROLES,
+    DEFAULT_STANDARD_PROFILE_BY_ALGORITHM,
     ORCHESTRATOR_RECEIPT_DOMAIN,
     receipt_hash,
     signed_payload_hash,
@@ -159,6 +160,7 @@ def _resign_bundle_with_real_oqs_mldsa(
         entry["key_id"] = key["key_id"]
         message = build_real_crypto_signature_input(
             algorithm=algorithm,
+            standard_profile=DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm],
             domain_tag=str(entry["domain_tag"]),
             signed_payload_hash=str(entry["signed_payload_hash"]),
             key_id=str(entry["key_id"]),
