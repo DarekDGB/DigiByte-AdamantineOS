@@ -1,7 +1,7 @@
 # AdamantineOS Shield v4 Threat Model
 
 Author attribution: DarekDGB
-Status: Shield v4 V4.8G-R4 audit cleanup lock
+Status: Shield v4 V4.8H-D FN-DSA verify-only lock
 Scope: AdamantineOS-side Shield v4 receipt verification and final-policy boundary
 
 ## 1. Security objective
@@ -46,6 +46,8 @@ The verifier and final policy engine must defend against:
 - submitting a v3 receipt where v4 is required
 - stripping ML-DSA and presenting a weaker classical-only policy
 - presenting FN-DSA/Falcon evidence as if it were ML-DSA
+- flipping an authenticated FN-DSA `standard_profile` after signing
+- claiming optional FN-DSA in embedded summaries when AdamantineOS did not independently verify it
 - replaying a previously valid receipt
 - changing context hash after signing
 - changing request id after signing
@@ -76,6 +78,7 @@ AdamantineOS must deny when:
 - required signatures are missing
 - signature bundles contain duplicate algorithms
 - unknown algorithms appear
+- unsupported or flipped standard profiles appear
 - the key registry is invalid
 - key lookup fails
 - keys are revoked
@@ -84,7 +87,7 @@ AdamantineOS must deny when:
 - replay is detected
 - the expected context hash does not match
 - the expected request id does not match
-- any component signature summary is missing or incomplete
+- any component signature summary is missing, incomplete, or drifted from independently verified optional FN-DSA evidence
 - embedded `component_signature_results` do not match the independently computed AdamantineOS component verification summaries
 - no explicit signature verifier backend is configured for receipt verification
 - any upstream artifact tries to carry final execution authority
@@ -95,7 +98,7 @@ Policy `policy.v1` requires both `classical-ed25519` and `ml-dsa`.
 
 ML-DSA is the algorithm formerly known as CRYSTALS-Dilithium.
 
-FN-DSA is based on Falcon and is separate from ML-DSA. FN-DSA can be optional evidence, but it must never compensate for failed or missing required signatures.
+FN-DSA is based on Falcon and is separate from ML-DSA. FN-DSA can be optional evidence, but it must never compensate for failed or missing required signatures. The V4.8H-D profile is `fips206-draft-falcon1024-v1`; it exists to isolate the draft Falcon-1024 direction from future FIPS 206 final profile changes and is not a final-standard claim.
 
 This prevents algorithm-substitution and downgrade attacks.
 
@@ -161,6 +164,6 @@ Shield v4 does not replace user confirmation, wallet policy, replay gates, or Ad
 
 ## 12. Current phase status
 
-V4.8G-R4 locks the AdamantineOS-side audit cleanup for real-backend proof boundaries. The verifier now rejects an unconfigured signature backend instead of silently falling back to TEST-ONLY verification, and independently cross-checks embedded `component_signature_results` against AdamantineOS-computed component verification summaries.
+V4.8H-D locks AdamantineOS verify-only handling for optional FN-DSA/Falcon-1024 evidence. The verifier rejects an unconfigured signature backend instead of silently falling back to TEST-ONLY verification, independently cross-checks embedded `component_signature_results` against AdamantineOS-computed summaries, allows FN-DSA absence under current policy, and denies present-but-invalid, wrong-role, duplicate, spliced, unsupported-profile, or summary-drifted FN-DSA evidence.
 
-This is not the final Shield v4 release gate. The remaining phases still require FN-DSA hybrid evidence work, compatibility documentation, proof-pack closure, live real-OQS workflow evidence with `skipped == 0`, and final release status.
+This is not the final Shield v4 release gate. The remaining phase still requires the V4.8H-E full integration and negative matrix lock, compatibility documentation, proof-pack closure, workflow evidence with `skipped == 0` where applicable, and final release status.
