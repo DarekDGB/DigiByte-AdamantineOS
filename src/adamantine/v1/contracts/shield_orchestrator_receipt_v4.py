@@ -16,9 +16,23 @@ SIGNATURE_POLICY = "policy.v1"
 SIGNED_PAYLOAD_HASH_PREFIX = "DGB-SHIELD-V4-SIGNED-PAYLOAD"
 ORCHESTRATOR_RECEIPT_DOMAIN = "DGB-SHIELD-V4-ORCH-RECEIPT:shield.receipt.v2:policy.v1"
 COMPONENT_VERDICT_DOMAIN = "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1"
-REQUIRED_ALGORITHMS = ("classical-ed25519", "ml-dsa")
-OPTIONAL_ALGORITHMS = ("fn-dsa",)
+CLASSICAL_ED25519 = "classical-ed25519"
+ML_DSA = "ml-dsa"
+FN_DSA = "fn-dsa"
+REQUIRED_ALGORITHMS = (CLASSICAL_ED25519, ML_DSA)
+OPTIONAL_ALGORITHMS = (FN_DSA,)
 ALLOWED_ALGORITHMS = REQUIRED_ALGORITHMS + OPTIONAL_ALGORITHMS
+ED25519_RFC8032_PROFILE = "rfc8032-ed25519-v1"
+FIPS204_ML_DSA_65_PROFILE = "fips204-ml-dsa-65-v1"
+FIPS206_DRAFT_FALCON1024_PROFILE = "fips206-draft-falcon1024-v1"
+ALGORITHM_STANDARD_PROFILES = {
+    CLASSICAL_ED25519: (ED25519_RFC8032_PROFILE,),
+    ML_DSA: (FIPS204_ML_DSA_65_PROFILE,),
+    FN_DSA: (FIPS206_DRAFT_FALCON1024_PROFILE,),
+}
+DEFAULT_STANDARD_PROFILE_BY_ALGORITHM = {
+    algorithm: profiles[0] for algorithm, profiles in ALGORITHM_STANDARD_PROFILES.items()
+}
 REAL_SIGNATURE_ENCODING_PREFIX = "b64u:"
 _BASE64URL_ALPHABET = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 SUPPORTED_COMPONENTS = ("adn", "dqsn", "guardian_wallet", "qwg", "sentinel_ai")
@@ -102,7 +116,9 @@ REQUIRED_SIGNED_COMPONENT_FIELDS = frozenset(
 )
 OPTIONAL_COMPONENT_FIELDS = frozenset({"verification_summary"})
 SIGNATURE_BUNDLE_FIELDS = frozenset({"schema_version", "policy_version", "signatures"})
-SIGNATURE_ENTRY_FIELDS = frozenset({"algorithm", "key_id", "key_version", "signed_payload_hash", "domain_tag", "signature"})
+SIGNATURE_ENTRY_FIELDS = frozenset(
+    {"algorithm", "standard_profile", "key_id", "key_version", "signed_payload_hash", "domain_tag", "signature"}
+)
 COMPONENT_SIGNATURE_RESULT_FIELDS = frozenset(
     {"component_id", "component_role", "verified", "verified_algorithms", "signature_policy"}
 )
@@ -179,6 +195,19 @@ def _require_non_empty_str(value: Any, *, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ShieldV4ReceiptContractError(f"{field} must be non-empty string")
     return value.strip()
+
+
+def _require_supported_standard_profile(*, algorithm: str, standard_profile: Any) -> str:
+    clean = _require_non_empty_str(standard_profile, field="standard_profile")
+    if clean not in ALGORITHM_STANDARD_PROFILES.get(algorithm, ()):  # impossible after algorithm allow-list, defensive anyway.
+        raise ShieldV4ReceiptContractError("unsupported Shield v4 signature standard_profile")
+    return clean
+
+
+def default_standard_profile_for_algorithm(algorithm: str) -> str:
+    if algorithm not in ALLOWED_ALGORITHMS:
+        raise ShieldV4ReceiptContractError("unsupported Shield v4 signature algorithm")
+    return DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm]
 
 
 def _require_positive_int(value: Any, *, field: str) -> int:
@@ -282,6 +311,10 @@ def _validate_signature_bundle_shape(
         if algorithm in seen_algorithms:
             raise ShieldV4ReceiptContractError("duplicate signature algorithm")
         seen_algorithms.add(algorithm)
+        _require_supported_standard_profile(
+            algorithm=algorithm,
+            standard_profile=entry["standard_profile"],
+        )
         _require_non_empty_str(entry["key_id"], field="key_id")
         _require_positive_int(entry["key_version"], field="key_version")
         if _require_hash(entry["signed_payload_hash"], field="signed_payload_hash") != expected_hash:
@@ -318,6 +351,8 @@ def _validate_component_signature_results(results: Any) -> list[dict[str, Any]]:
         if result["signature_policy"] != SIGNATURE_POLICY:
             raise ShieldV4ReceiptContractError("component signature result policy mismatch")
         algorithms = _require_str_list(result["verified_algorithms"], field="verified_algorithms")
+        if any(algorithm not in ALLOWED_ALGORITHMS for algorithm in algorithms):
+            raise ShieldV4ReceiptContractError("component signature result contains unsupported algorithm")
         if set(REQUIRED_ALGORITHMS) - set(algorithms):
             raise ShieldV4ReceiptContractError("component signature result missing required algorithm")
         checked.append(dict(result))
