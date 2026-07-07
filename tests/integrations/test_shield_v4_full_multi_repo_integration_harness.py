@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
+    DEFAULT_STANDARD_PROFILE_BY_ALGORITHM,
     ORCHESTRATOR_RECEIPT_DOMAIN,
     receipt_hash,
     signed_payload_hash,
@@ -52,18 +53,20 @@ def resign_orchestrator_receipt(receipt: dict) -> None:
     receipt["signed_payload_hash"] = payload_hash
     signatures = []
     for algorithm in ("classical-ed25519", "ml-dsa"):
+        standard_profile = DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm]
         key_id = f"test-shield_orchestrator-{algorithm}-v1"
         public_key = f"TEST-ONLY-PUBLIC-shield_orchestrator-{algorithm}-v1"
         signatures.append(
             {
                 "algorithm": algorithm,
+                "standard_profile": standard_profile,
                 "key_id": key_id,
                 "key_version": 1,
                 "signed_payload_hash": payload_hash,
                 "domain_tag": ORCHESTRATOR_RECEIPT_DOMAIN,
                 "signature": hmac.new(
                     public_key.encode("utf-8"),
-                    f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{payload_hash}|{algorithm}|{key_id}|1".encode("utf-8"),
+                    f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{payload_hash}|{algorithm}|{standard_profile}|{key_id}|1".encode("utf-8"),
                     "sha256",
                 ).hexdigest(),
             }
