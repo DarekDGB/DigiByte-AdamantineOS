@@ -8,6 +8,7 @@ from pathlib import Path
 
 from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
     COMPONENT_VERDICT_DOMAIN,
+    DEFAULT_STANDARD_PROFILE_BY_ALGORITHM,
     ORCHESTRATOR_RECEIPT_DOMAIN,
     receipt_hash,
     signed_payload_hash,
@@ -67,14 +68,16 @@ def optional_component_signature(component: dict, algorithm: str = "fn-dsa") -> 
     key_id = f"test-{role}-{algorithm}-v1"
     public_key = f"TEST-ONLY-PUBLIC-{role}-{algorithm}-v1"
     signed_hash = str(component["signed_payload_hash"])
+    standard_profile = DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm]
     return {
         "algorithm": algorithm,
+        "standard_profile": standard_profile,
         "key_id": key_id,
         "key_version": 1,
         "signed_payload_hash": signed_hash,
         "domain_tag": COMPONENT_VERDICT_DOMAIN,
         "signature": hashlib.sha256(
-            f"{COMPONENT_SIGNATURE_PREFIXES[component_id]}\n{public_key}\n{algorithm}\n{signed_hash}".encode("utf-8")
+            f"{COMPONENT_SIGNATURE_PREFIXES[component_id]}\n{public_key}\n{algorithm}\n{standard_profile}\n{signed_hash}".encode("utf-8")
         ).hexdigest(),
     }
 
@@ -83,15 +86,17 @@ def optional_orchestrator_signature(receipt: dict, algorithm: str = "fn-dsa") ->
     key_id = f"test-shield_orchestrator-{algorithm}-v1"
     public_key = f"TEST-ONLY-PUBLIC-shield_orchestrator-{algorithm}-v1"
     signed_hash = str(receipt["signed_payload_hash"])
+    standard_profile = DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm]
     return {
         "algorithm": algorithm,
+        "standard_profile": standard_profile,
         "key_id": key_id,
         "key_version": 1,
         "signed_payload_hash": signed_hash,
         "domain_tag": ORCHESTRATOR_RECEIPT_DOMAIN,
         "signature": hmac.new(
             public_key.encode("utf-8"),
-            f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{signed_hash}|{algorithm}|{key_id}|1".encode("utf-8"),
+            f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{signed_hash}|{algorithm}|{standard_profile}|{key_id}|1".encode("utf-8"),
             "sha256",
         ).hexdigest(),
     }
@@ -104,18 +109,20 @@ def resign_orchestrator_receipt(receipt: dict) -> None:
     receipt["signed_payload_hash"] = payload_hash
     signatures = []
     for algorithm in ("classical-ed25519", "ml-dsa"):
+        standard_profile = DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[algorithm]
         key_id = f"test-shield_orchestrator-{algorithm}-v1"
         public_key = f"TEST-ONLY-PUBLIC-shield_orchestrator-{algorithm}-v1"
         signatures.append(
             {
                 "algorithm": algorithm,
+                "standard_profile": standard_profile,
                 "key_id": key_id,
                 "key_version": 1,
                 "signed_payload_hash": payload_hash,
                 "domain_tag": ORCHESTRATOR_RECEIPT_DOMAIN,
                 "signature": hmac.new(
                     public_key.encode("utf-8"),
-                    f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{payload_hash}|{algorithm}|{key_id}|1".encode("utf-8"),
+                    f"{ORCHESTRATOR_RECEIPT_DOMAIN}|{payload_hash}|{algorithm}|{standard_profile}|{key_id}|1".encode("utf-8"),
                     "sha256",
                 ).hexdigest(),
             }
