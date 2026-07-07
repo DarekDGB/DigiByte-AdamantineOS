@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pytest
 
 import adamantine.v1.integrations.shield_v4_oqs_mldsa_backend as oqs_backend_module
-from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import ORCHESTRATOR_RECEIPT_DOMAIN
+from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import FIPS204_ML_DSA_65_PROFILE, ORCHESTRATOR_RECEIPT_DOMAIN
 from adamantine.v1.integrations.shield_orchestrator_receipt_v4_verifier import TrustedShieldV4Key
 from adamantine.v1.integrations.shield_v4_oqs_mldsa_backend import (
     OQS_ML_DSA_MECHANISM,
@@ -107,6 +107,7 @@ def trusted_key() -> TrustedShieldV4Key:
 def signature_entry() -> dict[str, object]:
     message = build_real_crypto_signature_input(
         algorithm="ml-dsa",
+        standard_profile=FIPS204_ML_DSA_65_PROFILE,
         domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN,
         signed_payload_hash=PAYLOAD_HASH,
         key_id="shield_orchestrator-ml-dsa-v1",
@@ -115,6 +116,7 @@ def signature_entry() -> dict[str, object]:
     signature = hashlib.sha256(b"oqs-sign|" + PUBLIC_KEY_BYTES + message).digest()
     return {
         "algorithm": "ml-dsa",
+        "standard_profile": FIPS204_ML_DSA_65_PROFILE,
         "key_id": "shield_orchestrator-ml-dsa-v1",
         "key_version": 1,
         "signed_payload_hash": PAYLOAD_HASH,
@@ -333,6 +335,7 @@ def test_v48g_adamantineos_oqs_mldsa_verifier_validates_optional_backend_length_
     backend = OqsMlDsaVerifierBackend(oqs_module=FakeOqsModule(signature_cls=MissingLengthDetailsOqsSignature))
     message = build_real_crypto_signature_input(
         algorithm="ml-dsa",
+        standard_profile=FIPS204_ML_DSA_65_PROFILE,
         domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN,
         signed_payload_hash=PAYLOAD_HASH,
         key_id="shield_orchestrator-ml-dsa-v1",
