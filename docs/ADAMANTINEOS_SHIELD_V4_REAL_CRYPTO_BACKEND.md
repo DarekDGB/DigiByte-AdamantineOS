@@ -31,7 +31,9 @@ Shield v4 policy `policy.v1` requires:
 - `ml-dsa`, formerly CRYSTALS-Dilithium.
 
 `fn-dsa`, based on Falcon, is optional evidence only. FN-DSA/Falcon is not ML-DSA and
-must never override failure of the required algorithms.
+must never override failure of the required algorithms. V4.8H-D locks the draft Falcon-1024
+standard profile as `fips206-draft-falcon1024-v1` for verify-only evidence handling.
+This is profile separation for future FIPS 206 movement, not a final-standard claim.
 
 ## Verify-only adapter
 
@@ -108,6 +110,7 @@ DGB-SHIELD-V4-REAL-CRYPTO-SIGNATURE-INPUT
 <domain_tag>
 <signed_payload_hash>
 <algorithm>
+<standard_profile>
 <key_id>
 <key_version>
 ```
@@ -119,7 +122,22 @@ Rules:
 - no trailing newline;
 - `signed_payload_hash` must be lowercase SHA-256 hex;
 - `domain_tag` must be one of the frozen Shield v4 signing domains;
-- `algorithm`, `key_id`, and `key_version` must match the trusted registry entry.
+- `standard_profile` is authenticated in the message bytes so FN-DSA/Falcon-1024 cannot be flipped to another profile after signing;
+- `algorithm`, `standard_profile`, `key_id`, and `key_version` must match the verifier contract and trusted registry entry.
+
+## V4.8H-D FN-DSA verify-only handling
+
+AdamantineOS treats FN-DSA as optional hybrid evidence under `policy.v1`:
+
+- FN-DSA absent is allowed when `classical-ed25519` and `ml-dsa` both verify;
+- FN-DSA present and valid is recorded as additional evidence;
+- FN-DSA present but invalid, malformed, wrong-role, wrong-payload, unsupported-profile, or missing from the trusted registry is rejected fail-closed;
+- a valid FN-DSA signature cannot rescue failed or missing `classical-ed25519` or `ml-dsa`;
+- embedded `component_signature_results` must match AdamantineOS independent verification and cannot falsely claim or hide FN-DSA evidence.
+
+No live FN-DSA/Falcon backend is claimed by this document. The locked behavior is verify-only
+contract handling, standard-profile binding, deterministic fixtures, and KAT coverage for the
+`fips206-draft-falcon1024-v1` profile.
 
 ## Binary encoding lock
 
