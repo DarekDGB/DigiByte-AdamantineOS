@@ -89,16 +89,18 @@
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_adn-classical-ed25519-v1",
             "key_version": 1,
-            "signature": "2d9bedd8fccea7d3f3ef8f03eec7a4fea62ea43777eda93f93fddfedd147c8d6",
-            "signed_payload_hash": "c773d32b9cbf03c44d79fa04469faf080ba14d149e35d1eb1ee76bdf04ed2eff"
+            "signature": "86bd77d86e86404af473ca9cf17d862374e595807abad91aef0e45c1501e517a",
+            "signed_payload_hash": "c773d32b9cbf03c44d79fa04469faf080ba14d149e35d1eb1ee76bdf04ed2eff",
+            "standard_profile": "rfc8032-ed25519-v1"
           },
           {
             "algorithm": "ml-dsa",
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_adn-ml-dsa-v1",
             "key_version": 1,
-            "signature": "b0c3e7515dc86d8b222a7e5961e3659a6658db88ce758e93c8dc4a4670d9eea2",
-            "signed_payload_hash": "c773d32b9cbf03c44d79fa04469faf080ba14d149e35d1eb1ee76bdf04ed2eff"
+            "signature": "4283e80f3f4d35656761b752cdd52a431ab539179f98e913ddcc0018e4233f68",
+            "signed_payload_hash": "c773d32b9cbf03c44d79fa04469faf080ba14d149e35d1eb1ee76bdf04ed2eff",
+            "standard_profile": "fips204-ml-dsa-65-v1"
           }
         ]
       },
@@ -165,16 +167,18 @@
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_dqsn-classical-ed25519-v1",
             "key_version": 1,
-            "signature": "54814de8fce742c6bf5e15615340d1e07afdf525eb629f8d12cc9d89f3da0c49",
-            "signed_payload_hash": "f3f953f25df15bcab2d1af2747c3fe577e0b341631ec205096ad87d71282bfbf"
+            "signature": "2619e78eef4ddf8f719ef6c6d62a55e39bb8c077cd4667cc22aa772018cc85a8",
+            "signed_payload_hash": "f3f953f25df15bcab2d1af2747c3fe577e0b341631ec205096ad87d71282bfbf",
+            "standard_profile": "rfc8032-ed25519-v1"
           },
           {
             "algorithm": "ml-dsa",
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_dqsn-ml-dsa-v1",
             "key_version": 1,
-            "signature": "820f42ef51e989fc2e0677ea04d73689ef0878a949ecb0035dc744076a9cfb1f",
-            "signed_payload_hash": "f3f953f25df15bcab2d1af2747c3fe577e0b341631ec205096ad87d71282bfbf"
+            "signature": "2aefa39975070bd751a695a0bb00e03a55692c4c559475db53dae2fc19496941",
+            "signed_payload_hash": "f3f953f25df15bcab2d1af2747c3fe577e0b341631ec205096ad87d71282bfbf",
+            "standard_profile": "fips204-ml-dsa-65-v1"
           }
         ]
       },
@@ -241,16 +245,18 @@
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_guardian_wallet-classical-ed25519-v1",
             "key_version": 1,
-            "signature": "ad37c08e31ede2f33b37f57875a454ca8d58537c3e6859fe5ff94202b79227d1",
-            "signed_payload_hash": "78d6091dffd20b6e1e4e3dfd55eeec2860e15e161798568b6e03aada8c06ccee"
+            "signature": "ebc3d0b3cca139e4670c47ab685d72d6a1966cebae86fa1054f4e5e8acd14a4d",
+            "signed_payload_hash": "78d6091dffd20b6e1e4e3dfd55eeec2860e15e161798568b6e03aada8c06ccee",
+            "standard_profile": "rfc8032-ed25519-v1"
           },
           {
             "algorithm": "ml-dsa",
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_guardian_wallet-ml-dsa-v1",
             "key_version": 1,
-            "signature": "01e9ea9b23a5c145c2378b8d9def4570c1ed38455248b9c3c9ced3e09cb567b9",
-            "signed_payload_hash": "78d6091dffd20b6e1e4e3dfd55eeec2860e15e161798568b6e03aada8c06ccee"
+            "signature": "de04691e23df9490219ffe0d67d27a8cc7616e0d7aa99246296bb4cf94fa290b",
+            "signed_payload_hash": "78d6091dffd20b6e1e4e3dfd55eeec2860e15e161798568b6e03aada8c06ccee",
+            "standard_profile": "fips204-ml-dsa-65-v1"
           }
         ]
       },
@@ -317,16 +323,18 @@
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_qwg-classical-ed25519-v1",
             "key_version": 1,
-            "signature": "cdb6f5af4f49ff663b99f56d0e8dce3534d994454fc59fa7713c7d5e2383c0bf",
-            "signed_payload_hash": "f83d57989f58da88df1b970810347dece97993a954910c3c7d0d9df0805cd55d"
+            "signature": "d1b3976f2ba828f720458c2f8a3c35bb29e15b2bfb90a83de486ce89bf97fe1e",
+            "signed_payload_hash": "f83d57989f58da88df1b970810347dece97993a954910c3c7d0d9df0805cd55d",
+            "standard_profile": "rfc8032-ed25519-v1"
           },
           {
             "algorithm": "ml-dsa",
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_qwg-ml-dsa-v1",
             "key_version": 1,
-            "signature": "33b2cb6ab2112a7ca9c31e501688b7067a1c0a1ef2f08b3bfdc2e8bfc27552a3",
-            "signed_payload_hash": "f83d57989f58da88df1b970810347dece97993a954910c3c7d0d9df0805cd55d"
+            "signature": "cbc62171475ce1306ec3ed36e96680b0acf847250e8256957628b0f42db9ba06",
+            "signed_payload_hash": "f83d57989f58da88df1b970810347dece97993a954910c3c7d0d9df0805cd55d",
+            "standard_profile": "fips204-ml-dsa-65-v1"
           }
         ]
       },
@@ -393,16 +401,18 @@
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_sentinel_ai-classical-ed25519-v1",
             "key_version": 1,
-            "signature": "3777988676fb2db29de1999d8418dc36564304353948335713510b7526d75ff8",
-            "signed_payload_hash": "59009acb8508d2684f6c529ccfa8a19f803ad9517e4d1ad08d29d7039f3a022a"
+            "signature": "7de27fcd1ef4fc4395d584f10e06598e5aa434987ca4a42f310778ad69c772b8",
+            "signed_payload_hash": "59009acb8508d2684f6c529ccfa8a19f803ad9517e4d1ad08d29d7039f3a022a",
+            "standard_profile": "rfc8032-ed25519-v1"
           },
           {
             "algorithm": "ml-dsa",
             "domain_tag": "DGB-SHIELD-V4-COMPONENT-VERDICT:shield.verdict.v2:policy.v1",
             "key_id": "test-shield_component_sentinel_ai-ml-dsa-v1",
             "key_version": 1,
-            "signature": "f33405b6dc9ba2fa659bcb2da82e5e8d8b147c42ec674b9eeaa51ecc00889240",
-            "signed_payload_hash": "59009acb8508d2684f6c529ccfa8a19f803ad9517e4d1ad08d29d7039f3a022a"
+            "signature": "e1bcacb0f7e564c35f591afd5bf982ae33539850f86db65cdc91c1ae7aa16ee5",
+            "signed_payload_hash": "59009acb8508d2684f6c529ccfa8a19f803ad9517e4d1ad08d29d7039f3a022a",
+            "standard_profile": "fips204-ml-dsa-65-v1"
           }
         ]
       },
@@ -449,7 +459,7 @@
   "key_registry_version": 1,
   "not_after": "2026-06-21T00:05:00Z",
   "not_before": "2026-06-21T00:00:00Z",
-  "receipt_hash": "2790ca8e764c20bd3d4e5a58c276b930dab86c97f400f5f6ffea080db27be89a",
+  "receipt_hash": "09e8f345655c31a7d421fbceb4753e6e50e31fbde2b67395dd20b7c2eb8c83ab",
   "request_id": "req-v4-final",
   "schema_version": "shield.receipt.v2",
   "signature_bundle": {
@@ -461,21 +471,23 @@
         "domain_tag": "DGB-SHIELD-V4-ORCH-RECEIPT:shield.receipt.v2:policy.v1",
         "key_id": "test-shield_orchestrator-classical-ed25519-v1",
         "key_version": 1,
-        "signature": "473ce32676188fae9df22e94794f4cd1ed52e27a458d161b566990ef987932e7",
-        "signed_payload_hash": "72e3d33934cb4acfae67054dea885cd4cbfd5aa35c067c7fca4f8bb722f5005d"
+        "signature": "251ca405828922f823a205af02e4d3ec0397bd61fa023c2185e2c923c0e99133",
+        "signed_payload_hash": "ce4e58abb6b8202a0f230e842662f7ad9dfdf027d206b54ddebc3f69eff51f75",
+        "standard_profile": "rfc8032-ed25519-v1"
       },
       {
         "algorithm": "ml-dsa",
         "domain_tag": "DGB-SHIELD-V4-ORCH-RECEIPT:shield.receipt.v2:policy.v1",
         "key_id": "test-shield_orchestrator-ml-dsa-v1",
         "key_version": 1,
-        "signature": "ab1d2791153f371ef3a93e23877a9dd63b8c3a4ec42d021fcd1a81a403890fb1",
-        "signed_payload_hash": "72e3d33934cb4acfae67054dea885cd4cbfd5aa35c067c7fca4f8bb722f5005d"
+        "signature": "166f7ca2757467a743969fef4156fbd904d9211dfa860400336cebba4e92a8e5",
+        "signed_payload_hash": "ce4e58abb6b8202a0f230e842662f7ad9dfdf027d206b54ddebc3f69eff51f75",
+        "standard_profile": "fips204-ml-dsa-65-v1"
       }
     ]
   },
   "signature_policy": "policy.v1",
-  "signed_payload_hash": "72e3d33934cb4acfae67054dea885cd4cbfd5aa35c067c7fca4f8bb722f5005d",
+  "signed_payload_hash": "ce4e58abb6b8202a0f230e842662f7ad9dfdf027d206b54ddebc3f69eff51f75",
   "verification_summary": {
     "optional_algorithms": [
       "fn-dsa"
