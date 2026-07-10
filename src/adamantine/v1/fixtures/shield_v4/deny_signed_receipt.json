@@ -13,6 +13,10 @@
       "verified_algorithms": [
         "classical-ed25519",
         "ml-dsa"
+      ],
+      "verified_standard_profiles": [
+        "rfc8032-ed25519-v1",
+        "fips204-ml-dsa-65-v1"
       ]
     },
     {
@@ -23,6 +27,10 @@
       "verified_algorithms": [
         "classical-ed25519",
         "ml-dsa"
+      ],
+      "verified_standard_profiles": [
+        "rfc8032-ed25519-v1",
+        "fips204-ml-dsa-65-v1"
       ]
     },
     {
@@ -33,6 +41,10 @@
       "verified_algorithms": [
         "classical-ed25519",
         "ml-dsa"
+      ],
+      "verified_standard_profiles": [
+        "rfc8032-ed25519-v1",
+        "fips204-ml-dsa-65-v1"
       ]
     },
     {
@@ -43,6 +55,10 @@
       "verified_algorithms": [
         "classical-ed25519",
         "ml-dsa"
+      ],
+      "verified_standard_profiles": [
+        "rfc8032-ed25519-v1",
+        "fips204-ml-dsa-65-v1"
       ]
     },
     {
@@ -53,6 +69,10 @@
       "verified_algorithms": [
         "classical-ed25519",
         "ml-dsa"
+      ],
+      "verified_standard_profiles": [
+        "rfc8032-ed25519-v1",
+        "fips204-ml-dsa-65-v1"
       ]
     }
   ],
@@ -120,18 +140,24 @@
             "algorithm": "classical-ed25519",
             "key_id": "test-shield_component_adn-classical-ed25519-v1",
             "key_version": 1,
+            "standard_profile": "rfc8032-ed25519-v1",
             "verified": true
           },
           {
             "algorithm": "ml-dsa",
             "key_id": "test-shield_component_adn-ml-dsa-v1",
             "key_version": 1,
+            "standard_profile": "fips204-ml-dsa-65-v1",
             "verified": true
           }
         ],
         "verified_algorithms": [
           "classical-ed25519",
           "ml-dsa"
+        ],
+        "verified_standard_profiles": [
+          "rfc8032-ed25519-v1",
+          "fips204-ml-dsa-65-v1"
         ]
       }
     },
@@ -198,18 +224,24 @@
             "algorithm": "classical-ed25519",
             "key_id": "test-shield_component_dqsn-classical-ed25519-v1",
             "key_version": 1,
+            "standard_profile": "rfc8032-ed25519-v1",
             "verified": true
           },
           {
             "algorithm": "ml-dsa",
             "key_id": "test-shield_component_dqsn-ml-dsa-v1",
             "key_version": 1,
+            "standard_profile": "fips204-ml-dsa-65-v1",
             "verified": true
           }
         ],
         "verified_algorithms": [
           "classical-ed25519",
           "ml-dsa"
+        ],
+        "verified_standard_profiles": [
+          "rfc8032-ed25519-v1",
+          "fips204-ml-dsa-65-v1"
         ]
       }
     },
@@ -276,18 +308,24 @@
             "algorithm": "classical-ed25519",
             "key_id": "test-shield_component_guardian_wallet-classical-ed25519-v1",
             "key_version": 1,
+            "standard_profile": "rfc8032-ed25519-v1",
             "verified": true
           },
           {
             "algorithm": "ml-dsa",
             "key_id": "test-shield_component_guardian_wallet-ml-dsa-v1",
             "key_version": 1,
+            "standard_profile": "fips204-ml-dsa-65-v1",
             "verified": true
           }
         ],
         "verified_algorithms": [
           "classical-ed25519",
           "ml-dsa"
+        ],
+        "verified_standard_profiles": [
+          "rfc8032-ed25519-v1",
+          "fips204-ml-dsa-65-v1"
         ]
       }
     },
@@ -354,18 +392,24 @@
             "algorithm": "classical-ed25519",
             "key_id": "test-shield_component_qwg-classical-ed25519-v1",
             "key_version": 1,
+            "standard_profile": "rfc8032-ed25519-v1",
             "verified": true
           },
           {
             "algorithm": "ml-dsa",
             "key_id": "test-shield_component_qwg-ml-dsa-v1",
             "key_version": 1,
+            "standard_profile": "fips204-ml-dsa-65-v1",
             "verified": true
           }
         ],
         "verified_algorithms": [
           "classical-ed25519",
           "ml-dsa"
+        ],
+        "verified_standard_profiles": [
+          "rfc8032-ed25519-v1",
+          "fips204-ml-dsa-65-v1"
         ]
       }
     },
@@ -432,18 +476,24 @@
             "algorithm": "classical-ed25519",
             "key_id": "test-shield_component_sentinel_ai-classical-ed25519-v1",
             "key_version": 1,
+            "standard_profile": "rfc8032-ed25519-v1",
             "verified": true
           },
           {
             "algorithm": "ml-dsa",
             "key_id": "test-shield_component_sentinel_ai-ml-dsa-v1",
             "key_version": 1,
+            "standard_profile": "fips204-ml-dsa-65-v1",
             "verified": true
           }
         ],
         "verified_algorithms": [
           "classical-ed25519",
           "ml-dsa"
+        ],
+        "verified_standard_profiles": [
+          "rfc8032-ed25519-v1",
+          "fips204-ml-dsa-65-v1"
         ]
       }
     }
@@ -459,7 +509,7 @@
   "key_registry_version": 1,
   "not_after": "2026-06-21T00:05:00Z",
   "not_before": "2026-06-21T00:00:00Z",
-  "receipt_hash": "04556a7d7d5870de2a251c76a0750b426d34f77bf9a05699a4a24162ceb612d8",
+  "receipt_hash": "3ec79bfb44fc464ee3d0149055fa5e8c4949a032e29b011a193578c9b059473b",
   "request_id": "req-v4-deny",
   "schema_version": "shield.receipt.v2",
   "signature_bundle": {
@@ -471,8 +521,8 @@
         "domain_tag": "DGB-SHIELD-V4-ORCH-RECEIPT:shield.receipt.v2:policy.v1",
         "key_id": "test-shield_orchestrator-classical-ed25519-v1",
         "key_version": 1,
-        "signature": "726345a9febac0e4f2906f0dff1184dde6f32c77387a06001ac293272dea6de7",
-        "signed_payload_hash": "0a6255ec220247f9a7e866372e1b5829bb5f3280bde68a8c1521856aadfc4ed1",
+        "signature": "2ae1bde0e262585ff3cd15034b53fa7d2172621a972011ec27b708e1d6476dbd",
+        "signed_payload_hash": "2e46f07f29e631255f83d46592ab5c7cbcddf003977de8532b308996b8c941f5",
         "standard_profile": "rfc8032-ed25519-v1"
       },
       {
@@ -480,14 +530,14 @@
         "domain_tag": "DGB-SHIELD-V4-ORCH-RECEIPT:shield.receipt.v2:policy.v1",
         "key_id": "test-shield_orchestrator-ml-dsa-v1",
         "key_version": 1,
-        "signature": "9a043ca809d2b4db144aea7e15c9694c2c00884c26e774be5a169ac8d3beda6a",
-        "signed_payload_hash": "0a6255ec220247f9a7e866372e1b5829bb5f3280bde68a8c1521856aadfc4ed1",
+        "signature": "dc3c09e32c886e627c7e1b7780c670b3e25f77cfc7496ed19e4ee74c707022b0",
+        "signed_payload_hash": "2e46f07f29e631255f83d46592ab5c7cbcddf003977de8532b308996b8c941f5",
         "standard_profile": "fips204-ml-dsa-65-v1"
       }
     ]
   },
   "signature_policy": "policy.v1",
-  "signed_payload_hash": "0a6255ec220247f9a7e866372e1b5829bb5f3280bde68a8c1521856aadfc4ed1",
+  "signed_payload_hash": "2e46f07f29e631255f83d46592ab5c7cbcddf003977de8532b308996b8c941f5",
   "verification_summary": {
     "optional_algorithms": [
       "fn-dsa"
