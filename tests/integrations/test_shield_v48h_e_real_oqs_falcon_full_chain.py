@@ -259,6 +259,11 @@ def test_v48h_e_real_oqs_full_chain_rejects_tampered_falcon_signature() -> None:
         signature_verifier=make_real_crypto_signature_verifier(HybridRealOqsFnDsaFullChainVerifierBackend()),
     )
 
-    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID
+    # Tampering a *component* signature mutates receipt content that is covered by
+    # receipt_hash, so the structural integrity check rejects it as
+    # REJECTED_TAMPERED_RECEIPT before per-signature verification runs. (Tampering
+    # the orchestrator's own signature, which lives in the excluded signature_bundle,
+    # would instead reach signature verification and yield REJECTED_SIGNATURE_INVALID.)
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_TAMPERED_RECEIPT
     assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
     assert result.final_approval is False
