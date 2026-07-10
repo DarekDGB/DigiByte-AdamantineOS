@@ -101,6 +101,39 @@ A public claim that live liboqs ML-DSA verified through AdamantineOS requires
 that gated job to pass with `skipped == 0`; release-grade real-backend proof remains a
 V4.10 release gate.
 
+## V4.8H-E OQS Falcon-1024 verify-only mapping
+
+V4.8H-E adds an optional verify-only OQS Falcon-1024 backend for live FN-DSA draft-profile evidence:
+
+```text
+src/adamantine/v1/integrations/shield_v4_oqs_falcon_backend.py
+tests/integrations/test_shield_v48h_e_oqs_falcon_backend.py
+tests/integrations/test_shield_v48h_e_real_oqs_falcon_full_chain.py
+```
+
+The backend mapping is locked as:
+
+```text
+Shield algorithm: fn-dsa
+standard_profile: fips206-draft-falcon1024-v1
+OQS mechanism:    Falcon-1024
+```
+
+AdamantineOS remains verify-only. The Falcon backend verifies Shield evidence; it does not sign transactions, broadcast, change DigiByte consensus, or grant upstream final authority. FN-DSA remains optional evidence and is not final FIPS 206 proof.
+
+V4.8H-E extends the dedicated PQC workflow so it sets both `SHIELD_V4_REAL_OQS=1` and `SHIELD_V4_REAL_OQS_FALCON=1`, then runs the ML-DSA proof, the ML-DSA full-chain proof, and the Falcon-1024 full-chain proof in the same guarded JUnit report:
+
+```text
+PYTHONPATH=src python -m pytest --override-ini addopts='' \
+  tests/integrations/test_shield_v48g_real_oqs_mldsa_backend.py \
+  tests/integrations/test_shield_v48g_real_oqs_full_chain.py \
+  tests/integrations/test_shield_v48h_e_real_oqs_falcon_full_chain.py \
+  -q --junitxml=shield-v4-real-oqs-results.xml
+python scripts/assert_real_oqs_junit_not_skipped.py shield-v4-real-oqs-results.xml
+```
+
+A public live Falcon-1024 AdamantineOS claim requires that dedicated workflow to finish green with `skipped == 0`, `failures == 0`, and `errors == 0` for the guarded report.
+
 ## Frozen real-signature input
 
 Every real signature is verified over the exact byte string:
@@ -135,13 +168,11 @@ AdamantineOS treats FN-DSA as optional hybrid evidence under `policy.v1`:
 - a valid FN-DSA signature cannot rescue failed or missing `classical-ed25519` or `ml-dsa`;
 - embedded `component_signature_results` must match AdamantineOS independent verification and cannot falsely claim or hide FN-DSA evidence.
 
-No live FN-DSA/Falcon backend is claimed by this document. The locked behavior is verify-only
-contract handling, standard-profile binding, deterministic fixtures, and KAT coverage for the
-`fips206-draft-falcon1024-v1` profile.
+V4.8H-E adds a live-Falcon proof path for draft Falcon-1024 evidence. The locked behavior remains verify-only contract handling, standard-profile binding, deterministic fixtures, and KAT coverage for the `fips206-draft-falcon1024-v1` profile; no final FIPS 206 claim is made.
 
 ## Binary encoding lock
 
-Real ML-DSA signatures and public keys are binary. AdamantineOS real backend adapters
+Real ML-DSA and FN-DSA/Falcon-1024 signatures and public keys are binary. AdamantineOS real backend adapters
 use explicit unpadded base64url encoding with the prefix:
 
 ```text
