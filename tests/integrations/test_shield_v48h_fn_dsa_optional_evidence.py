@@ -22,6 +22,7 @@ from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (
     receipt_hash,
     signed_payload_hash,
     unsigned_receipt_payload,
+    _validate_component_signature_results,
 )
 from adamantine.v1.integrations.shield_orchestrator_receipt_v4_verifier import (
     KEY_REGISTRY_SCHEMA_VERSION,
@@ -246,6 +247,11 @@ def test_v48h_component_signature_results_cannot_falsely_claim_or_hide_fn_dsa() 
     no_fn_flow = _load_flow_fixture("full_multi_repo_v4_allow_flow.json")
     claimed = copy.deepcopy(no_fn_flow["receipt"])
     claimed["component_signature_results"][0]["verified_algorithms"] = ["classical-ed25519", ML_DSA, FN_DSA]
+    claimed["component_signature_results"][0]["verified_standard_profiles"] = [
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM["classical-ed25519"],
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[ML_DSA],
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[FN_DSA],
+    ]
     _resign_orchestrator_receipt(claimed)
     claimed_result = _verify_flow(no_fn_flow, claimed)
     assert claimed_result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY
@@ -254,11 +260,66 @@ def test_v48h_component_signature_results_cannot_falsely_claim_or_hide_fn_dsa() 
     fn_flow = _load_flow_fixture("full_multi_repo_v4_fn_dsa_allow_flow.json")
     hidden = copy.deepcopy(fn_flow["receipt"])
     hidden["component_signature_results"][0]["verified_algorithms"] = ["classical-ed25519", ML_DSA]
+    hidden["component_signature_results"][0]["verified_standard_profiles"] = [
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM["classical-ed25519"],
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[ML_DSA],
+    ]
     _resign_orchestrator_receipt(hidden)
     hidden_result = _verify_flow(fn_flow, hidden)
     assert hidden_result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY
     assert hidden_result.dominant_reason_ids == ("component signature result mismatch",)
     assert hidden_result.final_approval is False
+
+
+def test_v48h_e_component_signature_result_duplicate_algorithm_is_denied() -> None:
+    flow = _load_flow_fixture("full_multi_repo_v4_fn_dsa_allow_flow.json")
+    receipt = copy.deepcopy(flow["receipt"])
+    receipt["component_signature_results"][0]["verified_algorithms"].append(ML_DSA)
+    receipt["component_signature_results"][0]["verified_standard_profiles"].append(
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[ML_DSA]
+    )
+    with pytest.raises(ShieldV4ReceiptContractError, match="unique"):
+        _validate_component_signature_results(receipt["component_signature_results"])
+    _resign_orchestrator_receipt(receipt)
+
+    result = _verify_flow(flow, receipt)
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_INVALID_RECEIPT
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.final_approval is False
+
+
+def test_v48h_e_component_signature_result_profile_mismatch_is_denied() -> None:
+    flow = _load_flow_fixture("full_multi_repo_v4_fn_dsa_allow_flow.json")
+    receipt = copy.deepcopy(flow["receipt"])
+    receipt["component_signature_results"][0]["verified_standard_profiles"] = [
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM["classical-ed25519"],
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[ML_DSA],
+        "fips206-final-falcon1024-v1",
+    ]
+    _resign_orchestrator_receipt(receipt)
+
+    result = _verify_flow(flow, receipt)
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_INVALID_RECEIPT
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.final_approval is False
+
+
+def test_v48h_e_component_signature_result_profile_omission_is_denied() -> None:
+    flow = _load_flow_fixture("full_multi_repo_v4_fn_dsa_allow_flow.json")
+    receipt = copy.deepcopy(flow["receipt"])
+    receipt["component_signature_results"][0]["verified_standard_profiles"] = [
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM["classical-ed25519"],
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM[ML_DSA],
+    ]
+    _resign_orchestrator_receipt(receipt)
+
+    result = _verify_flow(flow, receipt)
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_INVALID_RECEIPT
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.final_approval is False
 
 
 def test_v48h_fn_dsa_different_payload_hash_is_denied() -> None:
