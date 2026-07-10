@@ -193,6 +193,11 @@ def test_v48g_r4_shield_v4_verifier_cross_checks_component_signature_results() -
         "ml-dsa",
         "fn-dsa",
     ]
+    receipt["component_signature_results"][0]["verified_standard_profiles"] = [
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM["classical-ed25519"],
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM["ml-dsa"],
+        DEFAULT_STANDARD_PROFILE_BY_ALGORITHM["fn-dsa"],
+    ]
     sign_receipt(receipt)
 
     result = verify(receipt)
