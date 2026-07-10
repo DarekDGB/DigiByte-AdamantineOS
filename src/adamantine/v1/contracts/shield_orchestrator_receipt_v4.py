@@ -120,7 +120,14 @@ SIGNATURE_ENTRY_FIELDS = frozenset(
     {"algorithm", "standard_profile", "key_id", "key_version", "signed_payload_hash", "domain_tag", "signature"}
 )
 COMPONENT_SIGNATURE_RESULT_FIELDS = frozenset(
-    {"component_id", "component_role", "verified", "verified_algorithms", "signature_policy"}
+    {
+        "component_id",
+        "component_role",
+        "verified",
+        "verified_algorithms",
+        "verified_standard_profiles",
+        "signature_policy",
+    }
 )
 
 
@@ -351,10 +358,16 @@ def _validate_component_signature_results(results: Any) -> list[dict[str, Any]]:
         if result["signature_policy"] != SIGNATURE_POLICY:
             raise ShieldV4ReceiptContractError("component signature result policy mismatch")
         algorithms = _require_str_list(result["verified_algorithms"], field="verified_algorithms")
+        profiles = _require_str_list(result["verified_standard_profiles"], field="verified_standard_profiles")
         if any(algorithm not in ALLOWED_ALGORITHMS for algorithm in algorithms):
             raise ShieldV4ReceiptContractError("component signature result contains unsupported algorithm")
         if set(REQUIRED_ALGORITHMS) - set(algorithms):
             raise ShieldV4ReceiptContractError("component signature result missing required algorithm")
+        if len(profiles) != len(algorithms):
+            raise ShieldV4ReceiptContractError("component signature result profile/algorithm mismatch")
+        for algorithm, profile in zip(algorithms, profiles, strict=True):
+            if profile not in ALGORITHM_STANDARD_PROFILES[algorithm]:
+                raise ShieldV4ReceiptContractError("component signature result contains unsupported standard_profile")
         checked.append(dict(result))
     return checked
 
