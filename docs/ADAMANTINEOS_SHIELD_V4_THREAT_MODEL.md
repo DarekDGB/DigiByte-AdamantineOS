@@ -167,3 +167,15 @@ Shield v4 does not replace user confirmation, wallet policy, replay gates, or Ad
 V4.8H-D locks AdamantineOS verify-only handling for optional FN-DSA/Falcon-1024 evidence. The verifier rejects an unconfigured signature backend instead of silently falling back to TEST-ONLY verification, independently cross-checks embedded `component_signature_results` against AdamantineOS-computed summaries, allows FN-DSA absence under current policy, and denies present-but-invalid, wrong-role, duplicate, spliced, unsupported-profile, or summary-drifted FN-DSA evidence.
 
 This is not the final Shield v4 release gate. The remaining phase still requires the V4.8H-E full integration and negative matrix lock, compatibility documentation, proof-pack closure, workflow evidence with `skipped == 0` where applicable, and final release status.
+
+## V4.8H-E live-Falcon and summary-profile threat lock
+
+V4.8H-E adds the live Falcon-1024 verification path for FN-DSA draft-profile evidence and treats profile-summary drift as an explicit fail-closed threat.
+
+AdamantineOS must deny:
+
+- component or Orchestrator FN-DSA signatures under any unsupported profile;
+- `component_signature_results` that claim algorithms without matching `verified_standard_profiles`;
+- `component_signature_results` that claim a profile AdamantineOS did not independently verify;
+- live backend disabled-mechanism, malformed binary material, or native liboqs exceptions;
+- any attempt to use FN-DSA as rescue logic, transaction-signing authority, broadcast authority, consensus authority, or final FIPS 206 proof.
