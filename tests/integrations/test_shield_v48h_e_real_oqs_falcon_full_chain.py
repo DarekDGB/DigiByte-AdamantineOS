@@ -1,0 +1,264 @@
+from __future__ import annotations
+
+import copy
+import hashlib
+import hmac
+import json
+import os
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+if os.environ.get("SHIELD_V4_REAL_OQS") != "1" or os.environ.get("SHIELD_V4_REAL_OQS_FALCON") != "1":
+    pytest.skip("set SHIELD_V4_REAL_OQS=1 and SHIELD_V4_REAL_OQS_FALCON=1 to run the real hybrid OQS proof", allow_module_level=True)
+
+try:
+    oqs = pytest.importorskip("oqs")
+except SystemExit as exc:
+    pytest.skip(f"could not import oqs/liboqs: {exc}", allow_module_level=True)
+except Exception as exc:
+    pytest.skip(f"could not import oqs/liboqs: {exc}", allow_module_level=True)
+
+from adamantine.v1.contracts.reason_ids import ReasonId  # noqa: E402
+from adamantine.v1.contracts.shield_orchestrator_receipt_v4 import (  # noqa: E402
+    COMPONENT_ROLES,
+    ORCHESTRATOR_RECEIPT_DOMAIN,
+    receipt_hash,
+    signed_payload_hash,
+    unsigned_receipt_payload,
+)
+from adamantine.v1.integrations.shield_orchestrator_receipt_v4_verifier import (  # noqa: E402
+    ORCHESTRATOR_ROLE,
+    ShieldV4ReceiptVerificationState,
+    verify_shield_v4_orchestrator_receipt,
+)
+from adamantine.v1.integrations.shield_v4_oqs_falcon_backend import (  # noqa: E402
+    OQS_FALCON_MECHANISM,
+    OqsFalcon1024VerifierBackend,
+)
+from adamantine.v1.integrations.shield_v4_oqs_mldsa_backend import (  # noqa: E402
+    OQS_ML_DSA_MECHANISM,
+    OqsMlDsaVerifierBackend,
+)
+from adamantine.v1.integrations.shield_v4_real_crypto_backend import (  # noqa: E402
+    build_real_crypto_signature_input,
+    decode_binary_signature_material,
+    encode_binary_signature_material,
+    make_real_crypto_signature_verifier,
+)
+
+FIXTURE_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "src"
+    / "adamantine"
+    / "v1"
+    / "fixtures"
+    / "shield_v4"
+    / "full_multi_repo_v4_fn_dsa_allow_flow.json"
+)
+
+
+class HybridRealOqsFnDsaFullChainVerifierBackend:
+    """Verifier double using real liboqs ML-DSA and Falcon-1024 for Shield evidence."""
+
+    backend_name = "shield-v4.8h-e-real-oqs-hybrid-full-chain-verifier"
+    backend_version = "test-only-classical;real-liboqs-mldsa;real-liboqs-falcon1024"
+    supported_algorithms = ("classical-ed25519", "ml-dsa", "fn-dsa")
+
+    def __init__(self) -> None:
+        self._mldsa = OqsMlDsaVerifierBackend()
+        self._falcon = OqsFalcon1024VerifierBackend()
+
+    def verify_signature(self, *, algorithm: str, public_key: str, message: bytes, signature: str) -> bool:
+        if algorithm == "ml-dsa":
+            return self._mldsa.verify_signature(algorithm=algorithm, public_key=public_key, message=message, signature=signature)
+        if algorithm == "fn-dsa":
+            return self._falcon.verify_signature(algorithm=algorithm, public_key=public_key, message=message, signature=signature)
+        if algorithm == "classical-ed25519":
+            public_key_bytes = decode_binary_signature_material(public_key, field="public_key")
+            expected = _classical_signature(public_key_bytes, algorithm=algorithm, message=message)
+            return hmac.compare_digest(signature, expected)
+        return False
+
+
+def _load_fixture() -> dict[str, Any]:
+    return json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+
+
+def _generate_keypair(mechanism: str) -> tuple[bytes, bytes]:
+    with oqs.Signature(mechanism) as signer:
+        public_key = signer.generate_keypair()
+        secret_key = signer.export_secret_key()
+    assert isinstance(public_key, bytes) and public_key
+    assert isinstance(secret_key, bytes) and secret_key
+    return public_key, secret_key
+
+
+def _classical_public_key(*, role: str, algorithm: str, key_version: int) -> bytes:
+    return f"shield-v4.8h-e-classical-public|{role}|{algorithm}|{key_version}".encode("utf-8")
+
+
+def _classical_signature(public_key_bytes: bytes, *, algorithm: str, message: bytes) -> str:
+    digest = hashlib.sha512(b"shield-v4.8h-e-classical-signature|" + algorithm.encode("utf-8") + b"|" + public_key_bytes + b"|" + message).digest()
+    return encode_binary_signature_material(digest, field="signature")
+
+
+def _prod_key_id(*, role: str, algorithm: str, key_version: int) -> str:
+    return f"prod-{role}-{algorithm}-v{key_version}"
+
+
+def _realize_registry(registry: dict[str, Any]) -> tuple[dict[str, Any], dict[tuple[str, str, int], bytes]]:
+    realized = copy.deepcopy(registry)
+    secret_keys: dict[tuple[str, str, int], bytes] = {}
+    for key in realized["entries"]:
+        role = str(key["role"])
+        algorithm = str(key["algorithm"])
+        key_version = int(key["key_version"])
+        key["key_id"] = _prod_key_id(role=role, algorithm=algorithm, key_version=key_version)
+        if algorithm == "ml-dsa":
+            public_key, secret_key = _generate_keypair(OQS_ML_DSA_MECHANISM)
+            key["public_key"] = encode_binary_signature_material(public_key, field="public_key")
+            secret_keys[(role, algorithm, key_version)] = secret_key
+        elif algorithm == "fn-dsa":
+            public_key, secret_key = _generate_keypair(OQS_FALCON_MECHANISM)
+            key["public_key"] = encode_binary_signature_material(public_key, field="public_key")
+            secret_keys[(role, algorithm, key_version)] = secret_key
+        else:
+            key["public_key"] = encode_binary_signature_material(
+                _classical_public_key(role=role, algorithm=algorithm, key_version=key_version),
+                field="public_key",
+            )
+    return realized, secret_keys
+
+
+def _key_for(registry: dict[str, Any], *, role: str, algorithm: str, key_version: int) -> dict[str, Any]:
+    for key in registry["entries"]:
+        if (key["role"], key["algorithm"], key["key_version"]) == (role, algorithm, key_version):
+            return key
+    raise AssertionError(f"missing key for {role} {algorithm} v{key_version}")
+
+
+def _oqs_signature(mechanism: str, secret_key: bytes, *, message: bytes) -> str:
+    with oqs.Signature(mechanism, secret_key) as signer:
+        signature = signer.sign(message)
+    assert isinstance(signature, bytes) and signature
+    return encode_binary_signature_material(signature, field="signature")
+
+
+def _resign_bundle_with_real_oqs(
+    bundle: dict[str, Any],
+    *,
+    role: str,
+    registry: dict[str, Any],
+    secret_keys: dict[tuple[str, str, int], bytes],
+) -> None:
+    for entry in bundle["signatures"]:
+        algorithm = str(entry["algorithm"])
+        key_version = int(entry["key_version"])
+        key = _key_for(registry, role=role, algorithm=algorithm, key_version=key_version)
+        entry["key_id"] = key["key_id"]
+        message = build_real_crypto_signature_input(
+            algorithm=algorithm,
+            standard_profile=str(entry["standard_profile"]),
+            domain_tag=str(entry["domain_tag"]),
+            signed_payload_hash=str(entry["signed_payload_hash"]),
+            key_id=str(entry["key_id"]),
+            key_version=key_version,
+        )
+        if algorithm == "ml-dsa":
+            entry["signature"] = _oqs_signature(OQS_ML_DSA_MECHANISM, secret_keys[(role, algorithm, key_version)], message=message)
+        elif algorithm == "fn-dsa":
+            entry["signature"] = _oqs_signature(OQS_FALCON_MECHANISM, secret_keys[(role, algorithm, key_version)], message=message)
+        elif algorithm == "classical-ed25519":
+            public_key_bytes = decode_binary_signature_material(str(key["public_key"]), field="public_key")
+            entry["signature"] = _classical_signature(public_key_bytes, algorithm=algorithm, message=message)
+        else:  # pragma: no cover - policy lock.
+            raise AssertionError(f"unexpected signature algorithm in fixture: {algorithm}")
+
+
+def _tamper_b64u_signature(signature: str) -> str:
+    raw = bytearray(decode_binary_signature_material(signature, field="signature"))
+    assert raw
+    raw[0] ^= 0x01
+    return encode_binary_signature_material(bytes(raw), field="signature")
+
+
+def _realize_full_chain_receipt() -> tuple[dict[str, Any], dict[str, Any], str, str, str]:
+    fixture = _load_fixture()
+    receipt = copy.deepcopy(fixture["receipt"])
+    registry, secret_keys = _realize_registry(copy.deepcopy(fixture["trusted_key_registry"]))
+
+    for component in receipt["component_verdicts"]:
+        _resign_bundle_with_real_oqs(
+            component["signature_bundle"],
+            role=COMPONENT_ROLES[str(component["component_id"])],
+            registry=registry,
+            secret_keys=secret_keys,
+        )
+
+    unsigned = unsigned_receipt_payload(receipt)
+    receipt["receipt_hash"] = receipt_hash(unsigned)
+    receipt["signed_payload_hash"] = signed_payload_hash(domain_tag=ORCHESTRATOR_RECEIPT_DOMAIN, payload=unsigned)
+    for entry in receipt["signature_bundle"]["signatures"]:
+        entry["signed_payload_hash"] = receipt["signed_payload_hash"]
+    _resign_bundle_with_real_oqs(
+        receipt["signature_bundle"],
+        role=ORCHESTRATOR_ROLE,
+        registry=registry,
+        secret_keys=secret_keys,
+    )
+    return receipt, registry, fixture["expected_context_hash"], fixture["expected_request_id"], fixture["verification_time"]
+
+
+def test_v48h_e_real_oqs_mldsa_and_falcon_full_chain_verifies_through_adamantineos() -> None:
+    enabled = tuple(oqs.get_enabled_sig_mechanisms())
+    assert OQS_ML_DSA_MECHANISM in enabled
+    assert OQS_FALCON_MECHANISM in enabled
+
+    receipt, registry, expected_context_hash, expected_request_id, verification_time = _realize_full_chain_receipt()
+    result = verify_shield_v4_orchestrator_receipt(
+        receipt,
+        expected_context_hash=expected_context_hash,
+        expected_request_id=expected_request_id,
+        trusted_key_registry=registry,
+        verification_time=verification_time,
+        signature_verifier=make_real_crypto_signature_verifier(HybridRealOqsFnDsaFullChainVerifierBackend()),
+    )
+
+    assert result.state == ShieldV4ReceiptVerificationState.VERIFIED_ALLOW_EVIDENCE_CONTINUE_CHECKS
+    assert result.reason_id == ReasonId.EVIDENCE_OK
+    assert result.verified is True
+    assert result.accepted_as_evidence is True
+    assert result.final_approval is False
+    assert result.verification_summary is not None
+    assert result.verification_summary["orchestrator"]["verified_algorithms"] == ["classical-ed25519", "ml-dsa", "fn-dsa"]
+    assert result.verification_summary["orchestrator"]["verified_standard_profiles"] == [
+        "rfc8032-ed25519-v1",
+        "fips204-ml-dsa-65-v1",
+        "fips206-draft-falcon1024-v1",
+    ]
+    assert all("fn-dsa" in item["verified_algorithms"] for item in result.verification_summary["components"])
+
+
+def test_v48h_e_real_oqs_full_chain_rejects_tampered_falcon_signature() -> None:
+    receipt, registry, expected_context_hash, expected_request_id, verification_time = _realize_full_chain_receipt()
+    for entry in receipt["component_verdicts"][0]["signature_bundle"]["signatures"]:
+        if entry["algorithm"] == "fn-dsa":
+            entry["signature"] = _tamper_b64u_signature(str(entry["signature"]))
+            break
+    else:  # pragma: no cover - fixture policy lock.
+        raise AssertionError("missing component fn-dsa signature")
+
+    result = verify_shield_v4_orchestrator_receipt(
+        receipt,
+        expected_context_hash=expected_context_hash,
+        expected_request_id=expected_request_id,
+        trusted_key_registry=registry,
+        verification_time=verification_time,
+        signature_verifier=make_real_crypto_signature_verifier(HybridRealOqsFnDsaFullChainVerifierBackend()),
+    )
+
+    assert result.state == ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_INVALID
+    assert result.reason_id == ReasonId.EQC_INVALID_SHIELD_BUNDLE
+    assert result.final_approval is False
