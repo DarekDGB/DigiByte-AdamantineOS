@@ -538,17 +538,26 @@ def _verify_component_bundles(
 
 def _normalise_component_signature_result(item: Mapping[str, Any]) -> dict[str, Any]:
     algorithms = item.get("verified_algorithms")
-    if not isinstance(algorithms, list) or any(not isinstance(algorithm, str) for algorithm in algorithms):
+    profiles = item.get("verified_standard_profiles")
+    if (
+        not isinstance(algorithms, list)
+        or any(not isinstance(algorithm, str) for algorithm in algorithms)
+        or not isinstance(profiles, list)
+        or len(profiles) != len(algorithms)
+        or any(not isinstance(profile, str) for profile in profiles)
+    ):
         raise _VerifierRejection(
             ShieldV4ReceiptVerificationState.REJECTED_SIGNATURE_POLICY,
             ReasonId.EQC_INVALID_SHIELD_BUNDLE,
             "component signature result mismatch",
         )
+    pairs = sorted((str(algorithm), str(profile)) for algorithm, profile in zip(algorithms, profiles, strict=True))
     return {
         "component_id": str(item.get("component_id")),
         "component_role": str(item.get("component_role")),
         "verified": item.get("verified"),
-        "verified_algorithms": sorted(algorithms),
+        "verified_algorithms": [algorithm for algorithm, _ in pairs],
+        "verified_standard_profiles": [profile for _, profile in pairs],
         "signature_policy": item.get("signature_policy"),
     }
 
@@ -561,13 +570,16 @@ def _cross_check_component_signature_results(
 
     expected = sorted(
         (
-            {
-                "component_id": str(summary["component_id"]),
-                "component_role": str(summary["component_role"]),
-                "verified": True,
-                "verified_algorithms": sorted(str(algorithm) for algorithm in summary["verified_algorithms"]),
-                "signature_policy": "policy.v1",
-            }
+            _normalise_component_signature_result(
+                {
+                    "component_id": str(summary["component_id"]),
+                    "component_role": str(summary["component_role"]),
+                    "verified": True,
+                    "verified_algorithms": list(summary["verified_algorithms"]),
+                    "verified_standard_profiles": list(summary["verified_standard_profiles"]),
+                    "signature_policy": "policy.v1",
+                }
+            )
             for summary in component_summaries
         ),
         key=lambda item: item["component_id"],
