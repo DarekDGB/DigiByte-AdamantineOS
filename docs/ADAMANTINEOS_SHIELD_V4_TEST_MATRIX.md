@@ -92,7 +92,7 @@ Scope: AdamantineOS Shield v4 contract, verifier, final-policy v4-required tests
 | `ml-dsa` | ML-DSA, formerly CRYSTALS-Dilithium | required in `policy.v1` |
 | `fn-dsa` | FN-DSA, based on Falcon; locked draft profile `fips206-draft-falcon1024-v1` | optional evidence only |
 
-FN-DSA/Falcon must never be treated as ML-DSA and must never override failure of a required path. V4.8H-D does not claim a live FN-DSA/Falcon backend or final FIPS 206 proof.
+FN-DSA/Falcon must never be treated as ML-DSA and must never override failure of a required path. V4.8H-E adds a gated live Falcon-1024 proof path for the draft profile only; it does not claim final FIPS 206 proof.
 
 ## 6. Real backend proof levels
 
@@ -119,3 +119,17 @@ The following remain important for the full Shield v4 release gate and multi-rep
 - replay/stale receipt rejected by injected replay state across the integration harness
 
 V4.8G covers the real-backend interface-contract hardening and gated live-liboqs ML-DSA proof hooks. V4.8H-D covers AdamantineOS verify-only handling for optional FN-DSA/Falcon-1024 evidence. Final public release claims remain gated by the V4.10 proof pack and live workflow evidence with `skipped == 0` where applicable.
+
+## V4.8H-E full hybrid matrix
+
+V4.8H-E adds:
+
+| Case | Expected result | Test evidence |
+| --- | --- | --- |
+| Full receipt with FN-DSA present everywhere | Accepted as evidence only when required signatures also verify | `full_multi_repo_v4_fn_dsa_allow_flow.json`, `test_v48h_adamantineos_accepts_fn_dsa_absent_and_valid_fn_dsa_present` |
+| Component summary profile mismatch | Rejected fail-closed | `test_v48h_e_component_signature_result_profile_mismatch_is_denied` |
+| Component summary omits matching profile for FN-DSA | Rejected fail-closed | `test_v48h_e_component_signature_result_profile_omission_is_denied` |
+| OQS Falcon-1024 verify-only backend contract | Fail-closed on disabled/wrong backend, malformed material, native exceptions, wrong algorithms | `test_shield_v48h_e_oqs_falcon_backend.py` |
+| Gated real liboqs Falcon-1024 full-chain proof | Must pass with JUnit `skipped == 0` before any public live-Falcon claim | `test_shield_v48h_e_real_oqs_falcon_full_chain.py` plus `scripts/assert_real_oqs_junit_not_skipped.py` |
+
+The matrix keeps AdamantineOS verify-only and preserves the final execution boundary.
