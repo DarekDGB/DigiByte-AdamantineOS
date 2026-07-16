@@ -71,7 +71,7 @@ def enforce_tva(
     required_quantum_posture: str | None = None,
 ) -> None:
     """
-    TVA (Truth Vector Authority) Ã¢ÂÂ final enforcement gate (fail-closed).
+    TVA (Truth Vector Authority) - final enforcement gate (fail-closed).
 
     Execution is allowed ONLY if:
       - context exists
