@@ -77,7 +77,7 @@ class RuntimeServices(
 
 class AdamantineRuntimeAdapter(Protocol):
     """
-    Runtime â Adamantine adapter (interface only).
+    Runtime <-> Adamantine adapter (interface only).
 
     Purpose:
     - Provide a single embedding surface for wallet runtimes
