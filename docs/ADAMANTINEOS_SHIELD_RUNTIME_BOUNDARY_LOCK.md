@@ -46,7 +46,7 @@ and MUST inject a real `shield_receipt_verifier(payload, expected_context_hash)`
 
 The same live-protection profile also requires `oracle_verifier(payload, expected_context_hash)` for Adaptive Core oracle evidence. Without both verifiers, AdamantineOS fails closed before the Shield/Oracle evidence can be accepted.
 
-Without this authenticated-evidence latch, the receipt boundary remains deterministic, fail-closed, context-bound, and evidence-only, but it is not a public âShield liveâ protection claim against a hostile client.
+Without this authenticated-evidence latch, the receipt boundary remains deterministic, fail-closed, context-bound, and evidence-only, but it is not a public "Shield live" protection claim against a hostile client.
 
 ---
 
