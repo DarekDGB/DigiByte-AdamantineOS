@@ -59,7 +59,7 @@ AdamantineOS performs the following checks:
 4.  Compare with provided hash.
 5.  Evaluate governance policy.
 
-If any step fails â proposal is rejected.
+If any step fails -> proposal is rejected.
 
 ------------------------------------------------------------------------
 
@@ -70,7 +70,7 @@ The review process ensures:
 -   deterministic governance decisions
 -   verifiable audit trail
 -   tamper detection via hashing
--   crossârepository compatibility
+-   cross-repository compatibility
 
 ------------------------------------------------------------------------
 
