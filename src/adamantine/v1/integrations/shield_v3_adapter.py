@@ -279,11 +279,11 @@ def _parse_signal_v3(
         label="signal.reason_id",
     )
 
-    # Ã¢ÂÂ Correct registry API + correct reason id
+    # Correct registry API + correct reason id
     if not reason_registry.is_shield_reason_allowed(layer=layer, external_reason_id=ext_reason):
         _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"external reason_id not allowed for layer {layer}: {ext_reason}")
 
-    # Ã¢ÂÂ Correct reason map API
+    # Correct reason map API
     mapped = reason_map.lookup(ext_reason)
     if mapped is None:
         _fail(metrics, ReasonId.UNKNOWN_EXTERNAL_REASON, f"unmapped external reason_id: {ext_reason}")
