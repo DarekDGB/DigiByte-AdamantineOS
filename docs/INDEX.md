@@ -39,7 +39,7 @@ Architecture and system design documents.
 
 Documents describing governance interactions.
 
--   Adaptive Core ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Adamantine Governance Flow
+-   Adaptive Core -> Adamantine Governance Flow
 -   Governance Review Contract
 
 ------------------------------------------------------------------------
@@ -61,7 +61,7 @@ Artifact schemas and interface definitions.
 AdamantineOS follows strict architectural guardrails:
 
 -   deterministic behavior
--   failÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂclosed validation
+-   fail-closed validation
 -   canonical serialization
 -   explicit invariants
 -   no silent fallback
