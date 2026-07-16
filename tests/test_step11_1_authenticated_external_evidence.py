@@ -321,4 +321,4 @@ def test_authenticated_external_evidence_latch_is_documented_in_source_and_docs(
     assert "oracle_verifier(payload, expected_context_hash)" in joined
     assert "SHIELD_AUTHENTICITY_VERIFIER_MISSING" in joined
     assert "ORACLE_AUTHENTICITY_VERIFIER_MISSING" in joined
-    assert "not a public âShield liveâ protection claim" in joined
+    assert 'not a public "Shield live" protection claim' in joined
