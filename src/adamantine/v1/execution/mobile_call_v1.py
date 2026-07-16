@@ -40,7 +40,7 @@ def validate_execution_response_v1(*, payload: Mapping[str, Any]) -> Mapping[str
     - deny-by-default (unknown fields rejected)
     - fail-closed (raises ValueError)
     - validates the *shape* + key invariants only
-    - D3: locks status â reason_id semantics + nonce/timebox safety invariants
+    - D3: locks status <-> reason_id semantics + nonce/timebox safety invariants
     """
     top = _require_mapping(payload)
 
@@ -109,7 +109,7 @@ def validate_execution_response_v1(*, payload: Mapping[str, Any]) -> Mapping[str
             raise ValueError("allow status requires decision.allowed == True")
 
     # ---------------------------------------------------------------------
-    # D3 locks: status â reason_id semantics + nonce/timebox safety invariants
+    # D3 locks: status <-> reason_id semantics + nonce/timebox safety invariants
     # ---------------------------------------------------------------------
     if status == "deny":
         if not reason_id.startswith(_DENY_REASON_PREFIXES):
