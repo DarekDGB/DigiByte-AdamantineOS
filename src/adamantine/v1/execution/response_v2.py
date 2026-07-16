@@ -63,10 +63,10 @@ def build_execution_response_v2(
     """Deterministic builder for execution_response_v2.
 
     Contract invariants:
-    - status ÃÂ¢ÃÂÃÂ {"allow","deny","error"}
+    - status in {"allow","deny","error"}
     - status=="allow" => decision.allowed==True and reason_id==OK_ALLOW
     - status in {"deny","error"} => decision.allowed==False
-    - protection_mode ÃÂ¢ÃÂÃÂ {"legacy","minimal","full"}
+    - protection_mode in {"legacy","minimal","full"}
     - response shape is fixed; no unknown keys are inserted
     - no nondeterminism: no environment reads, no random ids, no clocks (caller injects times)
     """
