@@ -1,0 +1,659 @@
+{
+  "profile": "ai_gateway_canonical_json_v1",
+  "hash_algorithm": "sha256",
+  "required_vector_ids": {
+    "golden_vectors": [
+      "null",
+      "false",
+      "true",
+      "zero",
+      "one",
+      "negative-one",
+      "ascii-key-order",
+      "empty-key",
+      "empty-values-and-nesting",
+      "quote",
+      "backslash",
+      "raw-solidus",
+      "short-controls",
+      "other-controls-lowercase-hex",
+      "del-u007f",
+      "c1-u0080-u009f",
+      "raw-non-ascii",
+      "raw-line-separators",
+      "astral-value",
+      "astral-key",
+      "bmp-before-astral-key-order",
+      "nfc-e-acute",
+      "nfd-e-acute",
+      "array-order"
+    ],
+    "equivalence_pairs": [
+      "object-order",
+      "solidus-escape",
+      "newline-short-vs-unicode",
+      "tab-short-vs-unicode",
+      "bmp-raw-vs-unicode",
+      "astral-raw-vs-surrogate-pair",
+      "insignificant-wire-whitespace",
+      "negative-zero-integer"
+    ],
+    "injective_pairs": [
+      "true-vs-one",
+      "false-vs-zero",
+      "nfc-vs-nfd",
+      "array-order",
+      "empty-array-vs-object",
+      "empty-string-vs-null",
+      "del-scalar-vs-six-literal-characters",
+      "empty-key-vs-nonempty-key",
+      "astral-vs-bmp",
+      "nested-empty-shapes"
+    ],
+    "rejected_wire_vectors": [
+      "duplicate-top-level",
+      "duplicate-nested",
+      "duplicate-after-escape-decoding",
+      "float-zero",
+      "negative-float-zero",
+      "float-exponent",
+      "nan",
+      "infinity",
+      "negative-infinity",
+      "lone-high-surrogate",
+      "lone-low-surrogate",
+      "invalid-utf8",
+      "utf8-bom",
+      "trailing-second-value",
+      "plus-integer",
+      "leading-zero-integer",
+      "unescaped-line-feed"
+    ],
+    "boundary_vectors": [
+      "positive-4096-bit",
+      "negative-4096-bit",
+      "positive-4097-bit",
+      "string-10000-astral-scalars",
+      "string-10001-astral-scalars",
+      "key-10000-astral-scalars",
+      "key-10001-astral-scalars",
+      "depth-10",
+      "depth-11",
+      "array-1000-items",
+      "array-1001-items",
+      "object-1000-keys",
+      "object-1001-keys",
+      "nodes-20000",
+      "nodes-20001",
+      "canonical-bytes-1048576",
+      "canonical-bytes-1048577"
+    ]
+  },
+  "golden_vectors": [
+    {
+      "id": "null",
+      "value": null,
+      "expected_canonical_utf8_hex": "6e756c6c",
+      "expected_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "id": "false",
+      "value": false,
+      "expected_canonical_utf8_hex": "66616c7365",
+      "expected_sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+    },
+    {
+      "id": "true",
+      "value": true,
+      "expected_canonical_utf8_hex": "74727565",
+      "expected_sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+    },
+    {
+      "id": "zero",
+      "value": 0,
+      "expected_canonical_utf8_hex": "30",
+      "expected_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "id": "one",
+      "value": 1,
+      "expected_canonical_utf8_hex": "31",
+      "expected_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "id": "negative-one",
+      "value": -1,
+      "expected_canonical_utf8_hex": "2d31",
+      "expected_sha256": "1bad6b8cf97131fceab8543e81f7757195fbb1d36b376ee994ad1cf17699c464"
+    },
+    {
+      "id": "ascii-key-order",
+      "value": {
+        "b": 2,
+        "a": 1
+      },
+      "expected_canonical_utf8_hex": "7b2261223a312c2262223a327d",
+      "expected_sha256": "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+    },
+    {
+      "id": "empty-key",
+      "value": {
+        "": 1
+      },
+      "expected_canonical_utf8_hex": "7b22223a317d",
+      "expected_sha256": "f3d86de1bf4b354382f91a12a4487daaeb56692b2c46f2df52f6f83a84610074"
+    },
+    {
+      "id": "empty-values-and-nesting",
+      "value": {
+        "a": [],
+        "b": {},
+        "c": "",
+        "d": [
+          {},
+          []
+        ]
+      },
+      "expected_canonical_utf8_hex": "7b2261223a5b5d2c2262223a7b7d2c2263223a22222c2264223a5b7b7d2c5b5d5d7d",
+      "expected_sha256": "356c2fb861e0f678a189be0f86a04349aa747899daac610ddec4322fa283b1d3"
+    },
+    {
+      "id": "quote",
+      "value": {
+        "s": "\""
+      },
+      "expected_canonical_utf8_hex": "7b2273223a225c22227d",
+      "expected_sha256": "69cf8bb2d0a0fe22e392f161e67b585ddfd4b71f0878a7299aa707e000d4f773"
+    },
+    {
+      "id": "backslash",
+      "value": {
+        "s": "\\"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a225c5c227d",
+      "expected_sha256": "a1d6ce4a5ab87788e2e18472fee17875e27334fb99a7574eb376124a9a143be4"
+    },
+    {
+      "id": "raw-solidus",
+      "value": {
+        "s": "/"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a222f227d",
+      "expected_sha256": "3a21357b943ab7956f071b0904981aac17577986281af33468108795e079946d"
+    },
+    {
+      "id": "short-controls",
+      "value": {
+        "s": "\b\t\n\f\r"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a225c625c745c6e5c665c72227d",
+      "expected_sha256": "b087fcbc53f88174f9c3ccf7d6cb1c3906ab32d0198eb62c3e541c4aebdcdad0"
+    },
+    {
+      "id": "other-controls-lowercase-hex",
+      "value": {
+        "s": "\u0000\u0001\u001b\u001f"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a225c75303030305c75303030315c75303031625c7530303166227d",
+      "expected_sha256": "2ab33951b7088a7ad065aecfb06db20bc5304cdfb59cc3796c1a2b53d7705bfc"
+    },
+    {
+      "id": "del-u007f",
+      "value": {
+        "s": "\u007f"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a227f227d",
+      "expected_sha256": "487ec760fe5ebe05d21893f0f63b6271963dc1ba0a133585a0fb03b663f7cfe1"
+    },
+    {
+      "id": "c1-u0080-u009f",
+      "value": {
+        "s": "\u0080\u009f"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a22c280c29f227d",
+      "expected_sha256": "e1b3e49459c399e8252f9c4abff50666a3caced02c14c02e70b0358cbb075808"
+    },
+    {
+      "id": "raw-non-ascii",
+      "value": {
+        "s": "\u00e9\u6f22"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a22c3a9e6bca2227d",
+      "expected_sha256": "0ca0210a83c3b9518a11bccc14256197714986659cef2dde1c2f6c80fdec2e4c"
+    },
+    {
+      "id": "raw-line-separators",
+      "value": {
+        "s": "\u2028\u2029"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a22e280a8e280a9227d",
+      "expected_sha256": "37291683554efe5b232ef434c7f2ed8b3f39ce37f4a2d8db100eb4224e48edcd"
+    },
+    {
+      "id": "astral-value",
+      "value": {
+        "s": "\ud83d\ude00"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a22f09f9880227d",
+      "expected_sha256": "f9949e1006d1ca22bc0b60ea94f09779f11a8f0a29bae250fc7ab313d879f5e7"
+    },
+    {
+      "id": "astral-key",
+      "value": {
+        "\ud83d\ude00": "value"
+      },
+      "expected_canonical_utf8_hex": "7b22f09f9880223a2276616c7565227d",
+      "expected_sha256": "8baa5d1aa2fe7b376bb8262c175a659f64f917d4b041955f391925157c63e3fd"
+    },
+    {
+      "id": "bmp-before-astral-key-order",
+      "value": {
+        "\ud800\udc00": 1,
+        "\ue000": 2
+      },
+      "expected_canonical_utf8_hex": "7b22ee8080223a322c22f0908080223a317d",
+      "expected_sha256": "daec79d8b6582badd3b46bd783a72379bc0b5ae29f5d59f6133025aad69bc8d4"
+    },
+    {
+      "id": "nfc-e-acute",
+      "value": {
+        "s": "\u00e9"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a22c3a9227d",
+      "expected_sha256": "86028b41ba792eaf82aa26a45b218f6734f7f1096a86f1746c8296e088a0ccb4"
+    },
+    {
+      "id": "nfd-e-acute",
+      "value": {
+        "s": "e\u0301"
+      },
+      "expected_canonical_utf8_hex": "7b2273223a2265cc81227d",
+      "expected_sha256": "1fc0bd7cc93fca8092a2041d7d01842876422aa7e2838acf42c14578e9f2be05"
+    },
+    {
+      "id": "array-order",
+      "value": [
+        2,
+        1
+      ],
+      "expected_canonical_utf8_hex": "5b322c315d",
+      "expected_sha256": "af1a1fc110b6094c48582b0ef83553cb7908d7a4365424eef28e76ef6c88d630"
+    }
+  ],
+  "equivalence_pairs": [
+    {
+      "id": "object-order",
+      "left_wire_utf8_hex": "7b2262223a322c2261223a317d",
+      "right_wire_utf8_hex": "7b2261223a312c2262223a327d",
+      "expected_canonical_utf8_hex": "7b2261223a312c2262223a327d",
+      "expected_sha256": "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+    },
+    {
+      "id": "solidus-escape",
+      "left_wire_utf8_hex": "7b2273223a225c2f227d",
+      "right_wire_utf8_hex": "7b2273223a222f227d",
+      "expected_canonical_utf8_hex": "7b2273223a222f227d",
+      "expected_sha256": "3a21357b943ab7956f071b0904981aac17577986281af33468108795e079946d"
+    },
+    {
+      "id": "newline-short-vs-unicode",
+      "left_wire_utf8_hex": "7b2273223a225c6e227d",
+      "right_wire_utf8_hex": "7b2273223a225c7530303061227d",
+      "expected_canonical_utf8_hex": "7b2273223a225c6e227d",
+      "expected_sha256": "d62b0d4bc3e7f46bcc5b13fc9dec674af436ad01a496c5b09e9ebe6e633b73e2"
+    },
+    {
+      "id": "tab-short-vs-unicode",
+      "left_wire_utf8_hex": "7b2273223a225c74227d",
+      "right_wire_utf8_hex": "7b2273223a225c7530303039227d",
+      "expected_canonical_utf8_hex": "7b2273223a225c74227d",
+      "expected_sha256": "53c9fd2a34402b50a23224494255968e1a95eb8c5913d0b39febf9d3b1f3b960"
+    },
+    {
+      "id": "bmp-raw-vs-unicode",
+      "left_wire_utf8_hex": "7b2273223a22c3a9227d",
+      "right_wire_utf8_hex": "7b2273223a225c7530306539227d",
+      "expected_canonical_utf8_hex": "7b2273223a22c3a9227d",
+      "expected_sha256": "86028b41ba792eaf82aa26a45b218f6734f7f1096a86f1746c8296e088a0ccb4"
+    },
+    {
+      "id": "astral-raw-vs-surrogate-pair",
+      "left_wire_utf8_hex": "7b2273223a22f09f9880227d",
+      "right_wire_utf8_hex": "7b2273223a225c75643833645c7564653030227d",
+      "expected_canonical_utf8_hex": "7b2273223a22f09f9880227d",
+      "expected_sha256": "f9949e1006d1ca22bc0b60ea94f09779f11a8f0a29bae250fc7ab313d879f5e7"
+    },
+    {
+      "id": "insignificant-wire-whitespace",
+      "left_wire_utf8_hex": "207b20226122203a2031207d20",
+      "right_wire_utf8_hex": "7b2261223a317d",
+      "expected_canonical_utf8_hex": "7b2261223a317d",
+      "expected_sha256": "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862"
+    },
+    {
+      "id": "negative-zero-integer",
+      "left_wire_utf8_hex": "2d30",
+      "right_wire_utf8_hex": "30",
+      "expected_canonical_utf8_hex": "30",
+      "expected_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    }
+  ],
+  "injective_pairs": [
+    {
+      "id": "true-vs-one",
+      "left_value": true,
+      "left_expected_canonical_utf8_hex": "74727565",
+      "left_expected_sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "right_value": 1,
+      "right_expected_canonical_utf8_hex": "31",
+      "right_expected_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "id": "false-vs-zero",
+      "left_value": false,
+      "left_expected_canonical_utf8_hex": "66616c7365",
+      "left_expected_sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+      "right_value": 0,
+      "right_expected_canonical_utf8_hex": "30",
+      "right_expected_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "id": "nfc-vs-nfd",
+      "left_value": {
+        "s": "\u00e9"
+      },
+      "left_expected_canonical_utf8_hex": "7b2273223a22c3a9227d",
+      "left_expected_sha256": "86028b41ba792eaf82aa26a45b218f6734f7f1096a86f1746c8296e088a0ccb4",
+      "right_value": {
+        "s": "e\u0301"
+      },
+      "right_expected_canonical_utf8_hex": "7b2273223a2265cc81227d",
+      "right_expected_sha256": "1fc0bd7cc93fca8092a2041d7d01842876422aa7e2838acf42c14578e9f2be05"
+    },
+    {
+      "id": "array-order",
+      "left_value": [
+        1,
+        2
+      ],
+      "left_expected_canonical_utf8_hex": "5b312c325d",
+      "left_expected_sha256": "49a64717d5d4cb19952e6eac2946415cf6879adacf9908e7d872332d32c6e684",
+      "right_value": [
+        2,
+        1
+      ],
+      "right_expected_canonical_utf8_hex": "5b322c315d",
+      "right_expected_sha256": "af1a1fc110b6094c48582b0ef83553cb7908d7a4365424eef28e76ef6c88d630"
+    },
+    {
+      "id": "empty-array-vs-object",
+      "left_value": [],
+      "left_expected_canonical_utf8_hex": "5b5d",
+      "left_expected_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "right_value": {},
+      "right_expected_canonical_utf8_hex": "7b7d",
+      "right_expected_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "id": "empty-string-vs-null",
+      "left_value": "",
+      "left_expected_canonical_utf8_hex": "2222",
+      "left_expected_sha256": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+      "right_value": null,
+      "right_expected_canonical_utf8_hex": "6e756c6c",
+      "right_expected_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "id": "del-scalar-vs-six-literal-characters",
+      "left_value": "\u007f",
+      "left_expected_canonical_utf8_hex": "227f22",
+      "left_expected_sha256": "6fe76740e12a93d5598fe685cb6ad3d3c94e44609065a56866b69647772026ec",
+      "right_value": "\\u007f",
+      "right_expected_canonical_utf8_hex": "225c5c753030376622",
+      "right_expected_sha256": "6a7e115bca6bd3f305f10b56186c29e373af0a66a37abdbc059797086fbed153"
+    },
+    {
+      "id": "empty-key-vs-nonempty-key",
+      "left_value": {
+        "": 1
+      },
+      "left_expected_canonical_utf8_hex": "7b22223a317d",
+      "left_expected_sha256": "f3d86de1bf4b354382f91a12a4487daaeb56692b2c46f2df52f6f83a84610074",
+      "right_value": {
+        "a": 1
+      },
+      "right_expected_canonical_utf8_hex": "7b2261223a317d",
+      "right_expected_sha256": "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862"
+    },
+    {
+      "id": "astral-vs-bmp",
+      "left_value": "\ud83d\ude00",
+      "left_expected_canonical_utf8_hex": "22f09f988022",
+      "left_expected_sha256": "7a0c50b92434b015545fe93ab723db2d4b2cdd14a441405624a9ce8be29f1d5a",
+      "right_value": "\ue000",
+      "right_expected_canonical_utf8_hex": "22ee808022",
+      "right_expected_sha256": "2ae420786f133698ee38ccf4ade214858eafd2b2ac71c63f118b19df9aebed6b"
+    },
+    {
+      "id": "nested-empty-shapes",
+      "left_value": {
+        "a": [
+          []
+        ]
+      },
+      "left_expected_canonical_utf8_hex": "7b2261223a5b5b5d5d7d",
+      "left_expected_sha256": "b5fabdb64ab25c92500fe9f8404913bafd0bfa4993fcd9859996facd1f9a8b62",
+      "right_value": {
+        "a": [
+          {}
+        ]
+      },
+      "right_expected_canonical_utf8_hex": "7b2261223a5b7b7d5d7d",
+      "right_expected_sha256": "e143bd6ef0cb57b76ce6faacf531fd6234ea4289d5524426f6775f7d168d6e7a"
+    }
+  ],
+  "rejected_wire_vectors": [
+    {
+      "id": "duplicate-top-level",
+      "wire_utf8_hex": "7b2261223a312c2261223a327d"
+    },
+    {
+      "id": "duplicate-nested",
+      "wire_utf8_hex": "7b2278223a7b2261223a312c2261223a327d7d"
+    },
+    {
+      "id": "duplicate-after-escape-decoding",
+      "wire_utf8_hex": "7b2261223a312c225c7530303631223a327d"
+    },
+    {
+      "id": "float-zero",
+      "wire_utf8_hex": "302e30"
+    },
+    {
+      "id": "negative-float-zero",
+      "wire_utf8_hex": "2d302e30"
+    },
+    {
+      "id": "float-exponent",
+      "wire_utf8_hex": "316530"
+    },
+    {
+      "id": "nan",
+      "wire_utf8_hex": "4e614e"
+    },
+    {
+      "id": "infinity",
+      "wire_utf8_hex": "496e66696e697479"
+    },
+    {
+      "id": "negative-infinity",
+      "wire_utf8_hex": "2d496e66696e697479"
+    },
+    {
+      "id": "lone-high-surrogate",
+      "wire_utf8_hex": "225c756438303022"
+    },
+    {
+      "id": "lone-low-surrogate",
+      "wire_utf8_hex": "225c756466666622"
+    },
+    {
+      "id": "invalid-utf8",
+      "wire_utf8_hex": "22ff22"
+    },
+    {
+      "id": "utf8-bom",
+      "wire_utf8_hex": "efbbbf6e756c6c"
+    },
+    {
+      "id": "trailing-second-value",
+      "wire_utf8_hex": "6e756c6c2074727565"
+    },
+    {
+      "id": "plus-integer",
+      "wire_utf8_hex": "2b31"
+    },
+    {
+      "id": "leading-zero-integer",
+      "wire_utf8_hex": "3031"
+    },
+    {
+      "id": "unescaped-line-feed",
+      "wire_utf8_hex": "226c696e650a6665656422"
+    }
+  ],
+  "boundary_vectors": [
+    {
+      "id": "positive-4096-bit",
+      "kind": "integer_bits",
+      "bits": 4096,
+      "expected": "accept",
+      "expected_canonical_byte_length": 1233,
+      "expected_sha256": "7d2c60161fd08d6305ecc607f1b666a3db07197a8351fa4a52c8b35326d6418b"
+    },
+    {
+      "id": "negative-4096-bit",
+      "kind": "integer_bits",
+      "bits": 4096,
+      "negative": true,
+      "expected": "accept",
+      "expected_canonical_byte_length": 1234,
+      "expected_sha256": "de3999ff1a0062f940e7573b24cd0fdd6482924e24965167636ac5e068b3997d"
+    },
+    {
+      "id": "positive-4097-bit",
+      "kind": "integer_bits",
+      "bits": 4097,
+      "expected": "reject"
+    },
+    {
+      "id": "string-10000-astral-scalars",
+      "kind": "string_repeat",
+      "scalar_codepoint": "1f600",
+      "count": 10000,
+      "expected": "accept",
+      "expected_canonical_byte_length": 40002,
+      "expected_sha256": "8c79f5a61b2273bade7412975cc8d5326c31334d2b676d0eae3256b9328bf467"
+    },
+    {
+      "id": "string-10001-astral-scalars",
+      "kind": "string_repeat",
+      "scalar_codepoint": "1f600",
+      "count": 10001,
+      "expected": "reject"
+    },
+    {
+      "id": "key-10000-astral-scalars",
+      "kind": "key_repeat",
+      "scalar_codepoint": "1f600",
+      "count": 10000,
+      "expected": "accept",
+      "expected_canonical_byte_length": 40006,
+      "expected_sha256": "a4065b49a54865f405ce0326750463587ccfb81fdab09ed4dcd13250703a9491"
+    },
+    {
+      "id": "key-10001-astral-scalars",
+      "kind": "key_repeat",
+      "scalar_codepoint": "1f600",
+      "count": 10001,
+      "expected": "reject"
+    },
+    {
+      "id": "depth-10",
+      "kind": "nested_depth",
+      "wrappers": 10,
+      "expected": "accept",
+      "expected_canonical_byte_length": 21,
+      "expected_sha256": "848e7d93ce80a3d0b85a55d59884d089998a846a76d43bd403e380c1fc875d10"
+    },
+    {
+      "id": "depth-11",
+      "kind": "nested_depth",
+      "wrappers": 11,
+      "expected": "reject"
+    },
+    {
+      "id": "array-1000-items",
+      "kind": "list_items",
+      "count": 1000,
+      "expected": "accept",
+      "expected_canonical_byte_length": 2001,
+      "expected_sha256": "33e361f4dd1c58fca3f06fa9c677ed0ad2fe1cb595f0402f74415f4036233403"
+    },
+    {
+      "id": "array-1001-items",
+      "kind": "list_items",
+      "count": 1001,
+      "expected": "reject"
+    },
+    {
+      "id": "object-1000-keys",
+      "kind": "object_keys",
+      "count": 1000,
+      "expected": "accept",
+      "expected_canonical_byte_length": 10001,
+      "expected_sha256": "ccf32ad9e972f4206df52e3f75ce7a843471903590984315b121ea0bc3cfe93b"
+    },
+    {
+      "id": "object-1001-keys",
+      "kind": "object_keys",
+      "count": 1001,
+      "expected": "reject"
+    },
+    {
+      "id": "nodes-20000",
+      "kind": "node_budget",
+      "sublist_count": 1000,
+      "default_items": 19,
+      "last_items": 18,
+      "expected": "accept",
+      "expected_canonical_byte_length": 39999,
+      "expected_sha256": "af11f4f5fdce966e0daef8ef1c7034f26150cf545a8340e56a3b6e33e1cffd6c"
+    },
+    {
+      "id": "nodes-20001",
+      "kind": "node_budget",
+      "sublist_count": 1000,
+      "default_items": 19,
+      "expected": "reject"
+    },
+    {
+      "id": "canonical-bytes-1048576",
+      "kind": "canonical_bytes_array",
+      "full_string_count": 104,
+      "full_string_length": 10000,
+      "tail_string_length": 8260,
+      "expected": "accept",
+      "expected_canonical_byte_length": 1048576,
+      "expected_sha256": "924e961a357cb15d05c0e8489f01b94cd1575757eecb15098a968d1febd9a18d"
+    },
+    {
+      "id": "canonical-bytes-1048577",
+      "kind": "canonical_bytes_array",
+      "full_string_count": 104,
+      "full_string_length": 10000,
+      "tail_string_length": 8261,
+      "expected": "reject"
+    }
+  ]
+}
