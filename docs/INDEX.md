@@ -53,6 +53,7 @@ Artifact schemas and interface definitions.
 -   wsqk_authority_v2
 -   WSQK v2 reason IDs
 -   WSQK v2 Q-ID posture binding
+-   [AI Gateway policy-bound evidence V2](CONTRACTS/ai_gateway_policy_bound_evidence_v2.md)
 
 ------------------------------------------------------------------------
 
