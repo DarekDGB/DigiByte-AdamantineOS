@@ -1,0 +1,37 @@
+{
+  "evidence_role": "evidence_only",
+  "evidence_version": "adamantine_ai_gateway_evidence_v2",
+  "expected_context_hash": "dab7c6a2b93454e259894a9e0d68da7370d03626fb7154020362aeb756d436d6",
+  "handoff": {
+    "adapter": "poi",
+    "context_hash": "dab7c6a2b93454e259894a9e0d68da7370d03626fb7154020362aeb756d436d6",
+    "envelope_hash": "dab7c6a2b93454e259894a9e0d68da7370d03626fb7154020362aeb756d436d6",
+    "handoff_version": "ai_gateway_handoff_v1",
+    "output_hash": "f0361cb44ee95ccb041be4754671dd30c983809d4896cc18547f04ad4cca0efd",
+    "policy_decision": "accepted",
+    "reason_id": "ACCEPTED",
+    "task_type": "code_review"
+  },
+  "policy_binding": {
+    "handoff_hash": "77f576ef98296e59e45f9bc104165a77def827ae7aa9a1368ca313321533462b",
+    "policy_binding_version": "ai_gateway_policy_binding_v1",
+    "policy_pack_contract_version": "policy_pack_v1",
+    "policy_pack_hash": "87d3c7f9fcfe8d7f84648c272b5793b0a15cf634f1a02536d606e88232f131fa",
+    "policy_pack_id": "d2-policy",
+    "policy_pack_version_id": "v1",
+    "receipt_hash": "ba04340d93e658eb243fef7f060c16b52aeecbc4a100806931f8b8463c0d41e6"
+  },
+  "receipt": {
+    "adapter_id": "poi",
+    "adapter_version": "0.3.0",
+    "created_from_contract": "ai_gateway_output_v1",
+    "determinism_profile": "canonical_sha256_no_time_v1",
+    "envelope_hash": "dab7c6a2b93454e259894a9e0d68da7370d03626fb7154020362aeb756d436d6",
+    "gateway_version": "1.0.0",
+    "output_hash": "f0361cb44ee95ccb041be4754671dd30c983809d4896cc18547f04ad4cca0efd",
+    "policy_decision": "accepted",
+    "reason_id": "ACCEPTED",
+    "receipt_version": "ai_gateway_receipt_v1"
+  },
+  "source": "adamantine-ai-gateway"
+}
