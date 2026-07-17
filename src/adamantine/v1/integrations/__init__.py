@@ -52,6 +52,20 @@ from adamantine.v1.integrations.ai_gateway_policy_evidence import (
     AIGatewayPolicyEvidenceState,
     normalize_ai_gateway_policy_evidence,
 )
+from adamantine.v1.integrations.ai_gateway_canonical_json_v1 import (
+    AI_GATEWAY_CANONICAL_JSON_V1,
+    AIGatewayCanonicalJSONError,
+    AIGatewayDuplicateKeyError,
+    AIGatewayResourceLimitError,
+    canonical_ai_gateway_json_v1_bytes,
+    parse_ai_gateway_json_v1,
+)
+from adamantine.v1.integrations.ai_gateway_policy_bound_evidence_v2 import (
+    AIGatewayExpectedPolicyV1,
+    AIGatewayPolicyBoundEvidenceResult,
+    AIGatewayPolicyBoundEvidenceState,
+    consume_ai_gateway_policy_bound_evidence_v2,
+)
 
 __all__ = [
     "AdapterError",
@@ -84,4 +98,14 @@ __all__ = [
     "normalize_ai_gateway_policy_evidence",
     "AIGatewayPolicyEvidenceState",
     "AIGatewayPolicyEvidenceResult",
+    "AI_GATEWAY_CANONICAL_JSON_V1",
+    "AIGatewayCanonicalJSONError",
+    "AIGatewayDuplicateKeyError",
+    "AIGatewayResourceLimitError",
+    "canonical_ai_gateway_json_v1_bytes",
+    "parse_ai_gateway_json_v1",
+    "AIGatewayExpectedPolicyV1",
+    "AIGatewayPolicyBoundEvidenceState",
+    "AIGatewayPolicyBoundEvidenceResult",
+    "consume_ai_gateway_policy_bound_evidence_v2",
 ]
